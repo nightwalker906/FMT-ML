@@ -1,0 +1,334 @@
+═══════════════════════════════════════════════════════════════════════════════
+            COMPLETE PROJECT STRUCTURE - Find My Tutor (After Phase 2)
+═══════════════════════════════════════════════════════════════════════════════
+
+FMT-ML/
+│
+├── 📁 backend/                          [Django REST Framework]
+│   ├── 📄 manage.py                     [Django CLI]
+│   ├── 📄 requirements.txt              [Python dependencies]
+│   ├── 📄 setup.ps1                     [Setup script]
+│   ├── 📄 seed_db.py                    [Database seeding]
+│   ├── 📄 verify_data.py                [Data verification]
+│   ├── 📄 check_*.py                    [Database inspection tools]
+│   ├── 📄 test_db.py                    [Connection test]
+│   │
+│   ├── 📁 fmt_project/                  [Django project config]
+│   │   ├── 📄 settings.py               [Database, CORS, DRF config]
+│   │   ├── 📄 urls.py                   [Main URL routing]
+│   │   ├── 📄 wsgi.py                   [WSGI config]
+│   │   └── 📄 __init__.py
+│   │
+│   ├── 📁 core/                         [Main Django app]
+│   │   ├── 📄 models.py                 [SQLAlchemy-style ORM models]
+│   │   │                                 ├─ Profile (id, email, user_type, ...)
+│   │   │                                 ├─ Student (profile_id, grade_level, ...)
+│   │   │                                 ├─ Tutor (profile_id, hourly_rate, ...)
+│   │   │                                 ├─ Subject (name, category, description)
+│   │   │                                 ├─ Session (student, tutor, subject, ...)
+│   │   │                                 └─ Rating (student, tutor, session, ...)
+│   │   ├── 📄 serializers.py            [DRF serializers for API]
+│   │   │                                 ├─ ProfileSerializer
+│   │   │                                 ├─ StudentSerializer
+│   │   │                                 ├─ TutorSerializer
+│   │   │                                 ├─ SubjectSerializer
+│   │   │                                 ├─ SessionSerializer
+│   │   │                                 └─ RatingSerializer
+│   │   ├── 📄 views.py                  [DRF ViewSets + custom actions]
+│   │   │                                 ├─ ProfileViewSet (.tutors/, .students/)
+│   │   │                                 ├─ StudentViewSet (search, filter)
+│   │   │                                 ├─ TutorViewSet (.rating/{id}/)
+│   │   │                                 ├─ SubjectViewSet
+│   │   │                                 ├─ SessionViewSet (.by_status/, .my_sessions/)
+│   │   │                                 └─ RatingViewSet (.by_tutor/)
+│   │   ├── 📄 urls.py                   [App URL routing + router registration]
+│   │   ├── 📄 apps.py
+│   │   └── 📄 __init__.py
+│   │
+│   └── 📁 .venv/                        [Python virtual environment]
+│       └─ All 13 installed packages:
+│          ├─ Django 4.2.8
+│          ├─ djangorestframework 3.14.0
+│          ├─ psycopg2-binary 2.9.9
+│          ├─ dj-database-url 2.1.0
+│          ├─ python-dotenv 1.0.0
+│          ├─ django-cors-headers 4.3.1
+│          ├─ gunicorn 21.2.0
+│          ├─ six 1.16.0
+│          ├─ sqlparse 0.4.4
+│          ├─ tzdata 2024.1
+│          ├─ requests 2.31.0
+│          ├─ certifi 2024.2.2
+│          └─ charset-normalizer 3.3.2
+│
+│
+├── 📁 frontend/                         [Next.js 14 App Router]
+│   │
+│   ├── 📄 package.json                  [Node.js dependencies]
+│   │   └─ Installed packages:
+│   │      ├─ next 14.2.3
+│   │      ├─ react 18.3.1
+│   │      ├─ react-dom 18.3.1
+│   │      ├─ @supabase/supabase-js 2.45.0
+│   │      ├─ @supabase/ssr 0.4.0
+│   │      ├─ tailwindcss 3.4.3
+│   │      ├─ autoprefixer 10.4.22
+│   │      ├─ postcss 8.4.38
+│   │      ├─ typescript 5.4.5
+│   │      └─ ... (dev dependencies)
+│   │
+│   ├── 📄 .env.local                    [Client environment variables]
+│   │   ├─ NEXT_PUBLIC_SUPABASE_URL
+│   │   ├─ NEXT_PUBLIC_SUPABASE_ANON_KEY
+│   │   ├─ NEXT_PUBLIC_APP_URL
+│   │   ├─ NEXT_PUBLIC_API_URL
+│   │   └─ Note: SUPABASE_SERVICE_ROLE_KEY NOT here (server-only)
+│   │
+│   ├── 📄 tsconfig.json                 [TypeScript configuration]
+│   ├── 📄 next.config.js                [Next.js configuration]
+│   ├── 📄 tailwind.config.ts            [Tailwind CSS configuration]
+│   ├── 📄 postcss.config.js             [PostCSS configuration]
+│   │
+│   ├── 📁 app/                          [Next.js App Router]
+│   │   │
+│   │   ├── 📄 layout.tsx                [Root layout with AuthProvider]
+│   │   ├── 📄 page.tsx                  [Home page (/)]
+│   │   ├── 📄 globals.css               [Global Tailwind styles + custom classes]
+│   │   │
+│   │   ├── 📁 login/                    [Authentication pages]
+│   │   │   └── 📄 page.tsx              [Sign In / Sign Up with role selector]
+│   │   │       ├─ Login form (email, password)
+│   │   │       ├─ Signup form (email, password, confirm, role selector)
+│   │   │       ├─ Role selector: 🎓 Student / 👨‍🏫 Tutor
+│   │   │       ├─ Success/error messages
+│   │   │       └─ Calls /api/auth/create-profile after signup
+│   │   │
+│   │   ├── 📁 dashboard/                [Protected dashboard]
+│   │   │   └── 📄 page.tsx              [User dashboard (show profile, logout)]
+│   │   │
+│   │   ├── 📁 tutors/                   [Tutor listing]
+│   │   │   └── 📄 page.tsx              [List all tutors from Django API]
+│   │   │
+│   │   ├── 📁 api-test/                 [Test page]
+│   │   │   └── 📄 page.tsx              [API endpoint tester]
+│   │   │
+│   │   └── 📁 api/                      [Next.js API routes (server-side)]
+│   │       └── 📁 auth/
+│   │           └── 📁 create-profile/   [✅ NEW - Profile creation]
+│   │               └── 📄 route.ts      [POST /api/auth/create-profile]
+│   │                   ├─ Validates: userId, email, userType
+│   │                   ├─ Uses: Service Role key (server-only)
+│   │                   ├─ Inserts: profiles table row
+│   │                   └─ Returns: { success, message, profile }
+│   │
+│   ├── 📁 context/                      [React Context]
+│   │   └── 📄 auth-context.tsx          [Auth state management]
+│   │       ├─ useAuth() hook
+│   │       ├─ AuthProvider component
+│   │       ├─ State: user, session, isLoading, signOut
+│   │       └─ Listens: onAuthStateChange
+│   │
+│   ├── 📁 hooks/                        [Custom React hooks]
+│   │   └── 📄 useApi.ts                 [API fetching hook]
+│   │
+│   ├── 📁 utils/                        [Utility functions]
+│   │   └── 📁 supabase/
+│   │       ├── 📄 client.ts             [Browser Supabase client]
+│   │       │   └─ Uses: NEXT_PUBLIC_SUPABASE_ANON_KEY
+│   │       │
+│   │       └── 📄 server.ts             [✅ NEW - Admin client]
+│   │           ├─ createAdminClient() - uses Service Role key
+│   │           └─ createUserProfile() - creates profiles
+│   │
+│   ├── 📁 public/                       [Static assets]
+│   │
+│   └── 📄 next-env.d.ts                 [TypeScript declarations]
+│
+│
+├── 📄 PHASE2_SUMMARY.txt               [✅ NEW - Complete summary with visuals]
+├── 📄 PHASE2_CODE_REVIEW.txt           [✅ NEW - Detailed code review]
+├── 📄 frontend/PHASE2_COMPLETE.md      [✅ NEW - Phase 2 documentation]
+└── 📄 frontend/BROWSER_PREVIEW.md      [✅ NEW - Visual browser preview]
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                              KEY FILES SUMMARY
+═══════════════════════════════════════════════════════════════════════════════
+
+AUTHENTICATION CHAIN (New Files):
+──────────────────────────────────
+
+1. User visits: http://localhost:3001/login
+   ├─ Handled by: frontend/app/login/page.tsx
+   └─ Rendered with: AuthProvider (from context/auth-context.tsx)
+
+2. User clicks "Create Account" (Signup)
+   ├─ Calls: supabase.auth.signUp()
+   │  └─ Creates: auth.users row with user_type metadata
+   └─ Calls: fetch('/api/auth/create-profile')
+      ├─ Sent to: frontend/app/api/auth/create-profile/route.ts
+      ├─ Uses: createAdminClient() from utils/supabase/server.ts
+      └─ Creates: profiles table row (server-side, secure)
+
+3. Result in Database:
+   ├─ auth.users table (Supabase auth schema):
+   │  └─ {id, email, password_hash, metadata: {user_type}, ...}
+   └─ profiles table (public schema):
+      └─ {id (same as auth.users.id), email, user_type, ...}
+
+
+API ENDPOINTS (Django Backend):
+────────────────────────────────
+
+GET    /api/profiles/              [List profiles with search, filter]
+GET    /api/profiles/{id}/         [Get single profile]
+GET    /api/profiles/tutors/       [List all tutors]
+GET    /api/profiles/students/     [List all students]
+
+GET    /api/students/              [List students]
+GET    /api/students/{id}/         [Get student profile]
+
+GET    /api/tutors/                [List tutors]
+GET    /api/tutors/{id}/           [Get tutor details]
+GET    /api/tutors/{id}/rating/    [Get tutor's avg rating]
+
+GET    /api/subjects/              [List subjects]
+GET    /api/subjects/{id}/         [Get subject]
+
+GET    /api/sessions/              [List sessions]
+GET    /api/sessions/{id}/         [Get session]
+GET    /api/sessions/by_status/    [Filter by status]
+GET    /api/sessions/my_sessions/  [Current user's sessions]
+
+GET    /api/ratings/               [List ratings]
+GET    /api/ratings/{id}/          [Get rating]
+GET    /api/ratings/by_tutor/      [Ratings for tutor]
+
+
+FRONTEND PAGES (Next.js):
+─────────────────────────
+
+/                      [Home page]
+/login                 [Sign In / Sign Up with role selector]
+/dashboard             [Protected user dashboard]
+/tutors                [Tutor listing from Django API]
+/api-test              [API endpoint tester]
+
+
+ENVIRONMENT SETUP:
+──────────────────
+
+BACKEND (.env):
+  DATABASE_URL=postgres://user:pass@host:port/database
+  CORS_ALLOWED_ORIGINS=http://localhost:3000
+  NEXT_PUBLIC_SUPABASE_URL=...
+  NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+  SUPABASE_SERVICE_ROLE_KEY=...
+
+FRONTEND (.env.local):
+  NEXT_PUBLIC_SUPABASE_URL=https://...supabase.co
+  NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJh...
+  NEXT_PUBLIC_APP_URL=http://localhost:3000
+  NEXT_PUBLIC_API_URL=http://localhost:8000/api
+  (SUPABASE_SERVICE_ROLE_KEY NOT here - server env only)
+
+
+RUNNING LOCALLY:
+────────────────
+
+Backend:
+  1. cd backend
+  2. source .venv/Scripts/activate (Windows: .venv\Scripts\activate)
+  3. python manage.py runserver
+
+Frontend:
+  1. cd frontend
+  2. npm install (already done)
+  3. npm run dev
+  4. Open http://localhost:3001/login
+
+Access:
+  - Frontend: http://localhost:3001
+  - Login: http://localhost:3001/login
+  - Backend API: http://localhost:8000/api
+
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PHASE 2 COMPLETION STATUS:
+──────────────────────────
+
+✅ Environment Setup
+   ├─ NEXT_PUBLIC_* variables in .env.local
+   ├─ Service Role key hidden (server-only)
+   └─ Supabase project configured
+
+✅ Supabase Clients
+   ├─ Browser client (Anon Key) - frontend/utils/supabase/client.ts
+   └─ Admin client (Service Role) - frontend/utils/supabase/server.ts ✨ NEW
+
+✅ Auth Context
+   ├─ React Context for auth state
+   ├─ useAuth() hook
+   └─ onAuthStateChange listener
+
+✅ UI Implementation
+   ├─ Sign In form
+   ├─ Sign Up form with role selector ← Key feature
+   ├─ Error/success messages
+   ├─ Loading states
+   └─ Tailwind styling (clean EdTech design)
+
+✅ Server-Side Profile Creation
+   ├─ /api/auth/create-profile endpoint ✨ NEW
+   ├─ Input validation
+   ├─ Service Role key usage (secure)
+   └─ Database insertion (profiles table)
+
+✅ Complete Auth Flow
+   ├─ Signup: email, password, role → auth.users + profiles
+   ├─ Confirmation: email link → email_confirmed_at
+   ├─ Login: email, password → JWT session
+   ├─ State: AuthProvider updates context
+   └─ Redirect: protected pages available
+
+
+═══════════════════════════════════════════════════════════════════════════════
+
+NEXT STEPS (Phase 3):
+─────────────────────
+
+□ Create Dashboard page
+  └─ Show user profile info
+  └─ Display user type (Student/Tutor)
+  └─ Sign out button
+
+□ Create Profile Completion form
+  └─ First name, last name
+  └─ Bio (for tutors)
+  └─ Interests (for students)
+
+□ Implement Tutor Listing
+  └─ Fetch from Django API: /api/tutors/
+  └─ Display tutor cards
+  └─ Filter by subject, rating, hourly rate
+
+□ Implement Booking System
+  └─ Create sessions
+  └─ View upcoming sessions
+  └─ Cancel sessions
+
+□ Implement Messaging
+  └─ Message history
+  └─ Real-time notifications
+
+□ Implement Ratings
+  └─ Leave reviews
+  └─ View tutor ratings
+
+□ Setup Webhook for Supabase auth events
+  └─ Auto-create profiles (if API fails)
+  └─ Sync auth.users ↔ profiles
+
+
+═══════════════════════════════════════════════════════════════════════════════

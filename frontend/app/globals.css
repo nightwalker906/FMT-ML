@@ -1,0 +1,36 @@
+﻿@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* EdTech Color Palette */
+:root {
+  --color-primary: #0d9488;   /* Teal 600 */
+  --color-secondary: #34d399;  /* Emerald 400 */
+  --color-accent: #f59e0b;     /* Amber 500 */
+  --color-dark: #1e293b;       /* Slate 800 */
+  --color-background: #f8fafc; /* Slate 50 */
+}
+
+/* Smooth transitions */
+@layer components {
+  .btn-primary {
+    @apply px-4 py-2 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply px-4 py-2 bg-emerald-400 text-slate-900 font-semibold rounded-lg hover:bg-emerald-500 transition-colors;
+  }
+
+  .btn-text {
+    @apply font-semibold text-teal-600 hover:text-teal-700 transition-colors;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-600 focus:border-transparent;
+  }
+
+  .card {
+    @apply bg-white rounded-2xl shadow-lg p-8 space-y-6;
+  }
+}
+
