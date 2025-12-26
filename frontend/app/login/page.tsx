@@ -28,15 +28,56 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
       if (signInError) throw signInError
 
+      // Query profiles table to get the definitive user_type and check if complete
+      let userType = 'student' // default fallback
+      let isProfileComplete = false
+      
+      if (data.user?.id) {
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('user_type, first_name')
+          .eq('id', data.user.id)
+          .single()
+
+        if (!profileError && profile) {
+          userType = profile.user_type
+          
+          // Check if profile has first_name (basic completion check)
+          if (profile.first_name) {
+            // Also check if role-specific record exists
+            const roleTable = userType === 'tutor' ? 'tutors' : 'students'
+            const { data: roleData } = await supabase
+              .from(roleTable)
+              .select('profile_id')
+              .eq('profile_id', data.user.id)
+              .single()
+            
+            isProfileComplete = !!roleData
+          }
+        } else {
+          // Fallback to auth metadata if profile not found
+          userType = data.user?.user_metadata?.user_type || 'student'
+          console.warn('Profile not found, using auth metadata:', profileError)
+        }
+      }
+
+      // Determine redirect path based on profile completion
+      let redirectPath: string
+      if (!isProfileComplete) {
+        redirectPath = userType === 'tutor' ? '/tutor/complete-profile' : '/student/complete-profile'
+      } else {
+        redirectPath = userType === 'tutor' ? '/tutor/dashboard' : '/dashboard'
+      }
+
       setSuccessMessage('Login successful! Redirecting...')
-      setTimeout(() => router.push('/dashboard'), 1500)
+      setTimeout(() => router.push(redirectPath), 1500)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred during login')
     } finally {

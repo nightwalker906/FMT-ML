@@ -1,11 +1,11 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { User, Lock, Bell, Camera, Save, Loader2, Check, Sun, Moon } from 'lucide-react'
+import { User, Lock, Bell, Camera, Save, Loader2, Check, DollarSign, Sun, Moon } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 import { useTheme } from '@/context/theme-context'
 
-export default function StudentSettingsPage() {
+export default function TutorSettingsPage() {
   const { theme, toggleTheme } = useTheme()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
@@ -20,6 +20,7 @@ export default function StudentSettingsPage() {
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
+  const [hourlyRate, setHourlyRate] = useState('')
   
   // Security form states
   const [newPassword, setNewPassword] = useState('')
@@ -51,41 +52,38 @@ export default function StudentSettingsPage() {
       // Get profile data
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, user_type, is_online')
+        .select('*')
         .eq('id', user.id)
         .single()
 
       console.log('Profile query for user ID:', user.id)
-      console.log('Profile data:', profile)
+      console.log('Tutor Profile data:', profile)
       console.log('Profile error:', profileError)
 
       if (profile) {
+        console.log('Setting firstName to:', profile.first_name)
+        console.log('Setting lastName to:', profile.last_name)
         setFirstName(profile.first_name || '')
         setLastName(profile.last_name || '')
+        setAvatarUrl(profile.avatar_url || '')
+      } else {
+        console.log('No profile found for user')
       }
 
-      // Get student-specific data (includes phone_number)
-      const { data: student, error: studentError } = await supabase
-        .from('students')
-        .select('profile_id, grade_level, preferred_subjects, learning_goals, learning_style, phone_number')
+      // Get tutor data (including phone_number which is in tutors table)
+      const { data: tutor, error: tutorError } = await supabase
+        .from('tutors')
+        .select('profile_id, experience_years, hourly_rate, qualifications, teaching_style, bio_text, availability, average_rating, phone_number')
         .eq('profile_id', user.id)
         .single()
 
-      console.log('Student data:', student)
-      console.log('Student error:', studentError)
+      console.log('Tutor specific data:', tutor)
+      console.log('Tutor error:', tutorError)
 
-      if (student) {
-        // Get phone from students table
-        if (student.phone_number) {
-          setPhone(student.phone_number)
-        }
-        // Set bio from learning goals
-        if (student.learning_goals) {
-          const goals = Array.isArray(student.learning_goals) 
-            ? student.learning_goals.join(', ') 
-            : String(student.learning_goals)
-          setBio(goals || '')
-        }
+      if (tutor) {
+        setBio(tutor.bio_text || '')
+        setHourlyRate(tutor.hourly_rate?.toString() || '')
+        setPhone(tutor.phone_number || '')
       }
 
       // Get user settings
@@ -193,13 +191,12 @@ export default function StudentSettingsPage() {
       return
     }
 
-    // Update profiles table (only columns that exist)
+    // Update profiles table (without updated_at since it may not exist)
     const { error: profileError } = await supabase
       .from('profiles')
       .update({
         first_name: firstName,
-        last_name: lastName,
-        phone_number: phone
+        last_name: lastName
       })
       .eq('id', user.id)
 
@@ -210,21 +207,22 @@ export default function StudentSettingsPage() {
       return
     }
 
-    // Also update learning_goals in students table if bio changed
-    if (bio) {
-      const { error: studentError } = await supabase
-        .from('students')
-        .update({
-          learning_goals: [bio]
-        })
-        .eq('profile_id', user.id)
-      
-      if (studentError) {
-        console.error('Student update error:', studentError)
-      }
-    }
+    // Update tutors table (including phone_number)
+    const { error: tutorError } = await supabase
+      .from('tutors')
+      .update({
+        bio_text: bio,
+        hourly_rate: parseFloat(hourlyRate) || 0,
+        phone_number: phone
+      })
+      .eq('profile_id', user.id)
 
-    showSuccess('profile')
+    if (tutorError) {
+      console.error('Tutor update error:', tutorError)
+      showError(tutorError.message)
+    } else {
+      showSuccess('profile')
+    }
     setSaving(null)
   }
 
@@ -294,7 +292,7 @@ export default function StudentSettingsPage() {
     <div className="max-w-3xl mx-auto space-y-8 pb-12">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Settings</h1>
-        <p className="text-gray-600 dark:text-slate-400">Manage your account settings and preferences</p>
+        <p className="text-gray-600 dark:text-slate-400">Manage your tutor profile and preferences</p>
       </div>
 
       {/* Error Toast */}
@@ -312,7 +310,7 @@ export default function StudentSettingsPage() {
           </div>
           <div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Profile</h2>
-            <p className="text-sm text-gray-500 dark:text-slate-400">Update your personal information</p>
+            <p className="text-sm text-gray-500 dark:text-slate-400">Update your tutor information</p>
           </div>
         </div>
 
@@ -391,15 +389,32 @@ export default function StudentSettingsPage() {
           <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">Email cannot be changed</p>
         </div>
 
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Phone Number</label>
-          <input
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="+1 (555) 000-0000"
-            className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-500"
-          />
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Phone Number</label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+1 (555) 000-0000"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Hourly Rate ($)</label>
+            <div className="relative">
+              <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-slate-500" />
+              <input
+                type="number"
+                value={hourlyRate}
+                onChange={(e) => setHourlyRate(e.target.value)}
+                placeholder="50"
+                min="0"
+                step="5"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-500"
+              />
+            </div>
+          </div>
         </div>
 
         <div className="mb-6">
@@ -407,8 +422,8 @@ export default function StudentSettingsPage() {
           <textarea
             value={bio}
             onChange={(e) => setBio(e.target.value)}
-            rows={3}
-            placeholder="Tell us a bit about yourself..."
+            rows={4}
+            placeholder="Tell students about your experience, teaching style, and what makes you a great tutor..."
             className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none bg-white dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-500"
           />
         </div>
@@ -525,7 +540,7 @@ export default function StudentSettingsPage() {
           <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800 rounded-lg">
             <div>
               <p className="font-medium text-gray-900 dark:text-white">Email Notifications</p>
-              <p className="text-sm text-gray-500 dark:text-slate-400">Receive email updates about bookings and messages</p>
+              <p className="text-sm text-gray-500 dark:text-slate-400">Receive email updates about bookings and student requests</p>
             </div>
             <button
               onClick={() => setEmailNotifications(!emailNotifications)}
