@@ -75,7 +75,7 @@ The page shows:
    - Check your email inbox (or spam)
    - Click confirmation link
    - Returns to login page
-9. Sign in:
+9. Sign in: 
    - Email: testutor@example.com
    - Password: TestPass123!
    - Click "Sign In"

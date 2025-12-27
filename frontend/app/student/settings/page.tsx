@@ -199,7 +199,6 @@ export default function StudentSettingsPage() {
       .update({
         first_name: firstName,
         last_name: lastName,
-        phone_number: phone
       })
       .eq('id', user.id)
 
@@ -210,18 +209,24 @@ export default function StudentSettingsPage() {
       return
     }
 
-    // Also update learning_goals in students table if bio changed
+    // Update students table with phone_number and learning_goals
+    const studentUpdate: { phone_number?: string; learning_goals?: string[] } = {
+      phone_number: phone
+    }
     if (bio) {
-      const { error: studentError } = await supabase
-        .from('students')
-        .update({
-          learning_goals: [bio]
-        })
-        .eq('profile_id', user.id)
-      
-      if (studentError) {
-        console.error('Student update error:', studentError)
-      }
+      studentUpdate.learning_goals = [bio]
+    }
+    
+    const { error: studentError } = await supabase
+      .from('students')
+      .update(studentUpdate)
+      .eq('profile_id', user.id)
+    
+    if (studentError) {
+      console.error('Student update error:', studentError)
+      showError(studentError.message)
+      setSaving(null)
+      return
     }
 
     showSuccess('profile')

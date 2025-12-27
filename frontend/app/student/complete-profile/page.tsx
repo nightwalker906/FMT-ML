@@ -162,15 +162,12 @@ export default function StudentCompleteProfilePage() {
             learning_style: learningStyle,
             phone_number: phoneNumber || null,
           });
-            learning_goals: learningGoals.split('\n').filter((g) => g.trim()),
-            learning_style: learningStyle,
-          });
 
         if (studentError) throw studentError;
       }
 
-      // Redirect to dashboard
-      router.push('/dashboard');
+      // Redirect to student dashboard
+      router.push('/student/dashboard');
     } catch (err) {
       console.error('Profile completion error:', err);
       setError(err instanceof Error ? err.message : 'Failed to save profile');
