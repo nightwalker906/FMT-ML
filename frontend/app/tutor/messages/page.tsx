@@ -6,7 +6,7 @@ import { useAuth } from '@/context/auth-context';
 import { createClient } from '@/utils/supabase/client';
 import { sendMessage, getMessageHistory, markMessagesAsRead, getConversations } from '@/app/actions';
 import { formatDistanceToNow } from 'date-fns';
-import { Send, MessageCircle, Search, ArrowLeft, Check, CheckCheck } from 'lucide-react';
+import { Send, MessageCircle, Search, ArrowLeft, GraduationCap, Check, CheckCheck } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -153,10 +153,10 @@ function ConversationItem({
 }
 
 // ============================================================================
-// MESSAGES PAGE
+// TUTOR MESSAGES PAGE
 // ============================================================================
 
-export default function MessagesPage() {
+export default function TutorMessagesPage() {
   const { user, isLoading } = useAuth();
   const searchParams = useSearchParams();
   const chatWithId = searchParams.get('chat');
@@ -182,12 +182,12 @@ export default function MessagesPage() {
     scrollToBottom();
   }, [messages]);
 
-  // Handle chat URL parameter - start new conversation with tutor
+  // Handle chat URL parameter - start new conversation with student
   useEffect(() => {
     if (!user || !chatWithId) return;
 
     const startNewChat = async () => {
-      // Fetch the tutor's profile info
+      // Fetch the student's profile info
       const { data: profile } = await supabase
         .from('profiles')
         .select('id, first_name, last_name')
@@ -416,7 +416,7 @@ export default function MessagesPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search conversations..."
+              placeholder="Search students..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500"
@@ -428,10 +428,10 @@ export default function MessagesPage() {
         <div className="flex-1 overflow-y-auto">
           {filteredConversations.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full px-4">
-              <MessageCircle className="h-16 w-16 text-gray-300 dark:text-gray-600 mb-4" />
-              <p className="text-gray-500 dark:text-gray-400 text-center mb-2">No conversations yet</p>
+              <GraduationCap className="h-16 w-16 text-gray-300 dark:text-gray-600 mb-4" />
+              <p className="text-gray-500 dark:text-gray-400 text-center mb-2">No student messages yet</p>
               <p className="text-sm text-gray-400 dark:text-gray-500 text-center">
-                Book a session with a tutor to start chatting
+                Messages from students who book sessions will appear here
               </p>
             </div>
           ) : (
@@ -470,7 +470,14 @@ export default function MessagesPage() {
                 <h3 className="font-semibold text-gray-900 dark:text-gray-100">
                   {selectedConversation.user_name}
                 </h3>
-                <p className="text-sm text-green-500">Online</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-green-500">Online</span>
+                  {selectedConversation.has_booking && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300">
+                      Student
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -527,10 +534,10 @@ export default function MessagesPage() {
           </>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center bg-gray-50 dark:bg-slate-900">
-            <MessageCircle className="h-20 w-20 text-gray-300 dark:text-gray-600 mb-4" />
+            <GraduationCap className="h-20 w-20 text-gray-300 dark:text-gray-600 mb-4" />
             <p className="text-gray-500 dark:text-gray-400 text-lg mb-2">Select a conversation</p>
             <p className="text-sm text-gray-400 dark:text-gray-500">
-              Choose from your existing conversations
+              Choose from your student conversations
             </p>
           </div>
         )}

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search, Filter, Star, DollarSign, Clock, ChevronDown, X, Loader2, MapPin, BookOpen } from 'lucide-react'
+import { Search, Filter, Star, DollarSign, Clock, ChevronDown, X, Loader2, MapPin, BookOpen, Send } from 'lucide-react'
 import { searchTutors, getSubjects, bookSession } from '@/app/actions/student'
 
 type Tutor = {
@@ -16,9 +16,13 @@ type Tutor = {
     id: string
     first_name: string
     last_name: string
-    avatar_url?: string
     is_online: boolean
   }
+}
+
+// Helper to generate avatar URL from name
+function getAvatarUrl(firstName: string, lastName: string) {
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(firstName || '')}+${encodeURIComponent(lastName || '')}&background=0d9488&color=fff`
 }
 
 type Subject = {
@@ -45,9 +49,11 @@ export default function StudentSearchPage() {
   const [bookingSubject, setBookingSubject] = useState('')
   const [bookingDate, setBookingDate] = useState('')
   const [bookingTime, setBookingTime] = useState('')
+  const [bookingDuration, setBookingDuration] = useState('60')
   const [bookingNotes, setBookingNotes] = useState('')
   const [booking, setBooking] = useState(false)
   const [bookingSuccess, setBookingSuccess] = useState(false)
+  const [bookingError, setBookingError] = useState('')
 
   useEffect(() => {
     loadData()
@@ -84,13 +90,51 @@ export default function StudentSearchPage() {
     loadData()
   }
 
+  // Helper functions to remove individual filters and re-search
+  async function removeSubjectFilter() {
+    setSelectedSubject('')
+    setLoading(true)
+    const data = await searchTutors({
+      minPrice: priceRange[0],
+      maxPrice: priceRange[1],
+      isOnline: onlineOnly || undefined
+    })
+    setTutors(data.tutors || [])
+    setLoading(false)
+  }
+
+  async function removeOnlineFilter() {
+    setOnlineOnly(false)
+    setLoading(true)
+    const data = await searchTutors({
+      subject: selectedSubject || undefined,
+      minPrice: priceRange[0],
+      maxPrice: priceRange[1]
+    })
+    setTutors(data.tutors || [])
+    setLoading(false)
+  }
+
+  async function removePriceFilter() {
+    setPriceRange([0, 200])
+    setLoading(true)
+    const data = await searchTutors({
+      subject: selectedSubject || undefined,
+      isOnline: onlineOnly || undefined
+    })
+    setTutors(data.tutors || [])
+    setLoading(false)
+  }
+
   function openBookingModal(tutor: Tutor) {
     setSelectedTutor(tutor)
     setBookingSubject('')
     setBookingDate('')
     setBookingTime('')
+    setBookingDuration('60')
     setBookingNotes('')
     setBookingSuccess(false)
+    setBookingError('')
     setBookingModalOpen(true)
   }
 
@@ -98,12 +142,15 @@ export default function StudentSearchPage() {
     if (!selectedTutor || !bookingSubject || !bookingDate || !bookingTime) return
     
     setBooking(true)
+    setBookingError('')
+    
     const scheduledAt = new Date(`${bookingDate}T${bookingTime}`).toISOString()
     
     const formData = new FormData()
     formData.append('tutorId', selectedTutor.profile_id)
     formData.append('subject', bookingSubject)
     formData.append('scheduledAt', scheduledAt)
+    formData.append('duration', bookingDuration)
     formData.append('notes', bookingNotes)
 
     const result = await bookSession(formData)
@@ -113,6 +160,8 @@ export default function StudentSearchPage() {
       setTimeout(() => {
         setBookingModalOpen(false)
       }, 2000)
+    } else {
+      setBookingError(result.error || 'Failed to book session. Please try again.')
     }
     setBooking(false)
   }
@@ -248,7 +297,7 @@ export default function StudentSearchPage() {
           {selectedSubject && (
             <span className="flex items-center gap-1 px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-sm">
               {selectedSubject}
-              <button onClick={() => setSelectedSubject('')}>
+              <button onClick={removeSubjectFilter}>
                 <X className="h-3 w-3" />
               </button>
             </span>
@@ -256,7 +305,7 @@ export default function StudentSearchPage() {
           {onlineOnly && (
             <span className="flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
               Online Now
-              <button onClick={() => setOnlineOnly(false)}>
+              <button onClick={removeOnlineFilter}>
                 <X className="h-3 w-3" />
               </button>
             </span>
@@ -264,7 +313,7 @@ export default function StudentSearchPage() {
           {(priceRange[0] > 0 || priceRange[1] < 200) && (
             <span className="flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
               ${priceRange[0]} - ${priceRange[1]}/hr
-              <button onClick={() => setPriceRange([0, 200])}>
+              <button onClick={removePriceFilter}>
                 <X className="h-3 w-3" />
               </button>
             </span>
@@ -301,17 +350,11 @@ export default function StudentSearchPage() {
                 <div className="flex items-start gap-4">
                   <div className="relative">
                     <div className="h-16 w-16 rounded-full bg-gray-200 overflow-hidden">
-                      {tutor.profile?.avatar_url ? (
-                        <img
-                          src={tutor.profile.avatar_url}
-                          alt=""
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="h-full w-full flex items-center justify-center text-gray-500 text-xl font-semibold">
-                          {tutor.profile?.first_name?.[0]}{tutor.profile?.last_name?.[0]}
-                        </div>
-                      )}
+                      <img
+                        src={getAvatarUrl(tutor.profile?.first_name || '', tutor.profile?.last_name || '')}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
                     </div>
                     {tutor.profile?.is_online && (
                       <div className="absolute bottom-0 right-0 h-4 w-4 bg-green-500 border-2 border-white rounded-full" />
@@ -372,17 +415,28 @@ export default function StudentSearchPage() {
               </div>
 
               {/* Footer */}
-              <div className="px-5 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
-                <div className="flex items-center gap-1 text-lg font-semibold text-gray-900">
-                  <DollarSign className="h-5 w-5 text-teal-600" />
-                  {tutor.hourly_rate}/hr
+              <div className="px-5 py-4 bg-gray-50 border-t border-gray-100">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-1 text-lg font-semibold text-gray-900">
+                    <DollarSign className="h-5 w-5 text-teal-600" />
+                    {tutor.hourly_rate}/hr
+                  </div>
                 </div>
-                <button
-                  onClick={() => openBookingModal(tutor)}
-                  className="px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition-colors"
-                >
-                  Book Session
-                </button>
+                <div className="flex gap-2">
+                  <a
+                    href={`/student/messages?chat=${tutor.profile_id}`}
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <Send className="h-4 w-4" />
+                    Message
+                  </a>
+                  <button
+                    onClick={() => openBookingModal(tutor)}
+                    className="flex-1 px-3 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition-colors"
+                  >
+                    Book Session
+                  </button>
+                </div>
               </div>
             </div>
           ))}
@@ -399,7 +453,22 @@ export default function StudentSearchPage() {
                   <BookOpen className="h-8 w-8 text-green-600" />
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900">Session Requested!</h3>
-                <p className="text-gray-500 mt-2">The tutor will review your booking request</p>
+                <p className="text-gray-500 mt-2 mb-6">The tutor will review your booking request</p>
+                <div className="flex flex-col gap-3">
+                  <a
+                    href={`/student/messages?chat=${selectedTutor?.profile_id}`}
+                    className="flex items-center justify-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+                  >
+                    <Send className="h-4 w-4" />
+                    Message Tutor
+                  </a>
+                  <button
+                    onClick={() => setBookingModalOpen(false)}
+                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
             ) : (
               <>
@@ -416,17 +485,11 @@ export default function StudentSearchPage() {
                 {/* Tutor Info */}
                 <div className="flex items-center gap-3 mb-6 p-3 bg-gray-50 rounded-lg">
                   <div className="h-12 w-12 rounded-full bg-gray-200 overflow-hidden">
-                    {selectedTutor.profile?.avatar_url ? (
-                      <img
-                        src={selectedTutor.profile.avatar_url}
-                        alt=""
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="h-full w-full flex items-center justify-center text-gray-500 font-semibold">
-                        {selectedTutor.profile?.first_name?.[0]}{selectedTutor.profile?.last_name?.[0]}
-                      </div>
-                    )}
+                    <img
+                      src={getAvatarUrl(selectedTutor.profile?.first_name || '', selectedTutor.profile?.last_name || '')}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
                   </div>
                   <div>
                     <p className="font-semibold text-gray-900">
@@ -458,31 +521,59 @@ export default function StudentSearchPage() {
                   </select>
                 </div>
 
-                {/* Date */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
-                  <input
-                    type="date"
-                    value={bookingDate}
-                    onChange={(e) => setBookingDate(e.target.value)}
-                    min={new Date().toISOString().split('T')[0]}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                  />
+                {/* Date and Time Row */}
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  {/* Date */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
+                    <input
+                      type="date"
+                      value={bookingDate}
+                      onChange={(e) => setBookingDate(e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  {/* Time */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Time *</label>
+                    <input
+                      type="time"
+                      value={bookingTime}
+                      onChange={(e) => setBookingTime(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    />
+                  </div>
                 </div>
 
-                {/* Time */}
+                {/* Duration */}
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Time *</label>
-                  <input
-                    type="time"
-                    value={bookingTime}
-                    onChange={(e) => setBookingTime(e.target.value)}
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Duration *</label>
+                  <select
+                    value={bookingDuration}
+                    onChange={(e) => setBookingDuration(e.target.value)}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                  />
+                  >
+                    <option value="30">30 minutes</option>
+                    <option value="60">1 hour</option>
+                    <option value="90">1.5 hours</option>
+                    <option value="120">2 hours</option>
+                  </select>
+                </div>
+
+                {/* Estimated Cost */}
+                <div className="mb-4 p-3 bg-teal-50 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-teal-700">Estimated Cost</span>
+                    <span className="text-lg font-semibold text-teal-700">
+                      ${((selectedTutor.hourly_rate * parseInt(bookingDuration)) / 60).toFixed(2)}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Notes */}
-                <div className="mb-6">
+                <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
                   <textarea
                     value={bookingNotes}
@@ -492,6 +583,13 @@ export default function StudentSearchPage() {
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
                   />
                 </div>
+
+                {/* Error Message */}
+                {bookingError && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                    {bookingError}
+                  </div>
+                )}
 
                 <div className="flex gap-3">
                   <button

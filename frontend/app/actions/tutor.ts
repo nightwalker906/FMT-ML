@@ -529,7 +529,7 @@ export async function getPendingRequests(): Promise<{
     if (studentIds.length > 0) {
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, avatar_url')
+        .select('id, first_name, last_name')
         .in('id', studentIds);
 
       if (profiles) {
@@ -537,7 +537,7 @@ export async function getPendingRequests(): Promise<{
           const name = `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Student';
           acc[p.id] = {
             name,
-            avatar: p.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`,
+            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0d9488&color=fff`,
           };
           return acc;
         }, {} as Record<string, { name: string; avatar: string }>);

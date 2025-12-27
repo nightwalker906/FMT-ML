@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/auth-context';
 import { createClient } from '@/utils/supabase/client';
-import { Sidebar, MobileSidebar, studentLinks } from '@/components/layout/sidebar';
+import { Sidebar, MobileSidebar, studentLinks, SidebarLink } from '@/components/layout/sidebar';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Bell, Menu, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -18,6 +18,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [displayName, setDisplayName] = useState('');
   const [initials, setInitials] = useState('');
 
@@ -53,9 +54,55 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         .eq('is_read', false);
 
       setNotificationCount(count || 0);
+
+      // Fetch unread messages count
+      const { count: messagesCount } = await supabase
+        .from('messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('receiver_id', user.id)
+        .eq('is_read', false);
+
+      setUnreadMessagesCount(messagesCount || 0);
     };
 
     fetchData();
+
+    // Subscribe to new messages for real-time badge updates
+    const messagesSubscription = supabase
+      .channel(`messages-badge:${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `receiver_id=eq.${user.id}`,
+        },
+        () => {
+          // Increment unread count on new message
+          setUnreadMessagesCount(prev => prev + 1);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'messages',
+          filter: `receiver_id=eq.${user.id}`,
+        },
+        (payload) => {
+          // Decrement if message marked as read
+          if (payload.new && (payload.new as { is_read: boolean }).is_read) {
+            setUnreadMessagesCount(prev => Math.max(0, prev - 1));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      messagesSubscription.unsubscribe();
+    };
   }, [user, supabase]);
 
   // Redirect if not authenticated or not a student
@@ -69,6 +116,16 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
     await signOut();
     router.push('/login');
   };
+
+  // Create links with dynamic message badge
+  const linksWithBadges: SidebarLink[] = useMemo(() => {
+    return studentLinks.map(link => {
+      if (link.href === '/student/messages') {
+        return { ...link, badge: unreadMessagesCount };
+      }
+      return link;
+    });
+  }, [unreadMessagesCount]);
 
   // Loading state
   if (isLoading) {
@@ -88,7 +145,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       {/* Desktop Sidebar */}
       <Sidebar 
-        links={studentLinks} 
+        links={linksWithBadges} 
         userType="student" 
         onSignOut={handleSignOut}
         userName={displayName}
@@ -97,7 +154,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
 
       {/* Mobile Sidebar */}
       <MobileSidebar
-        links={studentLinks}
+        links={linksWithBadges}
         userType="student"
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}

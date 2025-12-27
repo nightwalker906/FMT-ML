@@ -62,6 +62,9 @@ export default function StudentSettingsPage() {
       if (profile) {
         setFirstName(profile.first_name || '')
         setLastName(profile.last_name || '')
+        // Generate avatar from name (avatar_url column doesn't exist in profiles table)
+        const generatedAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.first_name || '')}+${encodeURIComponent(profile.last_name || '')}&background=0d9488&color=fff`
+        setAvatarUrl(generatedAvatar)
       }
 
       // Get student-specific data (includes phone_number)

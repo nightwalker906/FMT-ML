@@ -15,9 +15,13 @@ type Booking = {
     id: string
     first_name: string
     last_name: string
-    avatar_url?: string
   }
   hasReview?: boolean
+}
+
+// Helper to generate avatar URL from name
+function getAvatarUrl(firstName: string, lastName: string) {
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(firstName || '')}+${encodeURIComponent(lastName || '')}&background=0d9488&color=fff`
 }
 
 export default function StudentSchedulePage() {
@@ -145,17 +149,11 @@ export default function StudentSchedulePage() {
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-4">
                     <div className="h-12 w-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
-                      {booking.tutor?.avatar_url ? (
-                        <img
-                          src={booking.tutor.avatar_url}
-                          alt=""
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="h-full w-full flex items-center justify-center text-gray-500 font-semibold">
-                          {booking.tutor?.first_name?.[0]}{booking.tutor?.last_name?.[0]}
-                        </div>
-                      )}
+                      <img
+                        src={getAvatarUrl(booking.tutor?.first_name || '', booking.tutor?.last_name || '')}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-900">
@@ -213,17 +211,11 @@ export default function StudentSchedulePage() {
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-4">
                     <div className="h-12 w-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
-                      {booking.tutor?.avatar_url ? (
-                        <img
-                          src={booking.tutor.avatar_url}
-                          alt=""
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="h-full w-full flex items-center justify-center text-gray-500 font-semibold">
-                          {booking.tutor?.first_name?.[0]}{booking.tutor?.last_name?.[0]}
-                        </div>
-                      )}
+                      <img
+                        src={getAvatarUrl(booking.tutor?.first_name || '', booking.tutor?.last_name || '')}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-900">
@@ -295,17 +287,11 @@ export default function StudentSchedulePage() {
 
                 <div className="flex items-center gap-3 mb-6">
                   <div className="h-12 w-12 rounded-full bg-gray-200 overflow-hidden">
-                    {selectedBooking.tutor?.avatar_url ? (
-                      <img
-                        src={selectedBooking.tutor.avatar_url}
-                        alt=""
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="h-full w-full flex items-center justify-center text-gray-500 font-semibold">
-                        {selectedBooking.tutor?.first_name?.[0]}{selectedBooking.tutor?.last_name?.[0]}
-                      </div>
-                    )}
+                    <img
+                      src={getAvatarUrl(selectedBooking.tutor?.first_name || '', selectedBooking.tutor?.last_name || '')}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
                   </div>
                   <div>
                     <p className="font-semibold text-gray-900">

@@ -17,18 +17,10 @@ export async function getStudentBookings() {
 
   const now = new Date().toISOString()
 
-  // Get upcoming bookings
+  // Get upcoming bookings (without join since tutor_id references auth.users)
   const { data: upcoming, error: upcomingError } = await supabase
     .from('bookings')
-    .select(`
-      *,
-      tutor:tutor_id (
-        id,
-        first_name,
-        last_name,
-        avatar_url
-      )
-    `)
+    .select('*')
     .eq('student_id', user.id)
     .gte('scheduled_at', now)
     .in('status', ['pending', 'accepted'])
@@ -41,15 +33,7 @@ export async function getStudentBookings() {
   // Get past bookings
   const { data: past, error: pastError } = await supabase
     .from('bookings')
-    .select(`
-      *,
-      tutor:tutor_id (
-        id,
-        first_name,
-        last_name,
-        avatar_url
-      )
-    `)
+    .select('*')
     .eq('student_id', user.id)
     .or(`scheduled_at.lt.${now},status.eq.completed`)
     .order('scheduled_at', { ascending: false })
@@ -59,9 +43,35 @@ export async function getStudentBookings() {
     console.error('Error fetching past bookings:', pastError)
   }
 
+  // Get tutor profiles for all bookings
+  const allBookings = [...(upcoming || []), ...(past || [])]
+  const tutorIds = [...new Set(allBookings.map(b => b.tutor_id))]
+  
+  const { data: tutorProfiles } = await supabase
+    .from('profiles')
+    .select('id, first_name, last_name')
+    .in('id', tutorIds)
+
+  // Create tutor map
+  const tutorMap: Record<string, { id: string; first_name: string; last_name: string }> = {}
+  tutorProfiles?.forEach(p => {
+    tutorMap[p.id] = p
+  })
+
+  // Add tutor info to bookings
+  const upcomingWithTutor = (upcoming || []).map(b => ({
+    ...b,
+    tutor: tutorMap[b.tutor_id] || null
+  }))
+
+  const pastWithTutor = (past || []).map(b => ({
+    ...b,
+    tutor: tutorMap[b.tutor_id] || null
+  }))
+
   // Check which past bookings have reviews
   const pastWithReviewStatus = await Promise.all(
-    (past || []).map(async (booking) => {
+    pastWithTutor.map(async (booking) => {
       const { data: review } = await supabase
         .from('reviews')
         .select('id')
@@ -76,7 +86,7 @@ export async function getStudentBookings() {
   )
 
   return {
-    upcoming: upcoming || [],
+    upcoming: upcomingWithTutor,
     past: pastWithReviewStatus
   }
 }
@@ -167,52 +177,65 @@ export async function searchTutors(filters?: {
 }) {
   const supabase = await createClient()
 
+  // First, fetch all tutors
   let query = supabase
     .from('tutors')
-    .select(`
-      *,
-      profile:profiles!tutors_profile_id_fkey (
-        id,
-        first_name,
-        last_name,
-        avatar_url,
-        is_online
-      )
-    `)
+    .select('*')
 
-  // Apply filters
-  if (filters?.minPrice) {
+  // Apply price filters (check for undefined/null, not just truthy)
+  if (filters?.minPrice !== undefined && filters.minPrice !== null && filters.minPrice > 0) {
     query = query.gte('hourly_rate', filters.minPrice)
   }
-  if (filters?.maxPrice) {
+  if (filters?.maxPrice !== undefined && filters.maxPrice !== null && filters.maxPrice < 200) {
     query = query.lte('hourly_rate', filters.maxPrice)
   }
 
-  const { data: tutors, error } = await query.order('average_rating', { ascending: false, nullsFirst: false })
+  const { data: tutorsData, error: tutorsError } = await query.order('average_rating', { ascending: false, nullsFirst: false })
 
-  if (error) {
-    console.error('Error searching tutors:', error)
-    return { tutors: [], error: error.message }
+  if (tutorsError) {
+    console.error('Error searching tutors:', tutorsError)
+    return { tutors: [], error: tutorsError.message }
   }
 
+  if (!tutorsData || tutorsData.length === 0) {
+    return { tutors: [] }
+  }
+
+  // Fetch profiles for all tutors
+  const profileIds = tutorsData.map(t => t.profile_id)
+  const { data: profilesData, error: profilesError } = await supabase
+    .from('profiles')
+    .select('id, first_name, last_name, is_online')
+    .in('id', profileIds)
+
+  if (profilesError) {
+    console.error('Error fetching profiles:', profilesError)
+  }
+
+  // Combine tutors with their profiles
+  const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || [])
+  let tutors = tutorsData.map(tutor => ({
+    ...tutor,
+    profile: profilesMap.get(tutor.profile_id) || null
+  }))
+
   // Filter by subject if provided (subjects is stored in qualifications JSON)
-  let filteredTutors = tutors || []
-  
-  if (filters?.subject) {
-    filteredTutors = filteredTutors.filter(tutor => {
+  if (filters?.subject && filters.subject.trim() !== '') {
+    const searchSubject = filters.subject.toLowerCase()
+    tutors = tutors.filter(tutor => {
       const qualifications = tutor.qualifications || []
       return qualifications.some((q: string) => 
-        q.toLowerCase().includes(filters.subject!.toLowerCase())
+        q.toLowerCase().includes(searchSubject)
       )
     })
   }
 
   // Filter by online status if specified
-  if (filters?.isOnline) {
-    filteredTutors = filteredTutors.filter(tutor => tutor.profile?.is_online)
+  if (filters?.isOnline === true) {
+    tutors = tutors.filter(tutor => tutor.profile?.is_online === true)
   }
 
-  return { tutors: filteredTutors }
+  return { tutors }
 }
 
 // ============================================================================
@@ -244,16 +267,37 @@ export async function bookSession(formData: FormData) {
   
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
-    return { error: 'Not authenticated' }
+    return { error: 'Not authenticated. Please log in to book a session.' }
   }
 
   const tutorId = formData.get('tutorId') as string
   const subject = formData.get('subject') as string
   const scheduledAt = formData.get('scheduledAt') as string
+  const duration = formData.get('duration') as string
   const notes = formData.get('notes') as string
 
   if (!tutorId || !subject || !scheduledAt) {
-    return { error: 'Missing required fields' }
+    return { error: 'Please fill in all required fields.' }
+  }
+
+  // Validate the scheduled time is in the future
+  const scheduledDate = new Date(scheduledAt)
+  if (scheduledDate <= new Date()) {
+    return { error: 'Please select a future date and time.' }
+  }
+
+  // Check if the student has a pending booking with the same tutor at the same time
+  const { data: existingBooking } = await supabase
+    .from('bookings')
+    .select('id')
+    .eq('student_id', user.id)
+    .eq('tutor_id', tutorId)
+    .eq('scheduled_at', scheduledAt)
+    .in('status', ['pending', 'accepted'])
+    .single()
+
+  if (existingBooking) {
+    return { error: 'You already have a booking with this tutor at this time.' }
   }
 
   const { error } = await supabase
@@ -263,12 +307,13 @@ export async function bookSession(formData: FormData) {
       tutor_id: tutorId,
       subject,
       scheduled_at: scheduledAt,
-      notes,
+      notes: notes ? `Duration: ${duration} minutes. ${notes}` : `Duration: ${duration} minutes.`,
       status: 'pending'
     })
 
   if (error) {
-    return { error: error.message }
+    console.error('Booking error:', error)
+    return { error: 'Failed to create booking. Please try again.' }
   }
 
   revalidatePath('/student/schedule')

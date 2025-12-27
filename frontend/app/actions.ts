@@ -1,7 +1,6 @@
 'use server';
 
-import { createAdminClient } from '@/utils/supabase/server';
-import { createClient } from '@/utils/supabase/client';
+import { createClient } from '@/utils/supabase/server';
 
 // ============================================================================
 // MESSAGE SERVER ACTIONS
@@ -16,7 +15,7 @@ export async function sendMessage(receiverId: string, content: string) {
       return { error: 'Receiver ID and content are required' };
     }
 
-    const supabase = createAdminClient();
+    const supabase = await createClient();
 
     // Get the current user
     const {
@@ -57,32 +56,204 @@ export async function sendMessage(receiverId: string, content: string) {
 
 /**
  * Get all conversations for the current user
+ * Returns list of users the current user has messaged with AND tutors with booked sessions
  */
 export async function getConversations() {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createClient();
 
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return { error: 'User not authenticated' };
+      return { error: 'User not authenticated', conversations: [] };
     }
 
-    // Get conversations (unique tutor/student pairs with latest message)
-    const { data, error } = await supabase
-      .rpc('get_user_conversations', { user_id: user.id });
+    // Get all messages involving this user
+    const { data: messages, error: messagesError } = await supabase
+      .from('messages')
+      .select('*')
+      .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+      .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching conversations:', error);
-      return { error: 'Failed to fetch conversations' };
+    if (messagesError) {
+      console.error('Error fetching messages:', messagesError);
     }
 
-    return { success: true, conversations: data || [] };
+    // Get all bookings for this user (as student)
+    const { data: bookings, error: bookingsError } = await supabase
+      .from('bookings')
+      .select('tutor_id, subject, scheduled_at, status')
+      .eq('student_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (bookingsError) {
+      console.error('Error fetching bookings:', bookingsError);
+    }
+
+    // Also check if user is a tutor - get their student bookings
+    const { data: tutorBookings, error: tutorBookingsError } = await supabase
+      .from('bookings')
+      .select('student_id, subject, scheduled_at, status')
+      .eq('tutor_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (tutorBookingsError) {
+      console.error('Error fetching tutor bookings:', tutorBookingsError);
+    }
+
+    // Collect all unique user IDs we need profiles for
+    const otherUserIds = new Set<string>();
+    
+    // From messages
+    messages?.forEach(msg => {
+      if (msg.sender_id === user.id) {
+        otherUserIds.add(msg.receiver_id);
+      } else {
+        otherUserIds.add(msg.sender_id);
+      }
+    });
+
+    // From bookings (tutors the student booked)
+    bookings?.forEach(booking => {
+      otherUserIds.add(booking.tutor_id);
+    });
+
+    // From tutor bookings (students who booked the tutor)
+    tutorBookings?.forEach(booking => {
+      otherUserIds.add(booking.student_id);
+    });
+
+    if (otherUserIds.size === 0) {
+      return { success: true, conversations: [] };
+    }
+
+    // Fetch profiles for these users
+    const { data: profiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, first_name, last_name, user_type')
+      .in('id', Array.from(otherUserIds));
+
+    if (profilesError) {
+      console.error('Error fetching profiles:', profilesError);
+    }
+
+    const profilesMap = new Map(profiles?.map(p => [p.id, p]) || []);
+
+    // Build conversations map
+    const conversationsMap = new Map<string, {
+      id: string;
+      user_id: string;
+      user_name: string;
+      user_avatar: string;
+      user_type: string;
+      last_message: string;
+      last_message_time: string;
+      unread_count: number;
+      has_booking: boolean;
+      booking_status?: string;
+    }>();
+
+    // Add conversations from bookings first (so they appear even without messages)
+    bookings?.forEach(booking => {
+      const tutorId = booking.tutor_id;
+      if (!conversationsMap.has(tutorId)) {
+        const profile = profilesMap.get(tutorId);
+        const userName = profile 
+          ? `${profile.first_name} ${profile.last_name}` 
+          : 'Unknown Tutor';
+        
+        conversationsMap.set(tutorId, {
+          id: tutorId,
+          user_id: tutorId,
+          user_name: userName,
+          user_type: 'tutor',
+          user_avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=14b8a6&color=fff`,
+          last_message: `📚 Booked: ${booking.subject}`,
+          last_message_time: booking.scheduled_at,
+          unread_count: 0,
+          has_booking: true,
+          booking_status: booking.status,
+        });
+      }
+    });
+
+    // Add conversations from tutor bookings (for tutors viewing their students)
+    tutorBookings?.forEach(booking => {
+      const studentId = booking.student_id;
+      if (!conversationsMap.has(studentId)) {
+        const profile = profilesMap.get(studentId);
+        const userName = profile 
+          ? `${profile.first_name} ${profile.last_name}` 
+          : 'Unknown Student';
+        
+        conversationsMap.set(studentId, {
+          id: studentId,
+          user_id: studentId,
+          user_name: userName,
+          user_type: 'student',
+          user_avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=6366f1&color=fff`,
+          last_message: `📚 Session: ${booking.subject}`,
+          last_message_time: booking.scheduled_at,
+          unread_count: 0,
+          has_booking: true,
+          booking_status: booking.status,
+        });
+      }
+    });
+
+    // Update with message data (overrides booking-only entries if messages exist)
+    messages?.forEach(msg => {
+      const otherUserId = msg.sender_id === user.id ? msg.receiver_id : msg.sender_id;
+      const existing = conversationsMap.get(otherUserId);
+      
+      if (!existing || (existing.has_booking && !existing.last_message.startsWith('📚'))) {
+        // First message for this conversation - update it
+      }
+      
+      if (!conversationsMap.has(otherUserId) || 
+          (conversationsMap.get(otherUserId)?.last_message.startsWith('📚') && msg.created_at)) {
+        const profile = profilesMap.get(otherUserId);
+        const userName = profile 
+          ? `${profile.first_name} ${profile.last_name}` 
+          : 'Unknown User';
+        
+        const existingConv = conversationsMap.get(otherUserId);
+        conversationsMap.set(otherUserId, {
+          id: otherUserId,
+          user_id: otherUserId,
+          user_name: userName,
+          user_type: profile?.user_type || 'unknown',
+          user_avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=14b8a6&color=fff`,
+          last_message: msg.content,
+          last_message_time: msg.created_at,
+          unread_count: existingConv?.unread_count || 0,
+          has_booking: existingConv?.has_booking || false,
+          booking_status: existingConv?.booking_status,
+        });
+      }
+
+      // Count unread messages
+      if (msg.receiver_id === user.id && !msg.is_read) {
+        const conv = conversationsMap.get(otherUserId);
+        if (conv) {
+          conv.unread_count++;
+        }
+      }
+    });
+
+    // Sort by last_message_time descending
+    const sortedConversations = Array.from(conversationsMap.values())
+      .sort((a, b) => new Date(b.last_message_time).getTime() - new Date(a.last_message_time).getTime());
+
+    return { 
+      success: true, 
+      conversations: sortedConversations
+    };
   } catch (error) {
     console.error('Error in getConversations:', error);
-    return { error: 'An unexpected error occurred' };
+    return { error: 'An unexpected error occurred', conversations: [] };
   }
 }
 
@@ -91,7 +262,7 @@ export async function getConversations() {
  */
 export async function getMessageHistory(otherUserId: string, limit = 50) {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createClient();
 
     const {
       data: { user },
@@ -128,7 +299,7 @@ export async function getMessageHistory(otherUserId: string, limit = 50) {
  */
 export async function markMessagesAsRead(otherUserId: string) {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createClient();
 
     const {
       data: { user },
@@ -156,6 +327,13 @@ export async function markMessagesAsRead(otherUserId: string) {
   }
 }
 
+/**
+ * Start a new conversation with a tutor (for use after booking)
+ */
+export async function startConversation(tutorId: string, initialMessage: string) {
+  return sendMessage(tutorId, initialMessage);
+}
+
 // ============================================================================
 // SETTINGS SERVER ACTIONS
 // ============================================================================
@@ -173,7 +351,7 @@ export async function updateProfile(
       return { error: 'Display name is required' };
     }
 
-    const supabase = createAdminClient();
+    const supabase = await createClient();
 
     const {
       data: { user },
@@ -217,7 +395,7 @@ export async function updatePassword(newPassword: string) {
       return { error: 'Password must be at least 8 characters' };
     }
 
-    const supabase = createAdminClient();
+    const supabase = await createClient();
 
     const {
       data: { user },
@@ -248,7 +426,7 @@ export async function updatePassword(newPassword: string) {
  */
 export async function deleteAccount() {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createClient();
 
     const {
       data: { user },
@@ -282,7 +460,7 @@ export async function updateNotificationSettings(
   marketingEmails: boolean
 ) {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createClient();
 
     const {
       data: { user },
@@ -324,7 +502,7 @@ export async function uploadAvatar(file: File) {
       return { error: 'No file provided' };
     }
 
-    const supabase = createAdminClient();
+    const supabase = await createClient();
 
     const {
       data: { user },
@@ -363,7 +541,7 @@ export async function uploadAvatar(file: File) {
  */
 export async function getNotificationSettings() {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createClient();
 
     const {
       data: { user },
@@ -418,7 +596,7 @@ export async function createBooking(
       return { error: 'Tutor ID, subject, and scheduled time are required' };
     }
 
-    const supabase = createAdminClient();
+    const supabase = await createClient();
 
     const {
       data: { user },
@@ -463,7 +641,7 @@ export async function createBooking(
  */
 export async function getBookings(role: 'student' | 'tutor' = 'student') {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createClient();
 
     const {
       data: { user },
@@ -505,7 +683,7 @@ export async function updateBookingStatus(
       return { error: 'Booking ID and status are required' };
     }
 
-    const supabase = createAdminClient();
+    const supabase = await createClient();
 
     const {
       data: { user },
@@ -561,7 +739,7 @@ export async function createTutorRequest(
       return { error: 'Subject and description are required' };
     }
 
-    const supabase = createAdminClient();
+    const supabase = await createClient();
 
     const {
       data: { user },
@@ -600,7 +778,7 @@ export async function createTutorRequest(
  */
 export async function getOpenTutorRequests(limit = 20) {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createClient();
 
     const { data, error } = await supabase
       .from('tutor_requests')
@@ -626,7 +804,7 @@ export async function getOpenTutorRequests(limit = 20) {
  */
 export async function getMyTutorRequests() {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createClient();
 
     const {
       data: { user },
@@ -666,7 +844,7 @@ export async function updateRequestStatus(
       return { error: 'Request ID and status are required' };
     }
 
-    const supabase = createAdminClient();
+    const supabase = await createClient();
 
     const { data, error } = await supabase
       .from('tutor_requests')
@@ -703,7 +881,7 @@ export async function updateUserSettings(
   notifyMarketing: boolean
 ) {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createClient();
 
     const {
       data: { user },
@@ -742,7 +920,7 @@ export async function updateUserSettings(
  */
 export async function getUserSettings() {
   try {
-    const supabase = createAdminClient();
+    const supabase = await createClient();
 
     const {
       data: { user },

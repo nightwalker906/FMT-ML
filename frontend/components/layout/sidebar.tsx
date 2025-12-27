@@ -54,6 +54,7 @@ export const tutorLinks: SidebarLink[] = [
   { label: 'Dashboard', href: '/tutor/dashboard', icon: <Gauge size={20} /> },
   { label: 'Requests', href: '/tutor/requests', icon: <Inbox size={20} /> },
   { label: 'My Students', href: '/tutor/students', icon: <Users size={20} /> },
+  { label: 'Messages', href: '/tutor/messages', icon: <MessageSquare size={20} /> },
   { label: 'Earnings', href: '/tutor/earnings', icon: <DollarSign size={20} /> },
   { label: 'Notifications', href: '/tutor/notifications', icon: <Bell size={20} /> },
   { label: 'Settings', href: '/tutor/settings', icon: <Settings size={20} /> },
