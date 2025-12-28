@@ -15,4 +15,23 @@ router.register(r'ratings', views.RatingViewSet, basename='rating')
 
 urlpatterns = [
     path('', include(router.urls)),
+    
+    # ML-Powered Recommendation Endpoints
+    path('recommend/', views.recommend_tutors, name='recommend-tutors'),
+    path('recommend/health/', views.recommendation_health, name='recommend-health'),
+    
+    # Sentiment Analysis Endpoints
+    path('analyze-review/', views.analyze_review, name='analyze-review'),
+    path('analyze-reviews/batch/', views.analyze_reviews_batch, name='analyze-reviews-batch'),
+    path('tutor/<str:tutor_id>/sentiment/', views.analyze_tutor_sentiment, name='tutor-sentiment'),
+    
+    # Smart Pricing Endpoints (Predictive Analytics - Linear Regression)
+    path('predict-price/', views.predict_price, name='predict-price'),
+    path('market-analysis/', views.market_analysis, name='market-analysis'),
+    path('debug/db-check/', views.debug_db_check, name='debug-db-check'),
+    
+    # AI Study Planner Endpoints (Generative AI - Google Gemini)
+    path('generate-plan/', views.generate_plan, name='generate-plan'),
+    path('study-tips/', views.get_study_tips, name='study-tips'),
+    path('estimate-time/', views.estimate_study_time_view, name='estimate-time'),
 ]

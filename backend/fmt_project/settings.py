@@ -7,11 +7,18 @@ from pathlib import Path
 import dj_database_url
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
-
 # Build paths
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables from .env file (explicitly from backend folder)
+env_path = BASE_DIR / '.env'
+load_dotenv(dotenv_path=env_path)
+
+# Debug: Print DATABASE_URL status (remove in production)
+db_url = os.getenv('DATABASE_URL')
+print(f"[DEBUG] .env path: {env_path}")
+print(f"[DEBUG] .env exists: {env_path.exists()}")
+print(f"[DEBUG] DATABASE_URL loaded: {'Yes' if db_url else 'No'}")
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-dev-key-change-in-production')
@@ -25,8 +32,10 @@ ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.auth',
+    'django.contrib.staticfiles',  # Required for Swagger UI static files
     'rest_framework',
     'corsheaders',
+    'drf_yasg',  # Swagger/OpenAPI Documentation
     'core',
 ]
 
@@ -110,6 +119,22 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+    # ===========================================
+    # API Rate Limiting (Throttling)
+    # ===========================================
+    # Prevents API abuse and protects external API quotas (e.g., Gemini)
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+        'rest_framework.throttling.ScopedRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/day',           # Anonymous users: 100 requests/day
+        'user': '1000/day',          # Authenticated users: 1000 requests/day
+        'generative_ai': '10/day',   # Strict limit for LLM endpoints (Gemini)
+        'ml_prediction': '50/day',   # ML endpoints (recommendations, pricing)
+        'sentiment': '100/day',      # Sentiment analysis endpoints
+    }
 }
 
 # CORS Configuration

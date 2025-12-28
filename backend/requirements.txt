@@ -5,3 +5,27 @@ dj-database-url==2.1.0
 python-dotenv==1.0.0
 django-cors-headers==4.3.1
 gunicorn==21.2.0
+
+# ============================================
+# Data Science & Machine Learning Libraries
+# ============================================
+scikit-learn==1.4.0      # TF-IDF Vectorizer & Cosine Similarity
+pandas==2.1.4            # DataFrame operations
+numpy==1.26.3            # Numerical computations
+supabase==2.3.0          # Supabase Python client for direct DB access
+
+# ============================================
+# Natural Language Processing (NLP)
+# ============================================
+textblob==0.18.0         # Sentiment Analysis (lightweight, easy to use)
+
+# ============================================
+# Generative AI & Advanced ML
+# ============================================
+google-generativeai==0.3.2   # Google Gemini API for Study Planner
+
+# ============================================
+# API Documentation & Security
+# ============================================
+drf-yasg==1.21.7             # Swagger/OpenAPI Documentation
+PyYAML==6.0.1                # YAML support for OpenAPI spec
