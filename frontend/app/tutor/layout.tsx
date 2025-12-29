@@ -1,16 +1,20 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/auth-context';
 import { createClient } from '@/utils/supabase/client';
 import { Sidebar, MobileSidebar, tutorLinks, SidebarLink } from '@/components/layout/sidebar';
+import dynamic from 'next/dynamic';
+const PricePredictorModal = dynamic(() => import('@/components/ai/PricePredictorModal'), { ssr: false });
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Bell, Menu, Loader2 } from 'lucide-react';
 
 export default function TutorLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user, signOut, isLoading } = useAuth();
   const supabase = createClient();
 
@@ -21,6 +25,7 @@ export default function TutorLayout({ children }: { children: React.ReactNode })
   const [initials, setInitials] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [hourlyRate, setHourlyRate] = useState(0);
+  const [showPricingModal, setShowPricingModal] = useState(false);
 
   // Fetch user profile and notifications
   useEffect(() => {
@@ -127,6 +132,15 @@ export default function TutorLayout({ children }: { children: React.ReactNode })
     }
   }, [user, isLoading, router]);
 
+  // Open pricing modal if requested via URL param
+  useEffect(() => {
+    if (searchParams?.get('openPricing') === '1') {
+      setShowPricingModal(true);
+      // Clean up URL by removing the query param
+      router.replace(pathname.split('?')[0]);
+    }
+  }, [searchParams, pathname, router]);
+
   const handleSignOut = async () => {
     await signOut();
     router.push('/login');
@@ -156,6 +170,15 @@ export default function TutorLayout({ children }: { children: React.ReactNode })
     return null;
   }
 
+  // Intercept Smart Pricing link click
+  const handleSidebarLinkClick = (link: SidebarLink) => {
+    if (link.href === '/tutor/smart-pricing') {
+      setShowPricingModal(true);
+    } else {
+      router.push(link.href);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       {/* Desktop Sidebar */}
@@ -166,6 +189,7 @@ export default function TutorLayout({ children }: { children: React.ReactNode })
         userName={displayName}
         userInitials={initials}
         userAvatar={avatarUrl}
+        onLinkClick={handleSidebarLinkClick}
       />
 
       {/* Mobile Sidebar */}
@@ -178,6 +202,7 @@ export default function TutorLayout({ children }: { children: React.ReactNode })
         userName={displayName}
         userInitials={initials}
         userAvatar={avatarUrl}
+        onLinkClick={handleSidebarLinkClick}
       />
 
       {/* Main Content Area */}
@@ -253,6 +278,12 @@ export default function TutorLayout({ children }: { children: React.ReactNode })
           {children}
         </main>
       </div>
+      {/* Smart Pricing Modal */}
+      <PricePredictorModal
+        isOpen={showPricingModal}
+        onClose={() => setShowPricingModal(false)}
+        onRateApplied={() => setShowPricingModal(false)}
+      />
     </div>
   );
 }

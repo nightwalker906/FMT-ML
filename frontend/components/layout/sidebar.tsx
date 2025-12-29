@@ -34,6 +34,7 @@ interface SidebarProps {
   links: SidebarLink[];
   userType: 'student' | 'tutor';
   onSignOut?: () => void;
+  onLinkClick?: (link: SidebarLink) => void;
   userName?: string;
   userInitials?: string;
   userAvatar?: string;
@@ -56,11 +57,12 @@ export const tutorLinks: SidebarLink[] = [
   { label: 'My Students', href: '/tutor/students', icon: <Users size={20} /> },
   { label: 'Messages', href: '/tutor/messages', icon: <MessageSquare size={20} /> },
   { label: 'Earnings', href: '/tutor/earnings', icon: <DollarSign size={20} /> },
+  { label: 'Smart Pricing', href: '/tutor/smart-pricing', icon: <DollarSign size={20} /> },
   { label: 'Notifications', href: '/tutor/notifications', icon: <Bell size={20} /> },
   { label: 'Settings', href: '/tutor/settings', icon: <Settings size={20} /> },
 ];
 
-export function Sidebar({ links, userType, onSignOut, userName, userInitials, userAvatar }: SidebarProps) {
+export function Sidebar({ links, userType, onSignOut, onLinkClick, userName, userInitials, userAvatar }: SidebarProps) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -181,6 +183,7 @@ export function Sidebar({ links, userType, onSignOut, userName, userInitials, us
             <Link
               key={link.href}
               href={link.href}
+              onClick={(e) => { if (typeof onLinkClick === 'function') { e.preventDefault(); onLinkClick(link); } }}
               className={cn(
                 'group relative flex items-center rounded-xl',
                 'transition-all duration-200',
@@ -354,10 +357,11 @@ export function MobileSidebar({
   isOpen, 
   onClose, 
   onSignOut,
+  onLinkClick,
   userName,
   userInitials,
   userAvatar 
-}: SidebarProps & { isOpen: boolean; onClose: () => void }) {
+}: SidebarProps & { isOpen: boolean; onClose: () => void; onLinkClick?: (link: SidebarLink) => void }) {
   const pathname = usePathname();
 
   const isStudent = userType === 'student';
@@ -476,7 +480,7 @@ export function MobileSidebar({
               <Link
                 key={link.href}
                 href={link.href}
-                onClick={onClose}
+                onClick={(e) => { onClose(); if (typeof onLinkClick === 'function') { e.preventDefault(); onLinkClick(link); } }}
                 className={cn(
                   'relative flex items-center gap-3 px-4 py-3 rounded-xl',
                   'transition-all duration-200',
