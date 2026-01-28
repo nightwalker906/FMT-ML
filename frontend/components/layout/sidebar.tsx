@@ -21,6 +21,7 @@ import {
   ChevronRight,
   GraduationCap,
   Bell,
+  BookOpen,
 } from 'lucide-react';
 
 export interface SidebarLink {
@@ -44,6 +45,7 @@ interface SidebarProps {
 export const studentLinks: SidebarLink[] = [
   { label: 'Dashboard', href: '/student/dashboard', icon: <Home size={20} /> },
   { label: 'Find a Tutor', href: '/student/search', icon: <Search size={20} /> },
+  { label: 'Study Planner', href: '/student/study-planner', icon: <BookOpen size={20} /> },
   { label: 'My Schedule', href: '/student/schedule', icon: <Calendar size={20} /> },
   { label: 'Messages', href: '/student/messages', icon: <MessageSquare size={20} /> },
   { label: 'Notifications', href: '/student/notifications', icon: <Bell size={20} /> },

@@ -30,7 +30,7 @@ urlpatterns = [
     path('market-analysis/', views.market_analysis, name='market-analysis'),
     path('debug/db-check/', views.debug_db_check, name='debug-db-check'),
     
-    # AI Study Planner Endpoints (Generative AI - Google Gemini)
+    # AI Study Planner Endpoints (Generative AI - Free Services: Ollama/Hugging Face)
     path('generate-plan/', views.generate_plan, name='generate-plan'),
     path('study-tips/', views.get_study_tips, name='study-tips'),
     path('estimate-time/', views.estimate_study_time_view, name='estimate-time'),

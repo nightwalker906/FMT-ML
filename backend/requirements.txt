@@ -22,7 +22,10 @@ textblob==0.18.0         # Sentiment Analysis (lightweight, easy to use)
 # ============================================
 # Generative AI & Advanced ML
 # ============================================
-google-generativeai==0.3.2   # Google Gemini API for Study Planner
+# Using free AI services instead of Gemini:
+# - Ollama (local, completely free)
+# - Hugging Face Inference API (free tier)
+requests>=2.31.0         # HTTP requests for AI APIs
 
 # ============================================
 # API Documentation & Security

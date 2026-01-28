@@ -5,7 +5,7 @@ API Views for Find My Tutor
 RATE LIMITING (THROTTLING) DOCUMENTATION
 =============================================================================
 This module implements API rate limiting to:
-1. Protect external API quotas (Google Gemini has daily limits)
+1. Protect external AI service usage
 2. Prevent abuse and DDoS attacks
 3. Ensure fair usage across all users
 
@@ -46,8 +46,8 @@ logger = logging.getLogger(__name__)
 
 class GenerativeAIThrottle(ScopedRateThrottle):
     """
-    Strict throttle for Generative AI endpoints (Google Gemini).
-    Protects against quota exhaustion on external LLM APIs.
+    Strict throttle for Generative AI endpoints (Free LLM services).
+    Protects against overuse of free AI service quotas.
     Rate: 10 requests/day per user
     """
     scope = 'generative_ai'
@@ -956,7 +956,7 @@ def debug_db_check(request):
 
 @swagger_auto_schema(
     method='post',
-    operation_description="Uses Google Gemini (Generative AI) to create personalized study plans. Rate limited to 10 requests/day.",
+    operation_description="Uses free AI services (Ollama or Hugging Face) to create personalized study plans. Rate limited to 10 requests/day.",
     request_body=openapi.Schema(
         type=openapi.TYPE_OBJECT,
         required=['goal', 'weakness'],
@@ -1003,7 +1003,7 @@ def debug_db_check(request):
                         }
                     ],
                     "ai_generated": True,
-                    "model": "gemini-pro"
+                    "service": "ollama"
                 }
             }
         ),
@@ -1019,9 +1019,9 @@ def generate_plan(request):
     AI Study Planner Endpoint
     
     🔓 PUBLIC ACCESS: No authentication required
-    ⚠️ RATE LIMITED: 10 requests/day (protects Gemini API quota)
+    ⚠️ RATE LIMITED: 10 requests/day
     
-    Uses Google Gemini (Generative AI) to create personalized study plans.
+    Uses free AI services (Ollama or Hugging Face) to create personalized study plans.
     """
     try:
         data = request.data
@@ -1133,7 +1133,7 @@ def get_study_tips(request):
     Quick Study Tips Endpoint
     
     🔓 PUBLIC ACCESS: No authentication required
-    ⚠️ RATE LIMITED: 10 requests/day (protects Gemini API quota)
+    ⚠️ RATE LIMITED: 10 requests/day
     
     Generates quick, actionable study tips for a specific topic.
     
