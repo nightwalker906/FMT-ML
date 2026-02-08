@@ -100,9 +100,10 @@ export default function TutorDetailPage() {
         },
         (payload) => {
           // Only add if not already in messages (avoid duplicates)
-          const messageExists = messages.some((m) => m.id === payload.new.id);
+          const newMsg = payload.new as Message;
+          const messageExists = messages.some((m) => m.id === newMsg.id);
           if (!messageExists) {
-            setMessages((prev) => [...prev, payload.new as Message]);
+            setMessages((prev) => [...prev, newMsg]);
           }
         }
       )
