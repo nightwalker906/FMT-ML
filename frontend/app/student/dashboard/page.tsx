@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/auth-context';
 import { createClient } from '@/utils/supabase/client';
 import Link from 'next/link';
+import SmartRecommendations from '@/components/study-planner/SmartRecommendations';
 import {
   Search,
   Calendar,
@@ -128,6 +129,9 @@ export default function StudentDashboardPage() {
 
   return (
     <div className="space-y-8">
+      {/* Smart Recommendations Carousel */}
+      <SmartRecommendations />
+
       {/* Quick Actions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Link

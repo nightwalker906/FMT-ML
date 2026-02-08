@@ -46,8 +46,11 @@ export default function LoginPage() {
           .eq('id', data.user.id)
           .single()
 
+        console.log('[login] Profile query result:', { profile, profileError })
+
         if (!profileError && profile) {
           userType = profile.user_type
+          console.log('[login] User type from profile:', userType)
           
           // Check if profile has first_name (basic completion check)
           if (profile.first_name) {
@@ -60,11 +63,33 @@ export default function LoginPage() {
               .single()
             
             isProfileComplete = !!roleData
+            console.log('[login] Role table check:', { roleTable, isProfileComplete })
           }
         } else {
-          // Fallback to auth metadata if profile not found
+          // Profile doesn't exist - try to create it from auth metadata
+          console.warn('[login] Profile not found, attempting to create from auth metadata')
           userType = data.user?.user_metadata?.user_type || 'student'
-          console.warn('Profile not found, using auth metadata:', profileError)
+          
+          // Try to create the profile
+          try {
+            const createRes = await fetch('/api/auth/create-profile', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userId: data.user.id,
+                email: data.user.email,
+                userType: userType,
+              }),
+            })
+            
+            if (createRes.ok) {
+              console.log('[login] Profile created during login')
+            } else {
+              console.error('[login] Failed to create profile during login:', await createRes.json())
+            }
+          } catch (err) {
+            console.error('[login] Error creating profile during login:', err)
+          }
         }
       }
 
@@ -73,7 +98,7 @@ export default function LoginPage() {
       if (!isProfileComplete) {
         redirectPath = userType === 'tutor' ? '/tutor/complete-profile' : '/student/complete-profile'
       } else {
-        redirectPath = userType === 'tutor' ? '/tutor/dashboard' : '/dashboard'
+        redirectPath = userType === 'tutor' ? '/tutor/dashboard' : '/student/dashboard'
       }
 
       setSuccessMessage('Login successful! Redirecting...')
@@ -104,6 +129,8 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
+      console.log('[signup] Starting signup with role:', role)
+
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
@@ -114,25 +141,50 @@ export default function LoginPage() {
         },
       })
 
+      console.log('[signup] Signup response:', { userId: data.user?.id, signUpError })
+
       if (signUpError) throw signUpError
 
       // Create profile record server-side after successful signup
       if (data.user?.id) {
-        const profileRes = await fetch('/api/auth/create-profile', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: data.user.id,
-            email,
-            userType: role,
-          }),
-        })
+        console.log('[signup] Creating profile with role:', role)
+        
+        let profileCreated = false
+        let retries = 3
+         
+        while (!profileCreated && retries > 0) {
+          const profileRes = await fetch('/api/auth/create-profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: data.user.id,
+              email,
+              userType: role,
+            }),
+          })
 
-        if (!profileRes.ok) {
-          const errorData = await profileRes.json()
-          console.error('Profile creation error:', errorData)
-          // Don't fail the signup flow if profile creation fails
-          // User can still login and complete profile setup later
+          console.log('[signup] Profile creation attempt:', { status: profileRes.status, retries })
+
+          if (profileRes.ok) {
+            const profileData = await profileRes.json()
+            console.log('[signup] Profile created successfully:', profileData)
+            profileCreated = true
+          } else {
+            const errorData = await profileRes.json()
+            console.error('[signup] Profile creation failed:', { status: profileRes.status, error: errorData })
+            retries--
+            if (retries > 0) {
+              // Wait a bit before retrying
+              await new Promise(resolve => setTimeout(resolve, 500))
+            }
+          }
+        }
+
+        if (!profileCreated) {
+          console.error('[signup] Failed to create profile after retries')
+          setError('Profile creation failed. Please try logging in and contact support if the issue persists.')
+          setLoading(false)
+          return
         }
       }
 

@@ -3,6 +3,9 @@
 venv/
 env/
 
+# Ignore Node modules
+node_modules/
+
 # Ignore Python compiled files
 __pycache__/
 *.pyc

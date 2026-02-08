@@ -71,6 +71,8 @@ export async function createUserProfile(
 ) {
   const supabase = createAdminClient()
 
+  console.log('[createUserProfile] Creating profile:', { userId, email, userType, firstName, lastName })
+
   const { data, error } = await supabase
     .from('profiles')
     .insert([
@@ -87,9 +89,17 @@ export async function createUserProfile(
     ])
     .select()
 
+  console.log('[createUserProfile] Result:', { data, error })
+
   if (error) {
+    console.error('[createUserProfile] Error details:', {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+    })
     throw new Error(`Failed to create profile: ${error.message}`)
   }
 
+  console.log('[createUserProfile] Profile created successfully')
   return data
 }

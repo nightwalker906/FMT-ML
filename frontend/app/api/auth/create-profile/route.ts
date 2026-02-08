@@ -23,8 +23,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { userId, email, userType, firstName, lastName } = body
 
+    console.log('[create-profile] Request body:', { userId, email, userType, firstName, lastName })
+
     // Validate required fields
     if (!userId || !email || !userType) {
+      console.error('[create-profile] Missing required fields:', { userId, email, userType })
       return NextResponse.json(
         { error: 'Missing required fields: userId, email, userType' },
         { status: 400 }
@@ -32,6 +35,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!['student', 'tutor'].includes(userType)) {
+      console.error('[create-profile] Invalid userType:', userType)
       return NextResponse.json(
         { error: 'Invalid userType: must be "student" or "tutor"' },
         { status: 400 }
@@ -39,6 +43,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the profile using Service Role key (server-side)
+    console.log('[create-profile] Creating profile with userType:', userType)
     const profile = await createUserProfile(
       userId,
       email,
@@ -46,6 +51,8 @@ export async function POST(request: NextRequest) {
       firstName,
       lastName
     )
+
+    console.log('[create-profile] Profile created successfully:', profile)
 
     return NextResponse.json(
       {
@@ -56,7 +63,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     )
   } catch (error) {
-    console.error('Error creating profile:', error)
+    console.error('[create-profile] Error creating profile:', error)
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Failed to create profile',

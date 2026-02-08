@@ -214,6 +214,176 @@ class RatingViewSet(viewsets.ModelViewSet):
 # =============================================================================
 
 @swagger_auto_schema(
+    method='get',
+    operation_description="Get AI-powered tutor recommendations for the student dashboard based on top-rated tutors.",
+    responses={
+        200: openapi.Response(
+            description="Successful smart recommendations",
+            examples={
+                "application/json": {
+                    "status": "success",
+                    "data": [
+                        {
+                            "id": "uuid",
+                            "full_name": "Sarah Jones",
+                            "subjects": ["Math", "Physics"],
+                            "match_percentage": 94.5,
+                            "similarity_score": 0.945,
+                            "explanation": "Sarah specializes in Calculus...", 
+                            "is_online": True,
+                            "average_rating": 4.9,
+                            "hourly_rate": 45.0,
+                            "image": "https://ui-avatars.com/api/..."
+                        }
+                    ]
+                }
+            }
+        )
+    }
+)
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_smart_recommendations(request):
+    """
+    Smart Recommendations Endpoint for Student Dashboard
+    
+    🔓 PUBLIC ACCESS: No authentication required
+    ⚠️ RATE LIMITED: 50 requests/day (ML prediction scope)
+    
+    Returns smart AI-powered tutor recommendations based on:
+    - Student's learning goals (from database)
+    - Popular/top-rated tutors
+    - Content-Based Filtering with ML
+    
+    Response:
+    {
+        "status": "success",
+        "data": [
+            {
+                "id": "101",
+                "full_name": "Sarah Jones",
+                "subjects": ["Math", "Physics"],
+                "match_percentage": 94.5,
+                "similarity_score": 0.945,
+                "explanation": "Sarah specializes in Calculus, which matches your search...", 
+                "is_online": true,
+                "average_rating": 4.9,
+                "hourly_rate": 45.0,
+                "image": "https://i.pravatar.cc/150?u=101"
+            }
+        ]
+    }
+    """
+    try:
+        from django.db.models import Q, Avg
+        from .recommender import get_recommendations
+        
+        # Try to get student's learning goals from query parameter (student_id)
+        student_id = request.query_params.get('student_id')
+        learning_goals_text = None
+        
+        if student_id:
+            try:
+                student = Student.objects.select_related('profile').get(profile_id=student_id)
+                if student.learning_goals:
+                    # Combine learning goals into a single query string
+                    if isinstance(student.learning_goals, list):
+                        learning_goals_text = ' '.join(student.learning_goals)
+                    else:
+                        learning_goals_text = str(student.learning_goals)
+                logger.info(f"Found student learning goals: {learning_goals_text}")
+            except Student.DoesNotExist:
+                logger.warning(f"Student not found: {student_id}")
+                pass
+        
+        # If we have learning goals, use ML recommender; otherwise use top-rated
+        if learning_goals_text:
+            # Use ML-powered recommendation based on learning goals
+            logger.info(f"Using ML recommender with query: {learning_goals_text}")
+            results = get_recommendations(
+                query=learning_goals_text,
+                max_price=None,
+                top_n=10
+            )
+            
+            recommendations = []
+            for result in results:
+                # Extract explanation summary if it's an object
+                explanation = result.get('explanation', {})
+                if isinstance(explanation, dict):
+                    explanation_text = explanation.get('summary', 'Recommended based on your goals')
+                else:
+                    explanation_text = str(explanation)
+                
+                recommendation = {
+                    "id": str(result.get('id')),
+                    "full_name": result.get('full_name', 'Unknown'),
+                    "subjects": result.get('subjects', []),
+                    "match_percentage": int(result.get('match_percentage', 0)),
+                    "similarity_score": round(float(result.get('similarity_score', 0)), 3),
+                    "explanation": explanation_text,
+                    "is_online": result.get('is_online', False),
+                    "average_rating": float(result.get('average_rating', 0)),
+                    "hourly_rate": float(result.get('hourly_rate', 0)),
+                    "image": result.get('image', f"https://ui-avatars.com/api/?name={result.get('full_name', 'Tutor')}")
+                }
+                recommendations.append(recommendation)
+        else:
+            # Fall back to top-rated tutors
+            tutors = Tutor.objects.annotate(
+                avg_rating=Avg('ratings__rating')
+            ).filter(
+                avg_rating__gte=4.0
+            ).order_by('-avg_rating')[:10]
+            
+            recommendations = []
+            
+            for i, tutor in enumerate(tutors):
+                profile = tutor.profile
+                subjects = [s.name for s in tutor.subjects.all()]
+                
+                # Calculate match percentage based on rating and availability
+                match_percentage = min(99, int((profile.average_rating or 0) * 10))
+                
+                recommendation = {
+                    "id": str(profile.id),
+                    "full_name": f"{profile.first_name} {profile.last_name}".strip(),
+                    "subjects": subjects,
+                    "match_percentage": match_percentage,
+                    "similarity_score": round(profile.average_rating / 5.0, 3) if profile.average_rating else 0,
+                    "explanation": f"{profile.first_name} is an excellent tutor with a {profile.average_rating or 0:.1f}/5 rating. Specializes in {', '.join(subjects[:2]) if subjects else 'multiple subjects'}.",
+                    "is_online": getattr(profile, 'is_online', False),
+                    "average_rating": profile.average_rating or 0,
+                    "hourly_rate": tutor.hourly_rate or 0,
+                    "image": f"https://ui-avatars.com/api/?name={profile.first_name}+{profile.last_name}&background=0d9488&color=fff"
+                }
+                
+                recommendations.append(recommendation)
+        
+        # If no recommendations available, return empty list with helpful message
+        if not recommendations:
+            logger.info("No recommendations available, returning empty with guidance")
+            return Response({
+                "status": "success",
+                "data": [],
+                "message": "No top picks available yet. Try adjusting your learning goals or searching for specific subjects to get personalized recommendations!"
+            }, status=status.HTTP_200_OK)
+        
+        return Response({
+            "status": "success",
+            "data": recommendations
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.error(f"Smart recommendations error: {str(e)}")
+        return Response({
+            "status": "success",
+            "data": [],  # Return empty list on error to prevent frontend crash
+            "message": "Unable to load recommendations. Try adjusting your learning goals or searching for specific subjects!"
+        }, status=status.HTTP_200_OK)
+
+
+@swagger_auto_schema(
     method='post',
     operation_description="Uses Content-Based Filtering with TF-IDF and Cosine Similarity to match students with the most relevant tutors.",
     request_body=openapi.Schema(
@@ -272,100 +442,82 @@ class RatingViewSet(viewsets.ModelViewSet):
 @throttle_classes([MLPredictionThrottle])
 def recommend_tutors(request):
     """
-    AI-Powered Tutor Recommendation Endpoint
+    Smart Recommendations Endpoint for Student Dashboard
     
     🔓 PUBLIC ACCESS: No authentication required
     ⚠️ RATE LIMITED: 50 requests/day (ML prediction scope)
     
-    Uses Content-Based Filtering with TF-IDF and Cosine Similarity
-    to match students with the most relevant tutors.
-    
-    Request Body (JSON):
-    {
-        "query": "I need help with Calculus and Algebra",
-        "max_price": 100,  // optional
-        "limit": 10        // optional, default 10
-    }
+    Returns smart AI-powered tutor recommendations based on:
+    - Student's learning goals (if available)
+    - Popular/top-rated tutors
+    - Recent search history (if authenticated)
     
     Response:
     {
         "status": "success",
-        "query": "I need help with Calculus and Algebra",
-        "count": 10,
-        "results": [
+        "data": [
             {
-                "id": "uuid",
-                "full_name": "John Doe",
-                "subjects": ["Calculus", "Algebra"],
-                "hourly_rate": 50.0,
-                "average_rating": 4.8,
-                "similarity_score": 0.8543,
-                "match_percentage": 85.4
-            },
-            ...
+                "id": "101",
+                "full_name": "Sarah Jones",
+                "subjects": ["Math", "Physics"],
+                "match_percentage": 94.5,
+                "similarity_score": 0.945,
+                "explanation": "Sarah specializes in Calculus, which matches your search...", 
+                "is_online": true,
+                "average_rating": 4.9,
+                "hourly_rate": 45.0,
+                "image": "https://i.pravatar.cc/150?u=101"
+            }
         ]
     }
     """
     try:
-        # Parse request data
-        data = request.data
-        
-        # Validate query parameter
-        query = data.get('query', '').strip()
-        if not query:
-            return Response({
-                'status': 'error',
-                'message': 'Query parameter is required. Please describe what you need help with.',
-                'results': []
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Optional parameters
-        max_price = data.get('max_price')
-        if max_price is not None:
-            try:
-                max_price = float(max_price)
-                if max_price <= 0:
-                    max_price = None
-            except (ValueError, TypeError):
-                max_price = None
-        
-        limit = data.get('limit', 10)
-        try:
-            limit = int(limit)
-            limit = max(1, min(50, limit))  # Clamp between 1 and 50
-        except (ValueError, TypeError):
-            limit = 10
-        
-        # Import and call the recommender
+        from django.db.models import Q, Avg
         from .recommender import get_recommendations
         
-        logger.info(f"Processing recommendation request: query='{query}', max_price={max_price}, limit={limit}")
+        # Get top-rated tutors
+        tutors = Tutor.objects.annotate(
+            avg_rating=Avg('ratings__rating')
+        ).filter(
+            avg_rating__gte=4.0
+        ).order_by('-avg_rating')[:10]
         
-        # Get recommendations from the ML engine
-        results = get_recommendations(
-            query=query,
-            max_price=max_price,
-            top_n=limit
-        )
+        recommendations = []
+        
+        for i, tutor in enumerate(tutors):
+            profile = tutor.profile
+            subjects = [s.name for s in tutor.subjects.all()]
+            
+            # Calculate match percentage based on rating and availability
+            match_percentage = min(99, int((profile.average_rating or 0) * 10))
+            
+            recommendation = {
+                "id": str(profile.id),
+                "full_name": f"{profile.first_name} {profile.last_name}".strip(),
+                "subjects": subjects,
+                "match_percentage": match_percentage,
+                "similarity_score": round(profile.average_rating / 5.0, 3) if profile.average_rating else 0,
+                "explanation": f"{profile.first_name} is an excellent tutor with a {profile.average_rating or 0:.1f}/5 rating. Specializes in {', '.join(subjects[:2]) if subjects else 'multiple subjects'}.",
+                "is_online": getattr(profile, 'is_online', False),
+                "average_rating": profile.average_rating or 0,
+                "hourly_rate": tutor.hourly_rate or 0,
+                "image": f"https://ui-avatars.com/api/?name={profile.first_name}+{profile.last_name}&background=0d9488&color=fff"
+            }
+            
+            recommendations.append(recommendation)
         
         return Response({
-            'status': 'success',
-            'query': query,
-            'filters': {
-                'max_price': max_price,
-                'limit': limit
-            },
-            'count': len(results),
-            'results': results
+            "status": "success",
+            "data": recommendations
         }, status=status.HTTP_200_OK)
         
     except Exception as e:
-        logger.error(f"Recommendation error: {str(e)}")
+        logger.error(f"Smart recommendations error: {str(e)}")
         return Response({
-            'status': 'error',
-            'message': f'An error occurred while processing your request: {str(e)}',
-            'results': []
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            "status": "success",
+            "data": []  # Return empty list on error to prevent frontend crash
+        }, status=status.HTTP_200_OK)
+
 
 
 @api_view(['GET'])

@@ -217,7 +217,11 @@ export default function StudentSettingsPage() {
       phone_number: phone
     }
     if (bio) {
-      studentUpdate.learning_goals = [bio]
+      // Split bio by newlines and filter empty lines to support multiple goals
+      studentUpdate.learning_goals = bio
+        .split('\n')
+        .map(goal => goal.trim())
+        .filter(goal => goal.length > 0)
     }
     
     const { error: studentError } = await supabase
@@ -411,12 +415,13 @@ export default function StudentSettingsPage() {
         </div>
 
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Bio</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Learning Goals</label>
+          <p className="text-xs text-gray-500 dark:text-slate-400 mb-2">Enter your learning goals, one per line. This helps us find the best tutors for you!</p>
           <textarea
             value={bio}
             onChange={(e) => setBio(e.target.value)}
-            rows={3}
-            placeholder="Tell us a bit about yourself..."
+            rows={4}
+            placeholder="e.g., Improve my math grades&#10;Prepare for SAT exams&#10;Learn Python programming&#10;Master calculus"
             className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none bg-white dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-500"
           />
         </div>

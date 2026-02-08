@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, BookOpen, Calendar, ChevronDown, ChevronUp, BrainCircuit, Target, Clock, AlertCircle } from 'lucide-react';
 import StudyPlanTimeline from '@/components/study-planner/StudyPlanTimeline';
-
 interface StudyPlan {
   week: number;
   theme: string;
@@ -228,7 +227,7 @@ export default function StudyPlannerPage() {
         {/* --- RESULTS AREA (Right Side) --- */}
         <div className="lg:col-span-2">
           <AnimatePresence mode="wait">
-            
+        
             {/* STATE: LOADING */}
             {loading && (
               <motion.div
@@ -258,7 +257,6 @@ export default function StudyPlannerPage() {
                 </motion.p>
               </motion.div>
             )}
-
             {/* STATE: SUCCESS (The Beautiful Timeline) */}
             {!loading && plan && (
               <motion.div
@@ -267,13 +265,11 @@ export default function StudyPlannerPage() {
                 exit={{ opacity: 0 }}
               >
                 <StudyPlanTimeline 
-                  planData={plan} 
                   isLoading={false}
                   method={method}
                 />
               </motion.div>
             )}
-
             {/* STATE: EMPTY/START */}
             {!loading && !plan && !error && (
               <motion.div 

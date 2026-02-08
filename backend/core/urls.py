@@ -17,6 +17,7 @@ urlpatterns = [
     path('', include(router.urls)),
     
     # ML-Powered Recommendation Endpoints
+    path('recommendations/', views.get_smart_recommendations, name='smart-recommendations'),
     path('recommend/', views.recommend_tutors, name='recommend-tutors'),
     path('recommend/health/', views.recommendation_health, name='recommend-health'),
     

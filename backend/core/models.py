@@ -76,6 +76,8 @@ class Tutor(models.Model):
     teaching_style = models.CharField(max_length=100, null=True, blank=True)
     bio_text = models.TextField(blank=True, null=True)
     availability = models.JSONField(default=dict, blank=True)
+    phone_number = models.CharField(max_length=20, null=True, blank=True)
+    location = models.CharField(max_length=255, null=True, blank=True)
     average_rating = models.DecimalField(max_digits=3, decimal_places=2, null=True, blank=True)
 
     class Meta:

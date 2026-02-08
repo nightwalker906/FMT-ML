@@ -112,6 +112,9 @@ class TutorRecommender:
                     t.bio_text,
                     t.qualifications,
                     t.teaching_style,
+                    t.availability,
+                    t.location,
+                    t.phone_number,
                     t.hourly_rate,
                     t.average_rating,
                     t.experience_years,
@@ -153,7 +156,15 @@ class TutorRecommender:
         Create a combined text document for each tutor.
         
         This "text soup" combines all relevant text fields that describe
-        a tutor's expertise. This combined text is what gets vectorized.
+        a tutor's expertise and teaching style. This combined text is what 
+        gets vectorized for content-based filtering.
+        
+        FIELD WEIGHTING:
+        - Subjects/Qualifications: 3x weight (most important for matching)
+        - Teaching Style: 2x weight (important for learning compatibility)
+        - Bio/About: 2x weight (describes expertise and approach)
+        - Location: 1x weight (geographic matching)
+        - Availability: 1x weight (schedule alignment)
         
         The more relevant terms appear in this soup, the higher the
         TF-IDF score will be for matching queries.
@@ -166,28 +177,46 @@ class TutorRecommender:
         """
         text_parts = []
         
-        # Add subjects/qualifications (these are the most important)
-        # Qualifications is stored as a JSON array of subject names
+        # 1. SUBJECTS/QUALIFICATIONS (3x weight - most important)
+        # Qualifications are stored as a JSON array of subject names
         qualifications = row.get('qualifications', [])
         if qualifications:
             if isinstance(qualifications, list):
-                # Repeat subjects to increase their weight in TF-IDF
+                # Triple weight for subjects - most important matching factor
                 subjects_text = ' '.join(qualifications)
-                text_parts.append(subjects_text)
-                text_parts.append(subjects_text)  # Double weight for subjects
+                text_parts.extend([subjects_text, subjects_text, subjects_text])
             elif isinstance(qualifications, str):
-                text_parts.append(qualifications)
-                text_parts.append(qualifications)
+                text_parts.extend([qualifications, qualifications, qualifications])
         
-        # Add biography text
-        bio = row.get('bio_text', '')
-        if bio and isinstance(bio, str):
-            text_parts.append(bio)
-        
-        # Add teaching style
+        # 2. TEACHING STYLE (2x weight - important for learning compatibility)
         teaching_style = row.get('teaching_style', '')
         if teaching_style and isinstance(teaching_style, str):
-            text_parts.append(teaching_style)
+            text_parts.extend([teaching_style, teaching_style])
+        
+        # 3. BIOGRAPHY/ABOUT (2x weight - describes expertise and approach)
+        bio = row.get('bio_text', '')
+        if bio and isinstance(bio, str):
+            text_parts.extend([bio, bio])
+        
+        # 4. LOCATION (1x weight - geographic matching)
+        # Location helps match students looking for local tutors
+        location = row.get('location', '')
+        if location and isinstance(location, str):
+            # Add location terms to help match geographic preferences
+            text_parts.append(location.lower())
+        
+        # 5. AVAILABILITY (1x weight - schedule alignment)
+        # Availability is stored as JSON, extract relevant info
+        availability = row.get('availability', {})
+        if availability:
+            if isinstance(availability, dict):
+                # Extract days and create readable text
+                days = availability.get('days', [])
+                if days:
+                    availability_text = ' '.join(days) + ' tutor flexible schedule'
+                    text_parts.append(availability_text)
+            elif isinstance(availability, str):
+                text_parts.append(availability)
         
         # Combine all text parts
         combined = ' '.join(text_parts)
