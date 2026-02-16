@@ -1,354 +1,389 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useRef } from 'react';
 import Link from 'next/link';
+import useSWR from 'swr';
 import { useAuth } from '@/context/auth-context';
 import { motion } from 'framer-motion';
-import { Sparkles, Star, Zap } from 'lucide-react';
+import { Sparkles, Star, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
+
+// -- SWR Config --
+const fetcher = (url) => fetch(url).then((res) => res.json());
+
+const SWR_OPTIONS = {
+  revalidateOnFocus: false,
+  revalidateOnReconnect: false,
+  revalidateIfStale: false,
+  dedupingInterval: 60000,
+  refreshInterval: 0,
+  errorRetryCount: 2,
+};
+
+// -- Match badge styling --
+const getMatchBadgeStyle = (percentage) => {
+  if (percentage >= 90) {
+    return {
+      bg: 'bg-gradient-to-r from-emerald-400 to-green-500',
+      text: 'text-white',
+    };
+  } else if (percentage >= 70) {
+    return {
+      bg: 'bg-gradient-to-r from-blue-400 to-blue-600',
+      text: 'text-white',
+    };
+  }
+  return {
+    bg: 'bg-gradient-to-r from-gray-400 to-gray-500',
+    text: 'text-white',
+  };
+};
+
+// -- Animation variants --
+const containerVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.1 } },
+};
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } },
+};
+
+// =•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•
+// -- MAIN COMPONENT --
+// =•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•
 
 const SmartRecommendations = () => {
   const { user } = useAuth();
-  const [recommendations, setRecommendations] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [message, setMessage] = useState(null);
+  const scrollRef = useRef(null);
+  const hasAnimated = useRef(false);
 
-  useEffect(() => {
-    const fetchRecommendations = async () => {
-      try {
-        setLoading(true);
-        
-        // Build URL with student_id if user is authenticated
-        let url = 'http://localhost:8000/api/recommendations/';
-        if (user?.id) {
-          url += `?student_id=${user.id}`;
-        }
-        
-        const response = await fetch(url);
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch recommendations');
-        }
-        
-        const data = await response.json();
-        
-        if (data.status === 'success') {
-          setRecommendations(data.data || []);
-          if (data.message) {
-            setMessage(data.message);
-          }
-        } else {
-          setError('No recommendations available');
-        }
-      } catch (err) {
-        setError(err.message);
-        console.error('Error fetching recommendations:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Build URL with student_id if user is authenticated
+  const url = user?.id
+    ? `http://localhost:8000/api/recommendations/?student_id=${user.id}`
+    : `http://localhost:8000/api/recommendations/`;
 
-    fetchRecommendations();
-  }, [user?.id]);
+  const { data, error, isLoading } = useSWR(url, fetcher, SWR_OPTIONS);
 
-  // Match percentage badge styling
-  const getMatchBadgeStyle = (percentage) => {
-    if (percentage >= 90) {
-      return {
-        bg: 'bg-gradient-to-r from-green-400 to-emerald-500',
-        text: 'text-white',
-        label: 'Excellent Match'
-      };
-    } else if (percentage >= 70) {
-      return {
-        bg: 'bg-gradient-to-r from-blue-400 to-cyan-500',
-        text: 'text-white',
-        label: 'Great Match'
-      };
-    } else {
-      return {
-        bg: 'bg-gray-300',
-        text: 'text-gray-700',
-        label: 'Good Match'
-      };
-    }
+  // =”€=”€ Scroll controls =”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€
+  const scroll = (direction) => {
+    if (!scrollRef.current) return;
+    const amount = 340;
+    scrollRef.current.scrollBy({
+      left: direction === 'left' ? -amount : amount,
+      behavior: 'smooth',
+    });
   };
 
-  // Skeleton Loader Component
-  const SkeletonCard = ({ index }) => (
-    <motion.div
-      initial={{ opacity: 0.6 }}
-      animate={{ opacity: 1 }}
-      transition={{
-        duration: 1.5,
-        repeat: Infinity,
-        repeatType: 'reverse'
-      }}
-      className="flex-shrink-0 w-80 bg-white rounded-xl border border-gray-100 p-6 shadow-md"
-    >
-      {/* Skeleton Badge */}
-      <div className="absolute top-4 right-4 w-20 h-8 bg-gray-300 rounded-full" />
+  // =”€=”€ Loading =†’ Skeleton =”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€
+  if (isLoading) {
+    return (
+      <div className="w-full py-2">
+        <div className="flex items-center gap-2 mb-4 px-1">
+          <Sparkles className="text-amber-500" size={22} />
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+            Top Picks for You
+          </h2>
+        </div>
+        <div className="flex gap-5 overflow-hidden pb-4">
+          {[0, 1, 2, 3].map((i) => (
+            <SkeletonCard key={i} />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
-      {/* Skeleton Avatar */}
-      <div className="w-16 h-16 bg-gray-300 rounded-full mb-4" />
+  // =”€=”€ Error =†’ silent fail =”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€
+  if (error) return null;
 
-      {/* Skeleton Name */}
-      <div className="w-32 h-4 bg-gray-300 rounded mb-2" />
-      <div className="w-24 h-3 bg-gray-200 rounded mb-4" />
+  // =”€=”€ Normalise data =”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€
+  const recommendations =
+    data?.data ?? data?.recommendations ?? (Array.isArray(data) ? data : []);
+  const message = data?.message;
 
-      {/* Skeleton Explanation */}
-      <div className="space-y-2 mb-4">
-        <div className="w-full h-3 bg-gray-200 rounded" />
-        <div className="w-5/6 h-3 bg-gray-200 rounded" />
+  // =”€=”€ Empty state =”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€
+  if (recommendations.length === 0) {
+    return (
+      <div className="w-full py-2">
+        <div className="flex items-center gap-2 mb-4 px-1">
+          <Sparkles className="text-amber-500" size={22} />
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+            Top Picks for You
+          </h2>
+        </div>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-10 px-6 text-center"
+        >
+          <Sparkles className="mx-auto text-slate-300 dark:text-slate-600 mb-4" size={40} />
+          <p className="text-slate-700 dark:text-slate-200 text-base font-semibold mb-2">
+            No Top Picks Yet
+          </p>
+          {message && (
+            <p className="text-slate-500 dark:text-slate-400 text-sm mb-4 max-w-sm mx-auto">
+              {message}
+            </p>
+          )}
+          <p className="text-slate-400 dark:text-slate-500 text-sm mb-5">
+            Here&apos;s how to get personalized recommendations:
+          </p>
+          <ul className="text-left text-slate-600 dark:text-slate-400 text-sm max-w-sm mx-auto space-y-2 mb-6">
+            <li className="flex items-start gap-2">
+              <span className="text-teal-600 dark:text-teal-400 font-bold mt-0.5">1.</span>
+              <span>Complete your learning profile with your goals and preferences</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-teal-600 dark:text-teal-400 font-bold mt-0.5">2.</span>
+              <span>Search for tutors by subject to build our recommendation database</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-teal-600 dark:text-teal-400 font-bold mt-0.5">3.</span>
+              <span>Book sessions to help our AI learn your preferences</span>
+            </li>
+          </ul>
+          <a
+            href="/student/settings"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg transition-colors text-sm"
+          >
+            <Zap size={16} />
+            Adjust Learning Goals
+          </a>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // =”€=”€ Only animate on first paint =”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€
+  const shouldAnimate = !hasAnimated.current;
+  if (shouldAnimate) hasAnimated.current = true;
+
+  // =”€=”€ Render carousel =”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€
+  return (
+    <div className="w-full py-2">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4 px-1">
+        <div className="flex items-center gap-2">
+          <Sparkles className="text-amber-500" size={22} />
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+            Top Picks for You
+          </h2>
+        </div>
+
+        {/* Scroll arrows (desktop) */}
+        <div className="hidden sm:flex items-center gap-1">
+          <button
+            onClick={() => scroll('left')}
+            className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            aria-label="Scroll left"
+          >
+            <ChevronLeft className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+          </button>
+          <button
+            onClick={() => scroll('right')}
+            className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            aria-label="Scroll right"
+          >
+            <ChevronRight className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+          </button>
+        </div>
       </div>
 
-      {/* Skeleton Rating */}
-      <div className="w-40 h-3 bg-gray-200 rounded mb-4" />
-
-      {/* Skeleton Button */}
-      <div className="w-full h-10 bg-gray-300 rounded-lg" />
-    </motion.div>
-  );
-
-  // Smart Card Component
-  const SmartCard = ({ recommendation, index }) => {
-    const badgeStyle = getMatchBadgeStyle(recommendation.match_percentage);
-
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: index * 0.1, duration: 0.5 }}
-        whileHover={{ y: -5, boxShadow: '0 20px 25px -5rgba(0, 0, 0, 0.1)' }}
-        className="flex-shrink-0 w-80 bg-white rounded-xl border border-gray-100 shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden"
-      >
-        <div className="relative p-6">
-          {/* Match Badge */}
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: index * 0.1 + 0.2, duration: 0.4 }}
-            className={`absolute top-4 right-4 ${badgeStyle.bg} ${badgeStyle.text} px-3 py-1 rounded-full flex items-center gap-1 text-xs font-semibold`}
-          >
-            <Sparkles size={14} />
-            {recommendation.match_percentage}%
-          </motion.div>
-
-          {/* Avatar & Online Status */}
-          <div className="flex items-start gap-4 mb-4">
-            <div className="relative">
-              <img
-                src={recommendation.image}
-                alt={recommendation.full_name}
-                className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
-              />
-              {recommendation.is_online && (
-                <motion.div
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-white"
-                  title="Online now"
-                />
-              )}
-            </div>
-
-            <div className="flex-1">
-              <h3 className="font-bold text-gray-900 text-lg leading-tight">
-                {recommendation.full_name}
-              </h3>
-              <div className="flex flex-wrap gap-1 mt-2">
-                {recommendation.subjects?.slice(0, 2).map((subject, idx) => (
-                  <span
-                    key={idx}
-                    className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-md font-medium"
-                  >
-                    {subject}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* AI Insight */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: index * 0.1 + 0.3, duration: 0.4 }}
-            className="mb-4 p-3 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg border border-indigo-100"
-          >
-            <div className="flex items-start gap-2">
-              <Zap size={16} className="text-indigo-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-gray-700 line-clamp-2 leading-snug">
-                {typeof recommendation.explanation === 'string' 
-                  ? recommendation.explanation 
-                  : typeof recommendation.explanation === 'object' && recommendation.explanation?.summary
-                    ? recommendation.explanation.summary
-                    : 'Recommended based on your preferences'}
-              </p>
-            </div>
-          </motion.div>
-
-          {/* Rating & Price */}
-          <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
-            <div className="flex items-center gap-1">
-              <Star size={16} className="text-yellow-400 fill-yellow-400" />
-              <span className="font-semibold text-gray-900">
-                {recommendation.average_rating}
-              </span>
-              <span className="text-sm text-gray-500">({recommendation.average_rating}/5)</span>
-            </div>
-            <span className="text-sm font-bold text-gray-900">
-              ${recommendation.hourly_rate}/hr
-            </span>
-          </div>
-
-          {/* View Profile Button */}
-          <Link href={`/student/tutors/${recommendation.id}`}>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
-            >
-              <Sparkles size={18} />
-              View Profile
-            </motion.button>
-          </Link>
-        </div>
-      </motion.div>
-    );
-  };
-
-  return (
-    <div className="w-full bg-gradient-to-b from-gray-50 to-white py-12 px-4 sm:px-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
+      {/* Carousel */}
+      <div className="relative">
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-8"
+          ref={scrollRef}
+          className="flex gap-5 overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-hide"
+          variants={containerVariants}
+          initial={shouldAnimate ? 'hidden' : false}
+          animate="visible"
         >
-          <div className="flex items-center gap-2 mb-2">
-            <Sparkles className="text-blue-600" size={24} />
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">
-              Top Picks for You
-            </h2>
-          </div>
-          <p className="text-gray-600 text-lg">
-            Based on your recent activity and learning goals
-          </p>
+          {recommendations.map((rec, index) => (
+            <SmartCard
+              key={rec.id || index}
+              recommendation={rec}
+              index={index}
+              shouldAnimate={shouldAnimate}
+            />
+          ))}
         </motion.div>
 
-        {/* Error State */}
-        {error && !loading && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-lg"
-          >
-            {error}
-          </motion.div>
-        )}
-
-        {/* Carousel Container */}
-        <div className="relative">
-          <div className="overflow-x-auto snap-x snap-mandatory scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
-            <div className="flex gap-6 pb-4">
-              {loading ? (
-                // Skeleton Loading State
-                Array.from({ length: 4 }).map((_, index) => (
-                  <SkeletonCard key={`skeleton-${index}`} index={index} />
-                ))
-              ) : recommendations.length > 0 ? (
-                // Recommendations Cards
-                recommendations.map((recommendation, index) => (
-                  <SmartCard
-                    key={recommendation.id}
-                    recommendation={recommendation}
-                    index={index}
-                  />
-                ))
-              ) : (
-                // Empty State with Call to Action
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="w-full text-center py-12 px-6"
-                >
-                  <Sparkles className="mx-auto text-gray-400 mb-4" size={48} />
-                  <p className="text-gray-700 text-lg font-semibold mb-3">
-                    No Top Picks Available Yet
-                  </p>
-                  {message && (
-                    <p className="text-gray-600 text-base mb-6 max-w-md mx-auto">
-                      {message}
-                    </p>
-                  )}
-                  <p className="text-gray-500 text-sm mb-6">
-                    Here's how to get personalized recommendations:
-                  </p>
-                  <ul className="text-left text-gray-600 text-sm max-w-md mx-auto space-y-2 mb-6">
-                    <li className="flex items-start gap-2">
-                      <span className="text-blue-600 font-bold mt-0.5">1.</span>
-                      <span>Complete your learning profile with your goals and preferences</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-blue-600 font-bold mt-0.5">2.</span>
-                      <span>Search for tutors by subject to build our recommendation database</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-blue-600 font-bold mt-0.5">3.</span>
-                      <span>Book sessions to help our AI learn your preferences</span>
-                    </li>
-                  </ul>
-                  <a
-                    href="/student/settings"
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-lg transition-all duration-200"
-                  >
-                    <Zap size={18} />
-                    Adjust Learning Goals
-                  </a>
-                </motion.div>
-              )}
-            </div>
-          </div>
-
-          {/* Gradient Fade (Right) */}
-          {!loading && recommendations.length > 0 && (
-            <div className="absolute top-0 right-0 w-12 h-full bg-gradient-to-l from-gray-50 to-transparent pointer-events-none" />
-          )}
-        </div>
-
-        {/* Info Section */}
-        {!loading && recommendations.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg"
-          >
-            <p className="text-sm text-blue-800">
-              <span className="font-semibold">💡 AI Insight:</span> These recommendations are powered by our explainable AI engine, which analyzes your learning patterns to find the perfect match.
-            </p>
-          </motion.div>
-        )}
-
-        {/* Empty State Info */}
-        {!loading && recommendations.length === 0 && message && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="mt-8 p-4 bg-amber-50 border border-amber-200 rounded-lg"
-          >
-            <p className="text-sm text-amber-800">
-              <span className="font-semibold">💡 Tip:</span> Your learning profile helps us find the best matches. The more information you provide, the better our recommendations become!
-            </p>
-          </motion.div>
-        )}
+        {/* Right fade gradient */}
+        <div className="absolute top-0 right-0 w-10 h-[calc(100%-16px)] bg-gradient-to-l from-slate-50 dark:from-slate-950 to-transparent pointer-events-none" />
       </div>
+
+      {/* AI Insight footer */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.6 }}
+        className="mt-2 px-1"
+      >
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          ðŸ’¡ Powered by our explainable AI engine =€” analysing your learning patterns to find the perfect match.
+        </p>
+      </motion.div>
     </div>
   );
 };
+
+// =•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•
+// -- SMART CARD --
+// =•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•
+
+const SmartCard = React.memo(function SmartCard({ recommendation, index, shouldAnimate }) {
+  const badgeStyle = getMatchBadgeStyle(recommendation.match_percentage);
+
+  const explanation =
+    typeof recommendation.explanation === 'string'
+      ? recommendation.explanation
+      : recommendation.explanation?.summary ?? 'Recommended based on your preferences';
+
+  const tutorName = recommendation.full_name || 'Unknown Tutor';
+  const initials = tutorName
+    .split(' ')
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+
+  return (
+    <motion.div
+      variants={shouldAnimate ? cardVariants : undefined}
+      whileHover={{ y: -5, boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}
+      className="flex-shrink-0 w-[310px] snap-start bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-lg transition-shadow duration-300 overflow-hidden"
+    >
+      <div className="relative p-5">
+        {/* Match Badge */}
+        <div
+          className={`absolute top-4 right-4 ${badgeStyle.bg} ${badgeStyle.text} px-2.5 py-1 rounded-full flex items-center gap-1 text-xs font-bold shadow-sm`}
+        >
+          <Sparkles size={12} />
+          {Math.round(recommendation.match_percentage)}%
+        </div>
+
+        {/* Avatar + Info */}
+        <div className="flex items-start gap-3 mb-4">
+          <div className="relative flex-shrink-0">
+            {recommendation.image ? (
+              <img
+                src={recommendation.image}
+                alt={tutorName}
+                className="w-14 h-14 rounded-full object-cover border-2 border-slate-200 dark:border-slate-600"
+                loading="lazy"
+              />
+            ) : (
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center border-2 border-slate-200 dark:border-slate-600">
+                <span className="text-white font-semibold text-sm">{initials}</span>
+              </div>
+            )}
+            {recommendation.is_online && (
+              <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white dark:border-slate-800" />
+            )}
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <h3 className="font-bold text-slate-900 dark:text-white text-base leading-tight truncate">
+              {tutorName}
+            </h3>
+            <div className="flex flex-wrap gap-1 mt-1.5">
+              {recommendation.subjects?.slice(0, 2).map((subject, idx) => (
+                <span
+                  key={idx}
+                  className="text-[11px] bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-md font-medium"
+                >
+                  {subject}
+                </span>
+              ))}
+              {recommendation.subjects?.length > 2 && (
+                <span className="text-[11px] bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded-md font-medium">
+                  +{recommendation.subjects.length - 2}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* AI Explanation */}
+        <div className="mb-4 p-2.5 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+          <div className="flex items-start gap-2">
+            <Zap size={14} className="text-amber-500 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2 leading-relaxed">
+              {explanation}
+            </p>
+          </div>
+        </div>
+
+        {/* Rating + Price */}
+        <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-700">
+          <div className="flex items-center gap-1">
+            <Star size={14} className="text-amber-400 fill-amber-400" />
+            <span className="font-semibold text-slate-900 dark:text-white text-sm">
+              {recommendation.average_rating || 'N/A'}
+            </span>
+          </div>
+          <span className="text-sm font-bold text-slate-900 dark:text-white">
+            R{recommendation.hourly_rate}/hr
+          </span>
+        </div>
+
+        {/* View Profile Button */}
+        <Link href={`/student/tutors/${recommendation.id}`}>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm"
+          >
+            <Sparkles size={16} />
+            View Profile
+          </motion.button>
+        </Link>
+      </div>
+    </motion.div>
+  );
+});
+
+// =•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•
+// -- SKELETON CARD --
+// =•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•
+
+function SkeletonCard() {
+  return (
+    <div className="flex-shrink-0 w-[310px] bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 animate-pulse">
+      {/* Badge */}
+      <div className="flex justify-end mb-3">
+        <div className="w-16 h-5 rounded-full bg-slate-200 dark:bg-slate-700" />
+      </div>
+
+      {/* Avatar + text */}
+      <div className="flex items-start gap-3 mb-4">
+        <div className="w-14 h-14 rounded-full bg-slate-200 dark:bg-slate-700" />
+        <div className="flex-1 space-y-2 pt-1">
+          <div className="h-4 w-28 rounded bg-slate-200 dark:bg-slate-700" />
+          <div className="flex gap-1">
+            <div className="h-4 w-12 rounded bg-slate-200 dark:bg-slate-700" />
+            <div className="h-4 w-14 rounded bg-slate-200 dark:bg-slate-700" />
+          </div>
+        </div>
+      </div>
+
+      {/* Explanation */}
+      <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-2.5 space-y-1.5 mb-4">
+        <div className="h-3 w-full rounded bg-slate-200 dark:bg-slate-600" />
+        <div className="h-3 w-3/4 rounded bg-slate-200 dark:bg-slate-600" />
+      </div>
+
+      {/* Rating + Price */}
+      <div className="flex justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-700">
+        <div className="h-4 w-12 rounded bg-slate-200 dark:bg-slate-700" />
+        <div className="h-4 w-16 rounded bg-slate-200 dark:bg-slate-700" />
+      </div>
+
+      {/* Button */}
+      <div className="h-10 w-full rounded-lg bg-slate-200 dark:bg-slate-700" />
+    </div>
+  );
+}
 
 export default SmartRecommendations;

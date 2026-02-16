@@ -180,7 +180,7 @@ export default function StudentDashboardPage() {
         </Link>
 
         <Link
-          href="/student/settings"
+          href="/student/progress"
           className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6 hover:border-teal-500 dark:hover:border-teal-500 hover:shadow-md transition-all"
         >
           <div className="flex items-center gap-4">
@@ -307,10 +307,10 @@ export default function StudentDashboardPage() {
                         {formatDate(session.scheduledAt)}
                       </p>
                       <Link
-                        href={`/student/session/${session.id}`}
+                        href="/student/schedule"
                         className="text-sm text-teal-600 dark:text-teal-400 hover:underline"
                       >
-                        Join Session
+                        View Session
                       </Link>
                     </div>
                   </div>

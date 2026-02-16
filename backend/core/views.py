@@ -18,6 +18,9 @@ Throttle Scopes:
 =============================================================================
 """
 import logging
+import hashlib
+import json
+from django.core.cache import cache
 from rest_framework import viewsets, filters, status
 from rest_framework.decorators import api_view, action, throttle_classes, permission_classes
 from rest_framework.response import Response
@@ -27,7 +30,7 @@ from rest_framework.throttling import (
     UserRateThrottle, 
     ScopedRateThrottle
 )
-from django.db.models import Q, Avg
+from django.db.models import Q, Avg, Prefetch
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from .models import Profile, Student, Tutor, Subject, Session, Rating
@@ -278,8 +281,14 @@ def get_smart_recommendations(request):
         from django.db.models import Q, Avg
         from .recommender import get_recommendations
         
-        # Try to get student's learning goals from query parameter (student_id)
+        # ── Response-level cache (60s) keyed by student_id ──────────────
         student_id = request.query_params.get('student_id')
+        cache_key = f"smart_recs_{student_id or 'anon'}"
+        cached = cache.get(cache_key)
+        if cached is not None:
+            logger.info(f"[SmartRecs] Cache HIT for key={cache_key}")
+            return Response(cached, status=status.HTTP_200_OK)
+
         learning_goals_text = None
         
         if student_id:
@@ -329,8 +338,12 @@ def get_smart_recommendations(request):
                 }
                 recommendations.append(recommendation)
         else:
-            # Fall back to top-rated tutors
-            tutors = Tutor.objects.annotate(
+            # Fall back to top-rated tutors (optimized with prefetch)
+            tutors = Tutor.objects.select_related(
+                'profile'
+            ).prefetch_related(
+                'subjects'
+            ).annotate(
                 avg_rating=Avg('ratings__rating')
             ).filter(
                 avg_rating__gte=4.0
@@ -369,10 +382,16 @@ def get_smart_recommendations(request):
                 "message": "No top picks available yet. Try adjusting your learning goals or searching for specific subjects to get personalized recommendations!"
             }, status=status.HTTP_200_OK)
         
-        return Response({
+        response_data = {
             "status": "success",
             "data": recommendations
-        }, status=status.HTTP_200_OK)
+        }
+        
+        # Cache the response for 60 seconds
+        cache.set(cache_key, response_data, timeout=60)
+        logger.info(f"[SmartRecs] Cache SET for key={cache_key} ({len(recommendations)} results)")
+        
+        return Response(response_data, status=status.HTTP_200_OK)
         
     except Exception as e:
         logger.error(f"Smart recommendations error: {str(e)}")

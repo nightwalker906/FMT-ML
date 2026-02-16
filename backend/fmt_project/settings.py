@@ -145,6 +145,20 @@ CORS_ALLOWED_ORIGINS = os.getenv(
 
 CORS_ALLOW_CREDENTIALS = True
 
+# ===========================================
+# Caching (In-Memory for ML Model + API Responses)
+# ===========================================
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'fmt-ml-cache',
+        'TIMEOUT': 300,  # 5 minutes default
+        'OPTIONS': {
+            'MAX_ENTRIES': 100,
+        }
+    }
+}
+
 # Logging
 LOGGING = {
     'version': 1,

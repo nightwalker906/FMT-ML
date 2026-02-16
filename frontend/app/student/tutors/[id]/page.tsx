@@ -22,6 +22,7 @@ import {
   Send,
   X,
 } from 'lucide-react';
+import BookingModal from '@/components/BookingModal';
 
 interface TutorDetail {
   id: string;
@@ -65,6 +66,7 @@ export default function TutorDetailPage() {
   const [isFavorite, setIsFavorite] = useState(false);
   const [reviews, setReviews] = useState<any[]>([]);
   const [showChat, setShowChat] = useState(false);
+  const [showBooking, setShowBooking] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
@@ -272,25 +274,110 @@ export default function TutorDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-teal-50">
-        <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 py-12 px-4 sm:px-6">
+        <div className="max-w-4xl mx-auto animate-pulse">
+          {/* Back button skeleton */}
+          <div className="h-5 w-32 rounded bg-slate-200 dark:bg-slate-700 mb-6" />
+
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg overflow-hidden">
+            {/* Hero banner skeleton */}
+            <div className="bg-gradient-to-r from-teal-600/60 to-teal-500/60 dark:from-teal-800/40 dark:to-teal-700/40 px-6 sm:px-8 py-12">
+              <div className="flex items-start gap-6">
+                <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-white/20" />
+                <div className="flex-1 pt-2 space-y-3">
+                  <div className="h-3 w-20 rounded bg-white/20" />
+                  <div className="h-8 w-56 rounded bg-white/20" />
+                  <div className="flex gap-4">
+                    <div className="h-4 w-28 rounded bg-white/20" />
+                    <div className="h-4 w-36 rounded bg-white/20" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Content skeleton */}
+            <div className="px-6 sm:px-8 py-8">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Left column */}
+                <div className="lg:col-span-2 space-y-8">
+                  {/* About */}
+                  <div>
+                    <div className="h-6 w-24 rounded bg-slate-200 dark:bg-slate-700 mb-4" />
+                    <div className="space-y-2">
+                      <div className="h-4 w-full rounded bg-slate-200 dark:bg-slate-700" />
+                      <div className="h-4 w-5/6 rounded bg-slate-200 dark:bg-slate-700" />
+                      <div className="h-4 w-3/4 rounded bg-slate-200 dark:bg-slate-700" />
+                    </div>
+                  </div>
+                  {/* Teaching Style */}
+                  <div>
+                    <div className="h-6 w-36 rounded bg-slate-200 dark:bg-slate-700 mb-4" />
+                    <div className="flex flex-wrap gap-2">
+                      {[80, 96, 72, 88].map((w, i) => (
+                        <div key={i} className="h-8 rounded-full bg-slate-200 dark:bg-slate-700" style={{ width: w }} />
+                      ))}
+                    </div>
+                  </div>
+                  {/* Reviews */}
+                  <div>
+                    <div className="h-6 w-28 rounded bg-slate-200 dark:bg-slate-700 mb-4" />
+                    {[0, 1].map((i) => (
+                      <div key={i} className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 mb-3">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700" />
+                          <div className="space-y-1.5">
+                            <div className="h-4 w-28 rounded bg-slate-200 dark:bg-slate-700" />
+                            <div className="h-3 w-20 rounded bg-slate-200 dark:bg-slate-700" />
+                          </div>
+                        </div>
+                        <div className="h-3 w-full rounded bg-slate-200 dark:bg-slate-700 mt-3" />
+                        <div className="h-3 w-2/3 rounded bg-slate-200 dark:bg-slate-700 mt-1.5" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Right sidebar */}
+                <div className="space-y-6">
+                  {/* Pricing card */}
+                  <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-6 space-y-4">
+                    <div className="h-8 w-24 rounded bg-slate-200 dark:bg-slate-600" />
+                    <div className="h-4 w-20 rounded bg-slate-200 dark:bg-slate-600" />
+                    <div className="h-12 w-full rounded-lg bg-slate-200 dark:bg-slate-600" />
+                    <div className="h-12 w-full rounded-lg bg-slate-200 dark:bg-slate-600" />
+                  </div>
+                  {/* Info cards */}
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-slate-200 dark:bg-slate-600" />
+                      <div className="space-y-1.5 flex-1">
+                        <div className="h-3 w-16 rounded bg-slate-200 dark:bg-slate-600" />
+                        <div className="h-4 w-24 rounded bg-slate-200 dark:bg-slate-600" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (error || !tutor) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50 py-12 px-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 py-12 px-4">
         <div className="max-w-4xl mx-auto">
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-2 text-teal-600 hover:text-teal-700 mb-6"
+            className="flex items-center gap-2 text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 mb-6"
           >
             <ArrowLeft size={20} />
             Go Back
           </button>
-          <div className="bg-white rounded-xl shadow-lg p-8 text-center">
-            <p className="text-red-600 text-lg">{error || 'Tutor not found'}</p>
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-8 text-center">
+            <p className="text-red-600 dark:text-red-400 text-lg">{error || 'Tutor not found'}</p>
           </div>
         </div>
       </div>
@@ -298,19 +385,19 @@ export default function TutorDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50 py-12 px-4 sm:px-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 py-12 px-4 sm:px-6">
       <div className="max-w-4xl mx-auto">
         {/* Header with Back Button */}
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-teal-600 hover:text-teal-700 mb-6 transition-colors"
+          className="flex items-center gap-2 text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 mb-6 transition-colors"
         >
           <ArrowLeft size={20} />
           Back to Results
         </button>
 
         {/* Main Content */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg overflow-hidden">
           {/* Top Section with Basic Info */}
           <div className="bg-gradient-to-r from-teal-600 to-teal-500 px-6 sm:px-8 py-12">
             <div className="flex items-start gap-6">
@@ -331,7 +418,7 @@ export default function TutorDetailPage() {
                     {tutor.is_online ? 'Online now' : 'Offline'}
                   </span>
                 </div>
-                <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">
+                <h1 className="text-2xl sm:text-4xl font-bold text-white mb-2">
                   {tutor.first_name} {tutor.last_name}
                 </h1>
                 <div className="flex items-center gap-4 flex-wrap">
@@ -373,14 +460,14 @@ export default function TutorDetailPage() {
               <div className="lg:col-span-2 space-y-8">
                 {/* Teaching Style & Qualifications */}
                 <div>
-                  <h2 className="text-2xl font-bold text-slate-900 mb-4">About</h2>
+                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">About</h2>
                   {tutor.bio_text && (
-                    <p className="text-slate-600 text-lg mb-6 leading-relaxed">{tutor.bio_text}</p>
+                    <p className="text-slate-600 dark:text-slate-300 text-lg mb-6 leading-relaxed">{tutor.bio_text}</p>
                   )}
                   {tutor.teaching_style && (
-                    <div className="bg-teal-50 border border-teal-200 rounded-lg p-4 mb-6">
-                      <h3 className="font-semibold text-teal-900 mb-2">Teaching Style</h3>
-                      <p className="text-teal-800">{tutor.teaching_style}</p>
+                    <div className="bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-lg p-4 mb-6">
+                      <h3 className="font-semibold text-teal-900 dark:text-teal-300 mb-2">Teaching Style</h3>
+                      <p className="text-teal-800 dark:text-teal-400">{tutor.teaching_style}</p>
                     </div>
                   )}
                 </div>
@@ -388,18 +475,18 @@ export default function TutorDetailPage() {
                 {/* Qualifications */}
                 {tutor.qualifications && tutor.qualifications.length > 0 && (
                   <div>
-                    <h2 className="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-2">
-                      <Award className="w-6 h-6 text-teal-600" />
+                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                      <Award className="w-6 h-6 text-teal-600 dark:text-teal-400" />
                       Qualifications & Subjects
                     </h2>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                       {tutor.qualifications.map((qual, idx) => (
                         <div
                           key={idx}
-                          className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center gap-2"
+                          className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 flex items-center gap-2"
                         >
-                          <Check className="w-5 h-5 text-blue-600 flex-shrink-0" />
-                          <span className="font-medium text-blue-900">{qual}</span>
+                          <Check className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                          <span className="font-medium text-blue-900 dark:text-blue-300">{qual}</span>
                         </div>
                       ))}
                     </div>
@@ -409,12 +496,12 @@ export default function TutorDetailPage() {
                 {/* Reviews */}
                 {reviews.length > 0 && (
                   <div>
-                    <h2 className="text-2xl font-bold text-slate-900 mb-4">Recent Reviews</h2>
+                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Recent Reviews</h2>
                     <div className="space-y-4">
                       {reviews.map((review, idx) => (
                         <div
                           key={idx}
-                          className="border border-slate-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                          className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 hover:shadow-md transition-shadow"
                         >
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-1">
@@ -435,7 +522,7 @@ export default function TutorDetailPage() {
                             </span>
                           </div>
                           {review.comment && (
-                            <p className="text-slate-600 text-sm">{review.comment}</p>
+                            <p className="text-slate-600 dark:text-slate-400 text-sm">{review.comment}</p>
                           )}
                         </div>
                       ))}
@@ -447,12 +534,12 @@ export default function TutorDetailPage() {
               {/* Sidebar */}
               <div className="lg:col-span-1">
                 {/* Pricing Card */}
-                <div className="bg-gradient-to-br from-teal-50 to-blue-50 border border-teal-200 rounded-xl p-6 mb-6 sticky top-4">
+                <div className="bg-gradient-to-br from-teal-50 to-blue-50 dark:from-slate-700 dark:to-slate-700/50 border border-teal-200 dark:border-slate-600 rounded-xl p-6 mb-6 sticky top-4">
                   <div className="flex items-center justify-between mb-4">
-                    <span className="text-slate-600 font-medium">Hourly Rate</span>
-                    <DollarSign className="w-5 h-5 text-teal-600" />
+                    <span className="text-slate-600 dark:text-slate-400 font-medium">Hourly Rate</span>
+                    <DollarSign className="w-5 h-5 text-teal-600 dark:text-teal-400" />
                   </div>
-                  <p className="text-4xl font-bold text-slate-900 mb-6">
+                  <p className="text-4xl font-bold text-slate-900 dark:text-white mb-6">
                     ${tutor.hourly_rate}
                     <span className="text-lg text-slate-600">/hr</span>
                   </p>
@@ -466,7 +553,10 @@ export default function TutorDetailPage() {
                       <MessageSquare size={18} />
                       Send Message
                     </button>
-                    <button className="w-full border-2 border-teal-600 text-teal-600 hover:bg-teal-50 font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2">
+                    <button
+                      onClick={() => setShowBooking(true)}
+                      className="w-full border-2 border-teal-600 text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/20 font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+                    >
                       <BookOpen size={18} />
                       Book Session
                     </button>
@@ -488,17 +578,17 @@ export default function TutorDetailPage() {
                       </div>
                     </div>
                   )}
-                  <div className="bg-slate-50 rounded-lg p-4">
-                    <p className="text-xs text-slate-500 uppercase tracking-wide font-semibold mb-1">
+                  <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide font-semibold mb-1">
                       Response Time
                     </p>
-                    <p className="text-slate-900 font-semibold">Usually within 1 hour</p>
+                    <p className="text-slate-900 dark:text-white font-semibold">Usually within 1 hour</p>
                   </div>
-                  <div className="bg-slate-50 rounded-lg p-4">
-                    <p className="text-xs text-slate-500 uppercase tracking-wide font-semibold mb-1">
+                  <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide font-semibold mb-1">
                       Total Students
                     </p>
-                    <p className="text-slate-900 font-semibold">{tutor?.total_students || 0}+ students</p>
+                    <p className="text-slate-900 dark:text-white font-semibold">{tutor?.total_students || 0}+ students</p>
                   </div>
                   {tutor?.location && (
                     <div className="bg-slate-50 rounded-lg p-4 flex items-center gap-3">
@@ -526,17 +616,41 @@ export default function TutorDetailPage() {
         </div>
       </div>
 
+      {/* Booking Modal */}
+      {tutor && (
+        <BookingModal
+          isOpen={showBooking}
+          onClose={() => setShowBooking(false)}
+          tutor={{
+            id: tutor.id,
+            first_name: tutor.first_name,
+            last_name: tutor.last_name,
+            hourly_rate: tutor.hourly_rate,
+            qualifications: tutor.qualifications,
+            availability: tutor.availability,
+          }}
+        />
+      )}
+
       {/* Chat Modal */}
       {showChat && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md h-[600px] flex flex-col">
+          <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl w-full max-w-md h-[600px] flex flex-col">
             {/* Header */}
             <div className="bg-gradient-to-r from-teal-600 to-teal-500 px-6 py-4 flex items-center justify-between rounded-t-xl">
               <div>
                 <h3 className="text-lg font-bold text-white">Chat with {tutor?.first_name}</h3>
-                <p className="text-teal-100 text-sm">
-                  {tutor?.is_online ? '🟢 Online' : '⚫ Offline'}
-                </p>
+                <div className="flex items-center gap-3">
+                  <p className="text-teal-100 text-sm">
+                    {tutor?.is_online ? '🟢 Online' : '⚫ Offline'}
+                  </p>
+                  <Link
+                    href={`/student/messages?chat=${tutorId}`}
+                    className="text-xs text-teal-200 hover:text-white underline transition-colors"
+                  >
+                    Open full chat →
+                  </Link>
+                </div>
               </div>
               <button
                 onClick={() => setShowChat(false)}
@@ -547,14 +661,14 @@ export default function TutorDetailPage() {
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 dark:bg-slate-800">
               {chatLoading ? (
                 <div className="flex items-center justify-center h-full">
                   <Loader2 className="w-6 h-6 animate-spin text-teal-600" />
                 </div>
               ) : messages.length === 0 ? (
                 <div className="flex items-center justify-center h-full">
-                  <p className="text-slate-400 text-center">
+                  <p className="text-slate-400 dark:text-slate-500 text-center">
                     No messages yet. Start the conversation!
                   </p>
                 </div>
@@ -568,7 +682,7 @@ export default function TutorDetailPage() {
                       className={`max-w-xs px-4 py-2 rounded-lg ${
                         msg.sender_id === user?.id
                           ? 'bg-teal-600 text-white rounded-br-none'
-                          : 'bg-white text-slate-900 border border-slate-200 rounded-bl-none'
+                          : 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-600 rounded-bl-none'
                       }`}
                     >
                       <p className="text-sm">{msg.content}</p>
@@ -589,7 +703,7 @@ export default function TutorDetailPage() {
             </div>
 
             {/* Input Area */}
-            <div className="border-t border-slate-200 p-4 bg-white rounded-b-xl">
+            <div className="border-t border-slate-200 dark:border-slate-700 p-4 bg-white dark:bg-slate-900 rounded-b-xl">
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -601,7 +715,7 @@ export default function TutorDetailPage() {
                     }
                   }}
                   placeholder="Type your message..."
-                  className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   disabled={sendingMessage}
                 />
                 <button
