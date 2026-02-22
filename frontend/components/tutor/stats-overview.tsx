@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { motion, type Variants } from 'framer-motion';
 import { Wallet, Star, Wifi, WifiOff, TrendingUp, Clock } from 'lucide-react';
 import { updateTutorStatus, type TutorStats } from '@/app/actions/tutor';
 
@@ -8,18 +9,28 @@ interface StatsOverviewProps {
   stats: TutorStats;
 }
 
+const cardEase: [number, number, number, number] = [0, 0, 0.2, 1];
+
+const cardVariants: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: i * 0.1, duration: 0.5, ease: cardEase },
+  }),
+};
+
 export function StatsOverview({ stats }: StatsOverviewProps) {
   const [isAvailable, setIsAvailable] = useState(stats.isAvailable);
   const [isPending, startTransition] = useTransition();
 
   const handleToggleAvailability = () => {
     const newStatus = !isAvailable;
-    setIsAvailable(newStatus); // Optimistic update
-    
+    setIsAvailable(newStatus);
+
     startTransition(async () => {
       const result = await updateTutorStatus(newStatus);
       if (!result.success) {
-        // Revert on error
         setIsAvailable(!newStatus);
         console.error('Failed to update status:', result.error);
       }
@@ -27,99 +38,111 @@ export function StatsOverview({ stats }: StatsOverviewProps) {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
+    return `R${amount.toLocaleString()}`;
   };
 
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      {/* Earnings Card */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-all hover:shadow-md">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-              Total Earnings
-            </p>
-            <p className="text-3xl font-bold text-slate-900 dark:text-white mt-1">
-              {formatCurrency(stats.totalEarnings)}
-            </p>
-            <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1">
-              <TrendingUp size={12} />
-              {stats.totalHours} sessions completed
-            </p>
-          </div>
-          <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-            <Wallet className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
-          </div>
+  const cards = [
+    {
+      label: 'Total Earnings',
+      value: formatCurrency(stats.totalEarnings),
+      sub: (
+        <span className="flex items-center gap-1">
+          <TrendingUp size={12} />
+          {stats.totalHours} sessions completed
+        </span>
+      ),
+      subColor: 'text-emerald-600 dark:text-emerald-400',
+      iconBg: 'bg-gradient-to-br from-emerald-100 to-emerald-200 dark:from-emerald-900/40 dark:to-emerald-800/30',
+      icon: <Wallet className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />,
+    },
+    {
+      label: 'Average Rating',
+      value: (
+        <>
+          {stats.averageRating > 0 ? stats.averageRating.toFixed(1) : '—'}
+          <span className="text-lg text-slate-400 dark:text-slate-500">/5.0</span>
+        </>
+      ),
+      sub: (
+        <div className="flex items-center gap-0.5">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <Star
+              key={star}
+              size={14}
+              className={
+                star <= Math.round(stats.averageRating)
+                  ? 'text-amber-400 fill-amber-400'
+                  : 'text-slate-300 dark:text-slate-600'
+              }
+            />
+          ))}
         </div>
-      </div>
+      ),
+      subColor: '',
+      iconBg: 'bg-gradient-to-br from-amber-100 to-amber-200 dark:from-amber-900/40 dark:to-amber-800/30',
+      icon: <Star className="h-6 w-6 text-amber-500 dark:text-amber-400" />,
+    },
+    {
+      label: 'Active Requests',
+      value: stats.activeRequests,
+      sub: (
+        <span className="flex items-center gap-1">
+          <Clock size={12} />
+          Pending approval
+        </span>
+      ),
+      subColor: 'text-blue-600 dark:text-blue-400',
+      iconBg: 'bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/40 dark:to-blue-800/30',
+      icon: <Clock className="h-6 w-6 text-blue-600 dark:text-blue-400" />,
+    },
+  ];
 
-      {/* Rating Card */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-all hover:shadow-md">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-              Average Rating
-            </p>
-            <p className="text-3xl font-bold text-slate-900 dark:text-white mt-1">
-              {stats.averageRating > 0 ? stats.averageRating.toFixed(1) : '—'}
-              <span className="text-lg text-slate-400 dark:text-slate-500">/5.0</span>
-            </p>
-            <div className="flex items-center gap-0.5 mt-1">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <Star
-                  key={star}
-                  size={14}
-                  className={
-                    star <= Math.round(stats.averageRating)
-                      ? 'text-amber-400 fill-amber-400'
-                      : 'text-slate-300 dark:text-slate-600'
-                  }
-                />
-              ))}
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {cards.map((card, i) => (
+        <motion.div
+          key={card.label}
+          custom={i}
+          initial="hidden"
+          animate="visible"
+          variants={cardVariants}
+          whileHover={{ y: -4, transition: { duration: 0.2 } }}
+          className="card-stat group"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                {card.label}
+              </p>
+              <p className="text-3xl font-bold text-slate-900 dark:text-white mt-1">
+                {card.value}
+              </p>
+              <p className={`text-xs mt-1 ${card.subColor}`}>{card.sub}</p>
+            </div>
+            <div className={`h-12 w-12 rounded-2xl ${card.iconBg} flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-300`}>
+              {card.icon}
             </div>
           </div>
-          <div className="h-12 w-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-            <Star className="h-6 w-6 text-amber-500 dark:text-amber-400" />
-          </div>
-        </div>
-      </div>
-
-      {/* Hours Card */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-all hover:shadow-md">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-              Active Requests
-            </p>
-            <p className="text-3xl font-bold text-slate-900 dark:text-white mt-1">
-              {stats.activeRequests}
-            </p>
-            <p className="text-xs text-blue-600 dark:text-blue-400 mt-1 flex items-center gap-1">
-              <Clock size={12} />
-              Pending approval
-            </p>
-          </div>
-          <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-            <Clock className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-          </div>
-        </div>
-      </div>
+        </motion.div>
+      ))}
 
       {/* Availability Toggle Card */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-all hover:shadow-md">
+      <motion.div
+        custom={3}
+        initial="hidden"
+        animate="visible"
+        variants={cardVariants}
+        whileHover={{ y: -4, transition: { duration: 0.2 } }}
+        className="card-stat group"
+      >
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
               Availability
             </p>
-            <p className={`text-lg font-semibold mt-1 ${
-              isAvailable 
-                ? 'text-emerald-600 dark:text-emerald-400' 
+            <p className={`text-lg font-semibold mt-1 transition-colors ${
+              isAvailable
+                ? 'text-emerald-600 dark:text-emerald-400'
                 : 'text-slate-500 dark:text-slate-400'
             }`}>
               {isAvailable ? 'Online' : 'Offline'}
@@ -128,11 +151,11 @@ export function StatsOverview({ stats }: StatsOverviewProps) {
               {isAvailable ? 'Accepting new students' : 'Not visible to students'}
             </p>
           </div>
-          <div className="flex flex-col items-center gap-2">
-            <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
-              isAvailable 
-                ? 'bg-emerald-100 dark:bg-emerald-900/30' 
-                : 'bg-slate-100 dark:bg-slate-700'
+          <div className="flex flex-col items-center gap-2.5">
+            <div className={`h-10 w-10 rounded-2xl flex items-center justify-center transition-all duration-300 shadow-sm group-hover:scale-110 ${
+              isAvailable
+                ? 'bg-gradient-to-br from-emerald-100 to-emerald-200 dark:from-emerald-900/40 dark:to-emerald-800/30'
+                : 'bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600'
             }`}>
               {isAvailable ? (
                 <Wifi className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
@@ -140,29 +163,30 @@ export function StatsOverview({ stats }: StatsOverviewProps) {
                 <WifiOff className="h-5 w-5 text-slate-500 dark:text-slate-400" />
               )}
             </div>
-            {/* Toggle Switch */}
             <button
               onClick={handleToggleAvailability}
               disabled={isPending}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 ${
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 ${
                 isPending ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
               } ${
-                isAvailable 
-                  ? 'bg-emerald-600' 
+                isAvailable
+                  ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 shadow-md shadow-emerald-500/25'
                   : 'bg-slate-300 dark:bg-slate-600'
               }`}
               role="switch"
               aria-checked={isAvailable}
             >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${
+              <motion.span
+                layout
+                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm ${
                   isAvailable ? 'translate-x-6' : 'translate-x-1'
                 }`}
               />
             </button>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

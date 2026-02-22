@@ -4,11 +4,12 @@ import { memo, useMemo, useRef } from 'react'
 import useSWR from 'swr'
 import { motion } from 'framer-motion'
 import { Star, Sparkles } from 'lucide-react'
+import { API_BASE } from '@/lib/api-config'
 
 // ── SWR Fetcher ──────────────────────────────────────────────────────────────
 const fetcher = (url) => fetch(url).then((res) => res.json())
 
-const API_URL = 'http://127.0.0.1:8000/api/recommendations/?user_id=1'
+const API_URL = `${API_BASE}/recommendations/?user_id=1`
 
 // ── SWR Config (aggressive caching — no unnecessary refetches) ───────────────
 const SWR_OPTIONS = {
@@ -22,9 +23,9 @@ const SWR_OPTIONS = {
 
 // ── Match Badge Color Logic ──────────────────────────────────────────────────
 function getMatchGradient(percentage) {
-  if (percentage > 90) return 'bg-gradient-to-r from-emerald-400 to-green-500'
-  if (percentage > 70) return 'bg-gradient-to-r from-blue-400 to-blue-600'
-  return 'bg-gradient-to-r from-gray-400 to-gray-500'
+  if (percentage > 90) return 'bg-gradient-to-r from-emerald-400 to-emerald-600'
+  if (percentage > 70) return 'bg-gradient-to-r from-primary-400 to-primary-600'
+  return 'bg-gradient-to-r from-slate-400 to-slate-500'
 }
 
 // ── Initials Fallback ────────────────────────────────────────────────────────
@@ -77,15 +78,15 @@ function SmartRecommendations() {
     <section className="w-full py-6">
       {/* Section Header */}
       <div className="flex items-center gap-2 mb-4 px-1">
-        <Sparkles className="w-5 h-5 text-amber-500" />
-        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">
+        <Sparkles className="w-5 h-5 text-primary-500" />
+        <h2 className="section-title !mb-0">
           Recommended For You
         </h2>
       </div>
 
       {/* Netflix-Style Horizontal Carousel */}
       <motion.div
-        className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-hide"
+        className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-hide -mx-1 px-1"
         variants={containerVariants}
         initial={shouldAnimate ? 'hidden' : false}
         animate="visible"
@@ -117,12 +118,12 @@ const RecommendationCard = memo(function RecommendationCard({ rec }) {
   return (
     <motion.div
       variants={cardVariants}
-      whileHover={{ y: -5, boxShadow: '0 20px 40px rgba(0,0,0,0.12)' }}
-      className="relative flex-shrink-0 w-[280px] snap-start bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-md overflow-hidden cursor-pointer transition-colors"
+      whileHover={{ y: -6, boxShadow: '0 20px 50px rgba(0,0,0,0.12)' }}
+      className="relative flex-shrink-0 w-[280px] snap-start bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-glass overflow-hidden cursor-pointer transition-all hover:border-primary-200 dark:hover:border-primary-800"
     >
       {/* Match Badge — Top Right */}
       <div
-        className={`absolute top-3 right-3 z-10 px-2.5 py-1 rounded-full text-xs font-bold text-white shadow-lg ${matchGradient}`}
+        className={`absolute top-3 right-3 z-10 px-2.5 py-1 rounded-xl text-xs font-bold text-white shadow-lg ${matchGradient}`}
       >
         {Math.round(match_percentage)}% Match
       </div>
@@ -141,7 +142,7 @@ const RecommendationCard = memo(function RecommendationCard({ rec }) {
                 loading="lazy"
               />
             ) : (
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center ring-2 ring-slate-200 dark:ring-slate-600">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-500 to-secondary-600 flex items-center justify-center ring-2 ring-slate-200 dark:ring-slate-600">
                 <span className="text-white font-semibold text-sm">{initials}</span>
               </div>
             )}
@@ -173,7 +174,7 @@ const RecommendationCard = memo(function RecommendationCard({ rec }) {
             {subjects.slice(0, 3).map((subject) => (
               <span
                 key={subject}
-                className="px-2 py-0.5 text-[11px] font-medium rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
+                className="px-2 py-0.5 text-[11px] font-medium rounded-lg bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
               >
                 {subject}
               </span>
@@ -188,7 +189,7 @@ const RecommendationCard = memo(function RecommendationCard({ rec }) {
 
         {/* XAI Explanation Box */}
         {explanation && (
-          <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3">
+          <div className="bg-gradient-to-r from-slate-50 to-primary-50/30 dark:from-slate-700/50 dark:to-primary-900/20 rounded-xl p-3 border border-slate-100 dark:border-slate-600/30">
             <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed line-clamp-2">
               💡 {explanation}
             </p>
@@ -202,11 +203,11 @@ const RecommendationCard = memo(function RecommendationCard({ rec }) {
 // ── Skeleton Loader (4 Pulsing Cards) ────────────────────────────────────────
 function SkeletonLoader() {
   return (
-    <section className="w-full py-6">
+    <section className="w-full py-6 animate-fade-in">
       {/* Header skeleton */}
       <div className="flex items-center gap-2 mb-4 px-1">
-        <div className="w-5 h-5 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
-        <div className="h-6 w-48 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+        <div className="w-5 h-5 rounded-lg skeleton" />
+        <div className="h-6 w-48 rounded-lg skeleton" />
       </div>
 
       {/* Cards skeleton row */}
@@ -214,33 +215,34 @@ function SkeletonLoader() {
         {[0, 1, 2, 3].map((i) => (
           <div
             key={i}
-            className="flex-shrink-0 w-[280px] bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-md p-5 pt-6 animate-pulse"
+            className="flex-shrink-0 w-[280px] card p-5 pt-6"
+            style={{ animationDelay: `${i * 0.1}s` }}
           >
             {/* Badge skeleton */}
             <div className="flex justify-end mb-3">
-              <div className="w-20 h-5 rounded-full bg-slate-200 dark:bg-slate-700" />
+              <div className="w-20 h-5 rounded-xl skeleton" />
             </div>
 
             {/* Avatar + Text skeleton */}
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-700" />
+              <div className="w-12 h-12 rounded-full skeleton" />
               <div className="flex-1 space-y-2">
-                <div className="h-4 w-28 rounded bg-slate-200 dark:bg-slate-700" />
-                <div className="h-3 w-20 rounded bg-slate-200 dark:bg-slate-700" />
+                <div className="h-4 w-28 rounded-lg skeleton" />
+                <div className="h-3 w-20 rounded-lg skeleton" />
               </div>
             </div>
 
             {/* Tags skeleton */}
             <div className="flex gap-1.5 mb-3">
-              <div className="h-5 w-14 rounded-full bg-slate-200 dark:bg-slate-700" />
-              <div className="h-5 w-16 rounded-full bg-slate-200 dark:bg-slate-700" />
-              <div className="h-5 w-12 rounded-full bg-slate-200 dark:bg-slate-700" />
+              <div className="h-5 w-14 rounded-lg skeleton" />
+              <div className="h-5 w-16 rounded-lg skeleton" />
+              <div className="h-5 w-12 rounded-lg skeleton" />
             </div>
 
             {/* Explanation skeleton */}
-            <div className="bg-slate-100 dark:bg-slate-700/50 rounded-lg p-3 space-y-2">
-              <div className="h-3 w-full rounded bg-slate-200 dark:bg-slate-600" />
-              <div className="h-3 w-3/4 rounded bg-slate-200 dark:bg-slate-600" />
+            <div className="bg-slate-50 dark:bg-slate-700/30 rounded-xl p-3 space-y-2">
+              <div className="h-3 w-full rounded-lg skeleton" />
+              <div className="h-3 w-3/4 rounded-lg skeleton" />
             </div>
           </div>
         ))}

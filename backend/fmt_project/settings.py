@@ -154,7 +154,7 @@ CACHES = {
         'LOCATION': 'fmt-ml-cache',
         'TIMEOUT': 300,  # 5 minutes default
         'OPTIONS': {
-            'MAX_ENTRIES': 100,
+            'MAX_ENTRIES': 500,
         }
     }
 }

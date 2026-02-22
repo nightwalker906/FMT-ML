@@ -279,7 +279,7 @@ export default function TutorDetailPage() {
           {/* Back button skeleton */}
           <div className="h-5 w-32 rounded bg-slate-200 dark:bg-slate-700 mb-6" />
 
-          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg overflow-hidden">
+          <div className="bg-white dark:bg-slate-800/80 dark:bg-slate-800 rounded-xl shadow-lg overflow-hidden">
             {/* Hero banner skeleton */}
             <div className="bg-gradient-to-r from-teal-600/60 to-teal-500/60 dark:from-teal-800/40 dark:to-teal-700/40 px-6 sm:px-8 py-12">
               <div className="flex items-start gap-6">
@@ -371,12 +371,12 @@ export default function TutorDetailPage() {
         <div className="max-w-4xl mx-auto">
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-2 text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 mb-6"
+            className="flex items-center gap-2 text-primary-600 dark:text-primary-400 dark:text-teal-400 hover:text-primary-700 dark:text-primary-300 dark:hover:text-teal-300 mb-6"
           >
             <ArrowLeft size={20} />
             Go Back
           </button>
-          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-8 text-center">
+          <div className="bg-white dark:bg-slate-800/80 dark:bg-slate-800 rounded-xl shadow-lg p-8 text-center">
             <p className="text-red-600 dark:text-red-400 text-lg">{error || 'Tutor not found'}</p>
           </div>
         </div>
@@ -390,14 +390,14 @@ export default function TutorDetailPage() {
         {/* Header with Back Button */}
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 mb-6 transition-colors"
+          className="flex items-center gap-2 text-primary-600 dark:text-primary-400 dark:text-teal-400 hover:text-primary-700 dark:text-primary-300 dark:hover:text-teal-300 mb-6 transition-colors"
         >
           <ArrowLeft size={20} />
           Back to Results
         </button>
 
         {/* Main Content */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg overflow-hidden">
+        <div className="bg-white dark:bg-slate-800/80 dark:bg-slate-800 rounded-xl shadow-lg overflow-hidden">
           {/* Top Section with Basic Info */}
           <div className="bg-gradient-to-r from-teal-600 to-teal-500 px-6 sm:px-8 py-12">
             <div className="flex items-start gap-6">
@@ -441,12 +441,12 @@ export default function TutorDetailPage() {
                   className={`p-3 rounded-full transition-all ${
                     isFavorite
                       ? 'bg-red-500 text-white'
-                      : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'
+                      : 'bg-white dark:bg-slate-800/80 bg-opacity-20 text-white hover:bg-opacity-30'
                   }`}
                 >
                   <Heart size={20} fill={isFavorite ? 'currentColor' : 'none'} />
                 </button>
-                <button className="p-3 bg-white bg-opacity-20 text-white rounded-full hover:bg-opacity-30 transition-all">
+                <button className="p-3 bg-white dark:bg-slate-800/80 bg-opacity-20 text-white rounded-full hover:bg-opacity-30 transition-all">
                   <Share2 size={20} />
                 </button>
               </div>
@@ -465,7 +465,7 @@ export default function TutorDetailPage() {
                     <p className="text-slate-600 dark:text-slate-300 text-lg mb-6 leading-relaxed">{tutor.bio_text}</p>
                   )}
                   {tutor.teaching_style && (
-                    <div className="bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-lg p-4 mb-6">
+                    <div className="bg-primary-50 dark:bg-primary-950/30 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-lg p-4 mb-6">
                       <h3 className="font-semibold text-teal-900 dark:text-teal-300 mb-2">Teaching Style</h3>
                       <p className="text-teal-800 dark:text-teal-400">{tutor.teaching_style}</p>
                     </div>
@@ -476,7 +476,7 @@ export default function TutorDetailPage() {
                 {tutor.qualifications && tutor.qualifications.length > 0 && (
                   <div>
                     <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                      <Award className="w-6 h-6 text-teal-600 dark:text-teal-400" />
+                      <Award className="w-6 h-6 text-primary-600 dark:text-primary-400 dark:text-teal-400" />
                       Qualifications & Subjects
                     </h2>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -537,7 +537,7 @@ export default function TutorDetailPage() {
                 <div className="bg-gradient-to-br from-teal-50 to-blue-50 dark:from-slate-700 dark:to-slate-700/50 border border-teal-200 dark:border-slate-600 rounded-xl p-6 mb-6 sticky top-4">
                   <div className="flex items-center justify-between mb-4">
                     <span className="text-slate-600 dark:text-slate-400 font-medium">Hourly Rate</span>
-                    <DollarSign className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+                    <DollarSign className="w-5 h-5 text-primary-600 dark:text-primary-400 dark:text-teal-400" />
                   </div>
                   <p className="text-4xl font-bold text-slate-900 dark:text-white mb-6">
                     ${tutor.hourly_rate}
@@ -548,14 +548,14 @@ export default function TutorDetailPage() {
                   <div className="space-y-3">
                     <button 
                       onClick={() => setShowChat(true)}
-                      className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+                      className="w-full bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
                     >
                       <MessageSquare size={18} />
                       Send Message
                     </button>
                     <button
                       onClick={() => setShowBooking(true)}
-                      className="w-full border-2 border-teal-600 text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/20 font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+                      className="w-full border-2 border-teal-600 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:bg-primary-950/30 dark:hover:bg-teal-900/20 font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
                     >
                       <BookOpen size={18} />
                       Book Session
@@ -567,12 +567,12 @@ export default function TutorDetailPage() {
                 <div className="space-y-3">
                   {tutor?.phone_number && (
                     <div className="bg-slate-50 rounded-lg p-4 flex items-center gap-3">
-                      <Phone className="w-5 h-5 text-teal-600 flex-shrink-0" />
+                      <Phone className="w-5 h-5 text-primary-600 dark:text-primary-400 flex-shrink-0" />
                       <div>
                         <p className="text-xs text-slate-500 uppercase tracking-wide font-semibold mb-1">
                           Phone
                         </p>
-                        <a href={`tel:${tutor.phone_number}`} className="text-slate-900 font-semibold hover:text-teal-600">
+                        <a href={`tel:${tutor.phone_number}`} className="text-slate-900 font-semibold hover:text-primary-600 dark:text-primary-400">
                           {tutor.phone_number}
                         </a>
                       </div>
@@ -592,7 +592,7 @@ export default function TutorDetailPage() {
                   </div>
                   {tutor?.location && (
                     <div className="bg-slate-50 rounded-lg p-4 flex items-center gap-3">
-                      <MapPin className="w-5 h-5 text-teal-600 flex-shrink-0" />
+                      <MapPin className="w-5 h-5 text-primary-600 dark:text-primary-400 flex-shrink-0" />
                       <div>
                         <p className="text-xs text-slate-500 uppercase tracking-wide font-semibold mb-1">
                           Location
@@ -635,7 +635,7 @@ export default function TutorDetailPage() {
       {/* Chat Modal */}
       {showChat && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl w-full max-w-md h-[600px] flex flex-col">
+          <div className="bg-white dark:bg-slate-800/80 dark:bg-slate-900 rounded-xl shadow-2xl w-full max-w-md h-[600px] flex flex-col">
             {/* Header */}
             <div className="bg-gradient-to-r from-teal-600 to-teal-500 px-6 py-4 flex items-center justify-between rounded-t-xl">
               <div>
@@ -654,7 +654,7 @@ export default function TutorDetailPage() {
               </div>
               <button
                 onClick={() => setShowChat(false)}
-                className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-colors"
+                className="text-white hover:bg-white dark:bg-slate-800/80 hover:bg-opacity-20 rounded-full p-2 transition-colors"
               >
                 <X size={24} />
               </button>
@@ -664,7 +664,7 @@ export default function TutorDetailPage() {
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 dark:bg-slate-800">
               {chatLoading ? (
                 <div className="flex items-center justify-center h-full">
-                  <Loader2 className="w-6 h-6 animate-spin text-teal-600" />
+                  <Loader2 className="w-6 h-6 animate-spin text-primary-600 dark:text-primary-400" />
                 </div>
               ) : messages.length === 0 ? (
                 <div className="flex items-center justify-center h-full">
@@ -681,8 +681,8 @@ export default function TutorDetailPage() {
                     <div
                       className={`max-w-xs px-4 py-2 rounded-lg ${
                         msg.sender_id === user?.id
-                          ? 'bg-teal-600 text-white rounded-br-none'
-                          : 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-600 rounded-bl-none'
+                          ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-br-none'
+                          : 'bg-white dark:bg-slate-800/80 dark:bg-slate-700 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-600 rounded-bl-none'
                       }`}
                     >
                       <p className="text-sm">{msg.content}</p>
@@ -703,7 +703,7 @@ export default function TutorDetailPage() {
             </div>
 
             {/* Input Area */}
-            <div className="border-t border-slate-200 dark:border-slate-700 p-4 bg-white dark:bg-slate-900 rounded-b-xl">
+            <div className="border-t border-slate-200 dark:border-slate-700 p-4 bg-white dark:bg-slate-800/80 dark:bg-slate-900 rounded-b-xl">
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -715,13 +715,13 @@ export default function TutorDetailPage() {
                     }
                   }}
                   placeholder="Type your message..."
-                  className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800/80 dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   disabled={sendingMessage}
                 />
                 <button
                   onClick={sendMessage}
                   disabled={sendingMessage || !newMessage.trim()}
-                  className="bg-teal-600 hover:bg-teal-700 disabled:bg-slate-300 text-white rounded-lg px-4 py-2 transition-colors flex items-center gap-2"
+                  className="bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 disabled:bg-slate-300 text-white rounded-lg px-4 py-2 transition-colors flex items-center gap-2"
                 >
                   {sendingMessage ? (
                     <Loader2 size={18} className="animate-spin" />

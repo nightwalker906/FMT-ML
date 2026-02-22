@@ -177,7 +177,7 @@ export default function StudentSearchPage() {
   if (loading && tutors.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary-600 dark:text-primary-400" />
       </div>
     )
   }
@@ -185,25 +185,25 @@ export default function StudentSearchPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-12">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Find a Tutor</h1>
-        <p className="text-gray-600">Browse and book sessions with expert tutors</p>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Find a Tutor</h1>
+        <p className="text-slate-600 dark:text-slate-400">Browse and book sessions with expert tutors</p>
       </div>
 
       {/* Search and Filter Bar */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 dark:text-slate-500" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by name or subject..."
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:outline-none"
           />
         </div>
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
+          className="flex items-center gap-2 px-4 py-3 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:bg-slate-800/50 transition-colors"
         >
           <Filter className="h-5 w-5" />
           Filters
@@ -213,15 +213,15 @@ export default function StudentSearchPage() {
 
       {/* Filters Panel */}
       {showFilters && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="bg-white dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/40 p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Subject Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Subject</label>
               <select
                 value={selectedSubject}
                 onChange={(e) => setSelectedSubject(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:outline-none"
               >
                 <option value="">All Subjects</option>
                 {subjects.map((subject) => (
@@ -234,7 +234,7 @@ export default function StudentSearchPage() {
 
             {/* Price Range Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Price Range: ${priceRange[0]} - ${priceRange[1]}/hr
               </label>
               <div className="flex items-center gap-4">
@@ -244,7 +244,7 @@ export default function StudentSearchPage() {
                   max="200"
                   value={priceRange[0]}
                   onChange={(e) => setPriceRange([parseInt(e.target.value), priceRange[1]])}
-                  className="flex-1 accent-teal-600"
+                  className="flex-1 accent-primary-600"
                 />
                 <input
                   type="range"
@@ -252,20 +252,20 @@ export default function StudentSearchPage() {
                   max="200"
                   value={priceRange[1]}
                   onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
-                  className="flex-1 accent-teal-600"
+                  className="flex-1 accent-primary-600"
                 />
               </div>
             </div>
 
             {/* Online Only Toggle */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Availability</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Availability</label>
               <button
                 onClick={() => setOnlineOnly(!onlineOnly)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-colors ${
                   onlineOnly
-                    ? 'bg-teal-50 border-teal-500 text-teal-700'
-                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                    ? 'bg-primary-50 dark:bg-primary-950/30 border-primary-500 dark:border-primary-400 text-primary-700 dark:text-primary-300'
+                    : 'bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:bg-slate-800/50'
                 }`}
               >
                 <div className={`h-2 w-2 rounded-full ${onlineOnly ? 'bg-green-500' : 'bg-gray-400'}`} />
@@ -277,13 +277,13 @@ export default function StudentSearchPage() {
           <div className="flex justify-end gap-3 mt-6">
             <button
               onClick={clearFilters}
-              className="px-4 py-2 text-gray-600 hover:text-gray-900"
+              className="px-4 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:text-white"
             >
               Clear All
             </button>
             <button
               onClick={applyFilters}
-              className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+              className="px-6 py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl hover:from-primary-600 hover:to-primary-700 transition-colors"
             >
               Apply Filters
             </button>
@@ -295,7 +295,7 @@ export default function StudentSearchPage() {
       {(selectedSubject || onlineOnly || priceRange[0] > 0 || priceRange[1] < 200) && (
         <div className="flex flex-wrap gap-2">
           {selectedSubject && (
-            <span className="flex items-center gap-1 px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-sm">
+            <span className="flex items-center gap-1 px-3 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full text-sm">
               {selectedSubject}
               <button onClick={removeSubjectFilter}>
                 <X className="h-3 w-3" />
@@ -322,18 +322,18 @@ export default function StudentSearchPage() {
       )}
 
       {/* Results Count */}
-      <p className="text-sm text-gray-500">
+      <p className="text-sm text-slate-500 dark:text-slate-400">
         {filteredTutors.length} tutor{filteredTutors.length !== 1 ? 's' : ''} found
       </p>
 
       {/* Tutor Cards Grid */}
       {filteredTutors.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-          <Search className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500">No tutors found matching your criteria</p>
+        <div className="bg-white dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/40 p-12 text-center">
+          <Search className="h-12 w-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+          <p className="text-slate-500 dark:text-slate-400">No tutors found matching your criteria</p>
           <button
             onClick={clearFilters}
-            className="mt-4 text-teal-600 hover:text-teal-700"
+            className="mt-4 text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:text-primary-300"
           >
             Clear filters
           </button>
@@ -343,13 +343,13 @@ export default function StudentSearchPage() {
           {filteredTutors.map((tutor) => (
             <div
               key={tutor.profile_id}
-              className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow"
+              className="bg-white dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/40 overflow-hidden hover:shadow-lg transition-shadow"
             >
               {/* Tutor Header */}
               <div className="p-5">
                 <div className="flex items-start gap-4">
                   <div className="relative">
-                    <div className="h-16 w-16 rounded-full bg-gray-200 overflow-hidden">
+                    <div className="h-16 w-16 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
                       <img
                         src={getAvatarUrl(tutor.profile?.first_name || '', tutor.profile?.last_name || '')}
                         alt=""
@@ -361,13 +361,13 @@ export default function StudentSearchPage() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-900 truncate">
+                    <h3 className="font-semibold text-slate-900 dark:text-white truncate">
                       {tutor.profile?.first_name} {tutor.profile?.last_name}
                     </h3>
                     {tutor.average_rating && (
                       <div className="flex items-center gap-1 mt-1">
                         <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                        <span className="text-sm font-medium text-gray-700">
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
                           {tutor.average_rating.toFixed(1)}
                         </span>
                       </div>
@@ -377,7 +377,7 @@ export default function StudentSearchPage() {
 
                 {/* Bio */}
                 {tutor.bio_text && (
-                  <p className="mt-3 text-sm text-gray-600 line-clamp-2">
+                  <p className="mt-3 text-sm text-slate-600 dark:text-slate-400 line-clamp-2">
                     {tutor.bio_text}
                   </p>
                 )}
@@ -388,13 +388,13 @@ export default function StudentSearchPage() {
                     {tutor.qualifications.slice(0, 3).map((qual, idx) => (
                       <span
                         key={idx}
-                        className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full"
+                        className="px-2 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 text-xs rounded-full"
                       >
                         {qual}
                       </span>
                     ))}
                     {tutor.qualifications.length > 3 && (
-                      <span className="px-2 py-0.5 text-gray-400 text-xs">
+                      <span className="px-2 py-0.5 text-slate-400 dark:text-slate-500 text-xs">
                         +{tutor.qualifications.length - 3} more
                       </span>
                     )}
@@ -402,7 +402,7 @@ export default function StudentSearchPage() {
                 )}
 
                 {/* Stats */}
-                <div className="mt-4 flex items-center gap-4 text-sm text-gray-500">
+                <div className="mt-4 flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
                   <div className="flex items-center gap-1">
                     <Clock className="h-4 w-4" />
                     <span>{tutor.experience_years}+ yrs</span>
@@ -415,24 +415,24 @@ export default function StudentSearchPage() {
               </div>
 
               {/* Footer */}
-              <div className="px-5 py-4 bg-gray-50 border-t border-gray-100">
+              <div className="px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-700/50">
                 <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-1 text-lg font-semibold text-gray-900">
-                    <DollarSign className="h-5 w-5 text-teal-600" />
+                  <div className="flex items-center gap-1 text-lg font-semibold text-slate-900 dark:text-white">
+                    <DollarSign className="h-5 w-5 text-primary-600 dark:text-primary-400" />
                     {tutor.hourly_rate}/hr
                   </div>
                 </div>
                 <div className="flex gap-2">
                   <a
                     href={`/student/messages?chat=${tutor.profile_id}`}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-100 transition-colors"
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-100 dark:bg-slate-700 transition-colors"
                   >
                     <Send className="h-4 w-4" />
                     Message
                   </a>
                   <button
                     onClick={() => openBookingModal(tutor)}
-                    className="flex-1 px-3 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition-colors"
+                    className="flex-1 px-3 py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white text-sm font-medium rounded-xl hover:from-primary-600 hover:to-primary-700 transition-colors"
                   >
                     Book Session
                   </button>
@@ -446,25 +446,25 @@ export default function StudentSearchPage() {
       {/* Booking Modal */}
       {bookingModalOpen && selectedTutor && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-md w-full p-6">
+          <div className="bg-white dark:bg-slate-800/80 rounded-xl max-w-md w-full p-6">
             {bookingSuccess ? (
               <div className="text-center py-8">
                 <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <BookOpen className="h-8 w-8 text-green-600" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900">Session Requested!</h3>
-                <p className="text-gray-500 mt-2 mb-6">The tutor will review your booking request</p>
+                <h3 className="text-xl font-semibold text-slate-900 dark:text-white">Session Requested!</h3>
+                <p className="text-slate-500 dark:text-slate-400 mt-2 mb-6">The tutor will review your booking request</p>
                 <div className="flex flex-col gap-3">
                   <a
                     href={`/student/messages?chat=${selectedTutor?.profile_id}`}
-                    className="flex items-center justify-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+                    className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl hover:from-primary-600 hover:to-primary-700 transition-colors"
                   >
                     <Send className="h-4 w-4" />
                     Message Tutor
                   </a>
                   <button
                     onClick={() => setBookingModalOpen(false)}
-                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:bg-slate-800/50 transition-colors"
                   >
                     Close
                   </button>
@@ -473,18 +473,18 @@ export default function StudentSearchPage() {
             ) : (
               <>
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">Book a Session</h3>
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Book a Session</h3>
                   <button
                     onClick={() => setBookingModalOpen(false)}
-                    className="p-1 hover:bg-gray-100 rounded-lg"
+                    className="p-1 hover:bg-slate-100 dark:bg-slate-700 rounded-xl"
                   >
-                    <X className="h-5 w-5 text-gray-500" />
+                    <X className="h-5 w-5 text-slate-500 dark:text-slate-400" />
                   </button>
                 </div>
 
                 {/* Tutor Info */}
-                <div className="flex items-center gap-3 mb-6 p-3 bg-gray-50 rounded-lg">
-                  <div className="h-12 w-12 rounded-full bg-gray-200 overflow-hidden">
+                <div className="flex items-center gap-3 mb-6 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                  <div className="h-12 w-12 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
                     <img
                       src={getAvatarUrl(selectedTutor.profile?.first_name || '', selectedTutor.profile?.last_name || '')}
                       alt=""
@@ -492,20 +492,20 @@ export default function StudentSearchPage() {
                     />
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">
+                    <p className="font-semibold text-slate-900 dark:text-white">
                       {selectedTutor.profile?.first_name} {selectedTutor.profile?.last_name}
                     </p>
-                    <p className="text-sm text-teal-600">${selectedTutor.hourly_rate}/hr</p>
+                    <p className="text-sm text-primary-600 dark:text-primary-400">${selectedTutor.hourly_rate}/hr</p>
                   </div>
                 </div>
 
                 {/* Subject */}
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Subject *</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Subject *</label>
                   <select
                     value={bookingSubject}
                     onChange={(e) => setBookingSubject(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:outline-none"
                   >
                     <option value="">Select a subject</option>
                     {subjects.map((subject) => (
@@ -525,35 +525,35 @@ export default function StudentSearchPage() {
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   {/* Date */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Date *</label>
                     <input
                       type="date"
                       value={bookingDate}
                       onChange={(e) => setBookingDate(e.target.value)}
                       min={new Date().toISOString().split('T')[0]}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:outline-none"
                     />
                   </div>
 
                   {/* Time */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Time *</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Time *</label>
                     <input
                       type="time"
                       value={bookingTime}
                       onChange={(e) => setBookingTime(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:outline-none"
                     />
                   </div>
                 </div>
 
                 {/* Duration */}
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Duration *</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Duration *</label>
                   <select
                     value={bookingDuration}
                     onChange={(e) => setBookingDuration(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:outline-none"
                   >
                     <option value="30">30 minutes</option>
                     <option value="60">1 hour</option>
@@ -563,10 +563,10 @@ export default function StudentSearchPage() {
                 </div>
 
                 {/* Estimated Cost */}
-                <div className="mb-4 p-3 bg-teal-50 rounded-lg">
+                <div className="mb-4 p-3 bg-primary-50 dark:bg-primary-950/30 rounded-xl">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-teal-700">Estimated Cost</span>
-                    <span className="text-lg font-semibold text-teal-700">
+                    <span className="text-sm text-primary-700 dark:text-primary-300">Estimated Cost</span>
+                    <span className="text-lg font-semibold text-primary-700 dark:text-primary-300">
                       ${((selectedTutor.hourly_rate * parseInt(bookingDuration)) / 60).toFixed(2)}
                     </span>
                   </div>
@@ -574,19 +574,19 @@ export default function StudentSearchPage() {
 
                 {/* Notes */}
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Notes (Optional)</label>
                   <textarea
                     value={bookingNotes}
                     onChange={(e) => setBookingNotes(e.target.value)}
                     rows={3}
                     placeholder="What would you like to focus on?"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+                    className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:outline-none resize-none"
                   />
                 </div>
 
                 {/* Error Message */}
                 {bookingError && (
-                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
                     {bookingError}
                   </div>
                 )}
@@ -594,14 +594,14 @@ export default function StudentSearchPage() {
                 <div className="flex gap-3">
                   <button
                     onClick={() => setBookingModalOpen(false)}
-                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex-1 px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:bg-slate-800/50 transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleBookSession}
                     disabled={booking || !bookingSubject || !bookingDate || !bookingTime}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50"
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl hover:from-primary-600 hover:to-primary-700 transition-colors disabled:opacity-50"
                   >
                     {booking ? (
                       <Loader2 className="h-4 w-4 animate-spin" />

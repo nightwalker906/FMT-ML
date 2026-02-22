@@ -106,15 +106,15 @@ export default function StudentSchedulePage() {
       case 'pending': return 'bg-yellow-100 text-yellow-700'
       case 'completed': return 'bg-blue-100 text-blue-700'
       case 'rejected': return 'bg-red-100 text-red-700'
-      case 'cancelled': return 'bg-gray-100 text-gray-700'
-      default: return 'bg-gray-100 text-gray-700'
+      case 'cancelled': return 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+      default: return 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
     }
   }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary-600 dark:text-primary-400" />
       </div>
     )
   }
@@ -122,33 +122,33 @@ export default function StudentSchedulePage() {
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-12">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">My Schedule</h1>
-        <p className="text-gray-600">View your upcoming and past tutoring sessions</p>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">My Schedule</h1>
+        <p className="text-slate-600 dark:text-slate-400">View your upcoming and past tutoring sessions</p>
       </div>
 
       {/* Upcoming Sessions */}
       <section>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <Calendar className="h-5 w-5 text-teal-600" />
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+          <Calendar className="h-5 w-5 text-primary-600 dark:text-primary-400" />
           Upcoming Sessions
         </h2>
         
         {upcoming.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
-            <Calendar className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">No upcoming sessions</p>
-            <p className="text-sm text-gray-400 mt-1">Book a tutor to get started!</p>
+          <div className="bg-white dark:bg-slate-800/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/40 p-8 text-center">
+            <Calendar className="h-12 w-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+            <p className="text-slate-500 dark:text-slate-400">No upcoming sessions</p>
+            <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">Book a tutor to get started!</p>
           </div>
         ) : (
           <div className="space-y-4">
             {upcoming.map((booking) => (
               <div
                 key={booking.id}
-                className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow"
+                className="bg-white dark:bg-slate-800/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/40 p-5 hover:shadow-md transition-shadow"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+                    <div className="h-12 w-12 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden flex-shrink-0">
                       <img
                         src={getAvatarUrl(booking.tutor?.first_name || '', booking.tutor?.last_name || '')}
                         alt=""
@@ -156,10 +156,10 @@ export default function StudentSchedulePage() {
                       />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900">
+                      <h3 className="font-semibold text-slate-900 dark:text-white">
                         {booking.tutor?.first_name} {booking.tutor?.last_name}
                       </h3>
-                      <p className="text-sm text-gray-600">{booking.subject}</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">{booking.subject}</p>
                     </div>
                   </div>
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
@@ -167,7 +167,7 @@ export default function StudentSchedulePage() {
                   </span>
                 </div>
                 
-                <div className="mt-4 flex items-center gap-6 text-sm text-gray-600">
+                <div className="mt-4 flex items-center gap-6 text-sm text-slate-600 dark:text-slate-400">
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
                     <span>{formatDate(booking.scheduled_at)}</span>
@@ -179,7 +179,7 @@ export default function StudentSchedulePage() {
                 </div>
 
                 {booking.notes && (
-                  <p className="mt-3 text-sm text-gray-500 bg-gray-50 rounded-lg p-3">
+                  <p className="mt-3 text-sm text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3">
                     {booking.notes}
                   </p>
                 )}
@@ -191,26 +191,26 @@ export default function StudentSchedulePage() {
 
       {/* Past Sessions */}
       <section>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <Clock className="h-5 w-5 text-gray-500" />
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+          <Clock className="h-5 w-5 text-slate-500 dark:text-slate-400" />
           Past Sessions
         </h2>
         
         {past.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
-            <Clock className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">No past sessions yet</p>
+          <div className="bg-white dark:bg-slate-800/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/40 p-8 text-center">
+            <Clock className="h-12 w-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+            <p className="text-slate-500 dark:text-slate-400">No past sessions yet</p>
           </div>
         ) : (
           <div className="space-y-4">
             {past.map((booking) => (
               <div
                 key={booking.id}
-                className="bg-white rounded-xl border border-gray-200 p-5"
+                className="bg-white dark:bg-slate-800/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/40 p-5"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+                    <div className="h-12 w-12 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden flex-shrink-0">
                       <img
                         src={getAvatarUrl(booking.tutor?.first_name || '', booking.tutor?.last_name || '')}
                         alt=""
@@ -218,10 +218,10 @@ export default function StudentSchedulePage() {
                       />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900">
+                      <h3 className="font-semibold text-slate-900 dark:text-white">
                         {booking.tutor?.first_name} {booking.tutor?.last_name}
                       </h3>
-                      <p className="text-sm text-gray-600">{booking.subject}</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">{booking.subject}</p>
                     </div>
                   </div>
                   
@@ -232,7 +232,7 @@ export default function StudentSchedulePage() {
                     {!booking.hasReview && booking.status === 'completed' && (
                       <button
                         onClick={() => openReviewModal(booking)}
-                        className="flex items-center gap-1 px-3 py-1.5 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700 transition-colors"
+                        className="flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-primary-500 to-primary-600 text-white text-sm rounded-xl hover:from-primary-600 hover:to-primary-700 transition-colors"
                       >
                         <Star className="h-4 w-4" />
                         Write Review
@@ -247,7 +247,7 @@ export default function StudentSchedulePage() {
                   </div>
                 </div>
                 
-                <div className="mt-4 flex items-center gap-6 text-sm text-gray-500">
+                <div className="mt-4 flex items-center gap-6 text-sm text-slate-500 dark:text-slate-400">
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
                     <span>{formatDate(booking.scheduled_at)}</span>
@@ -266,27 +266,27 @@ export default function StudentSchedulePage() {
       {/* Review Modal */}
       {reviewModalOpen && selectedBooking && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-md w-full p-6">
+          <div className="bg-white dark:bg-slate-800/80 dark:bg-slate-800/80 rounded-xl max-w-md w-full p-6">
             {submitSuccess ? (
               <div className="text-center py-8">
                 <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900">Review Submitted!</h3>
-                <p className="text-gray-500 mt-2">Thank you for your feedback</p>
+                <h3 className="text-xl font-semibold text-slate-900 dark:text-white">Review Submitted!</h3>
+                <p className="text-slate-500 dark:text-slate-400 mt-2">Thank you for your feedback</p>
               </div>
             ) : (
               <>
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">Write a Review</h3>
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Write a Review</h3>
                   <button
                     onClick={() => setReviewModalOpen(false)}
-                    className="p-1 hover:bg-gray-100 rounded-lg"
+                    className="p-1 hover:bg-slate-100 dark:bg-slate-700 rounded-xl"
                   >
-                    <X className="h-5 w-5 text-gray-500" />
+                    <X className="h-5 w-5 text-slate-500 dark:text-slate-400" />
                   </button>
                 </div>
 
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="h-12 w-12 rounded-full bg-gray-200 overflow-hidden">
+                  <div className="h-12 w-12 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
                     <img
                       src={getAvatarUrl(selectedBooking.tutor?.first_name || '', selectedBooking.tutor?.last_name || '')}
                       alt=""
@@ -294,16 +294,16 @@ export default function StudentSchedulePage() {
                     />
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">
+                    <p className="font-semibold text-slate-900 dark:text-white">
                       {selectedBooking.tutor?.first_name} {selectedBooking.tutor?.last_name}
                     </p>
-                    <p className="text-sm text-gray-500">{selectedBooking.subject}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">{selectedBooking.subject}</p>
                   </div>
                 </div>
 
                 {/* Star Rating */}
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Rating</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Rating</label>
                   <div className="flex items-center gap-1">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
@@ -315,7 +315,7 @@ export default function StudentSchedulePage() {
                           className={`h-8 w-8 ${
                             star <= rating
                               ? 'fill-yellow-400 text-yellow-400'
-                              : 'text-gray-300'
+                              : 'text-slate-300 dark:text-slate-600'
                           }`}
                         />
                       </button>
@@ -325,7 +325,7 @@ export default function StudentSchedulePage() {
 
                 {/* Review Text */}
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                     Your Review (Optional)
                   </label>
                   <textarea
@@ -333,21 +333,21 @@ export default function StudentSchedulePage() {
                     onChange={(e) => setReviewText(e.target.value)}
                     rows={4}
                     placeholder="Share your experience with this tutor..."
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+                    className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
                   />
                 </div>
 
                 <div className="flex gap-3">
                   <button
                     onClick={() => setReviewModalOpen(false)}
-                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex-1 px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:bg-slate-800/50 transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleSubmitReview}
                     disabled={submitting}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50"
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl hover:from-primary-600 hover:to-primary-700 transition-colors disabled:opacity-50"
                   >
                     {submitting ? (
                       <Loader2 className="h-4 w-4 animate-spin" />

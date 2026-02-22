@@ -2,8 +2,10 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { motion, AnimatePresence } from 'framer-motion'
 import { createClient } from '@/utils/supabase/client'
 import Link from 'next/link'
+import { GraduationCap, Loader2 } from 'lucide-react'
 
 type UserRole = 'student' | 'tutor'
 type AuthMode = 'login' | 'signup'
@@ -211,14 +213,32 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50 flex items-center justify-center px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md space-y-8">
+    <div className="min-h-screen bg-white dark:bg-slate-950 flex items-center justify-center px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      {/* Background effects */}
+      <div className="absolute inset-0 bg-mesh" />
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-radial from-primary-100/30 via-transparent to-transparent dark:from-primary-900/15 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-radial from-secondary-100/20 via-transparent to-transparent dark:from-secondary-900/10 pointer-events-none" />
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+        className="relative z-10 w-full max-w-md space-y-8"
+      >
         {/* Header */}
         <div className="text-center">
-          <h1 className="text-3xl sm:text-4xl font-bold text-slate-900">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.1, duration: 0.4 }}
+            className="mx-auto w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white shadow-lg shadow-primary-500/25 mb-5"
+          >
+            <GraduationCap size={28} />
+          </motion.div>
+          <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white">
             Find My Tutor
           </h1>
-          <p className="mt-2 text-slate-600">
+          <p className="mt-2 text-slate-600 dark:text-slate-400">
             {mode === 'login'
               ? 'Welcome back! Sign in to your account'
               : 'Join our community of learners and educators'}
@@ -228,7 +248,7 @@ export default function LoginPage() {
         {/* Card */}
         <div className="card">
           {/* Mode Toggle */}
-          <div className="flex gap-2 bg-slate-100 p-1 rounded-lg">
+          <div className="flex gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
             <button
               type="button"
               onClick={() => {
@@ -236,10 +256,10 @@ export default function LoginPage() {
                 setError(null)
                 setSuccessMessage(null)
               }}
-              className={`flex-1 py-2 px-4 rounded-md font-medium transition-all ${
+              className={`flex-1 py-2.5 px-4 rounded-lg font-semibold text-sm transition-all duration-200 ${
                 mode === 'login'
-                  ? 'bg-teal-600 text-white shadow-md'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-md shadow-primary-500/20'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               Sign In
@@ -251,10 +271,10 @@ export default function LoginPage() {
                 setError(null)
                 setSuccessMessage(null)
               }}
-              className={`flex-1 py-2 px-4 rounded-md font-medium transition-all ${
+              className={`flex-1 py-2.5 px-4 rounded-lg font-semibold text-sm transition-all duration-200 ${
                 mode === 'signup'
-                  ? 'bg-teal-600 text-white shadow-md'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-md shadow-primary-500/20'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               Sign Up
@@ -262,59 +282,81 @@ export default function LoginPage() {
           </div>
 
           {/* Role Selection (Signup only) */}
-          {mode === 'signup' && (
-            <div className="space-y-3">
-              <label className="block text-sm font-semibold text-slate-900">
-                I am a...
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setRole('student')}
-                  className={`p-4 rounded-lg border-2 transition-all font-medium ${
-                    role === 'student'
-                      ? 'border-teal-600 bg-teal-50 text-teal-900'
-                      : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
-                  }`}
-                >
-                  <div className="text-lg">🎓</div>
-                  <div className="mt-1">Student</div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRole('tutor')}
-                  className={`p-4 rounded-lg border-2 transition-all font-medium ${
-                    role === 'tutor'
-                      ? 'border-teal-600 bg-teal-50 text-teal-900'
-                      : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
-                  }`}
-                >
-                  <div className="text-lg">👨‍🏫</div>
-                  <div className="mt-1">Tutor</div>
-                </button>
-              </div>
-            </div>
-          )}
+          <AnimatePresence mode="wait">
+            {mode === 'signup' && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-3 overflow-hidden"
+              >
+                <label className="block text-sm font-semibold text-slate-900 dark:text-white">
+                  I am a...
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setRole('student')}
+                    className={`p-4 rounded-xl border-2 transition-all duration-200 font-medium ${
+                      role === 'student'
+                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-950/50 text-primary-900 dark:text-primary-300 shadow-md shadow-primary-500/10'
+                        : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600'
+                    }`}
+                  >
+                    <div className="text-2xl">🎓</div>
+                    <div className="mt-1">Student</div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRole('tutor')}
+                    className={`p-4 rounded-xl border-2 transition-all duration-200 font-medium ${
+                      role === 'tutor'
+                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-950/50 text-primary-900 dark:text-primary-300 shadow-md shadow-primary-500/10'
+                        : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600'
+                    }`}
+                  >
+                    <div className="text-2xl">👨‍🏫</div>
+                    <div className="mt-1">Tutor</div>
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Error Message */}
-          {error && (
-            <div className="p-4 rounded-lg bg-red-50 border border-red-200">
-              <p className="text-sm font-medium text-red-900">{error}</p>
-            </div>
-          )}
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                className="p-4 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50"
+              >
+                <p className="text-sm font-medium text-red-700 dark:text-red-400">{error}</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Success Message */}
-          {successMessage && (
-            <div className="p-4 rounded-lg bg-emerald-50 border border-emerald-200">
-              <p className="text-sm font-medium text-emerald-900">{successMessage}</p>
-            </div>
-          )}
+          <AnimatePresence>
+            {successMessage && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50"
+              >
+                <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">{successMessage}</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-slate-700">
+              <label htmlFor="email" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
                 Email address
               </label>
               <input
@@ -324,14 +366,14 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="input-field mt-1"
+                className="input-field"
                 placeholder="you@example.com"
               />
             </div>
 
             {/* Password */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-slate-700">
+              <label htmlFor="password" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
                 Password
               </label>
               <input
@@ -341,39 +383,46 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="input-field mt-1"
+                className="input-field"
                 placeholder="••••••••"
               />
             </div>
 
             {/* Confirm Password (Signup only) */}
-            {mode === 'signup' && (
-              <div>
-                <label htmlFor="confirm-password" className="block text-sm font-medium text-slate-700">
-                  Confirm password
-                </label>
-                <input
-                  id="confirm-password"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="input-field mt-1"
-                  placeholder="••••••••"
-                />
-              </div>
-            )}
+            <AnimatePresence>
+              {mode === 'signup' && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <label htmlFor="confirm-password" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                    Confirm password
+                  </label>
+                  <input
+                    id="confirm-password"
+                    type="password"
+                    autoComplete="new-password"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="input-field"
+                    placeholder="••••••••"
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2 px-4 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 disabled:bg-slate-400 disabled:cursor-not-allowed transition-colors mt-6"
+              className="btn-primary w-full py-3 mt-6"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  <Loader2 className="w-4 h-4 animate-spin" />
                   {mode === 'login' ? 'Signing in...' : 'Creating account...'}
                 </span>
               ) : mode === 'login' ? (
@@ -385,8 +434,9 @@ export default function LoginPage() {
           </form>
 
           {/* Footer */}
-          <div className="pt-4 border-t border-slate-200">
-            <p className="text-center text-sm text-slate-600">
+          <div className="divider" />
+          <div>
+            <p className="text-center text-sm text-slate-600 dark:text-slate-400">
               {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
               <button
                 type="button"
@@ -410,12 +460,12 @@ export default function LoginPage() {
         <div className="text-center">
           <Link
             href="/"
-            className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+            className="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
           >
             ← Back to Home
           </Link>
         </div>
-      </div>
+      </motion.div>
     </div>
   )
 }

@@ -4,6 +4,8 @@ import { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '@/context/auth-context';
 import { createClient } from '@/utils/supabase/client';
 import Link from 'next/link';
+import { useAchievements } from '@/hooks/useAchievements';
+import { AchievementsShowcase } from '@/components/achievements/AchievementsShowcase';
 import {
   BookOpen,
   Clock,
@@ -54,7 +56,7 @@ interface WeeklyStat {
 
 // Palette for subject bars
 const COLORS = [
-  'bg-teal-500',
+  'bg-primary-50 dark:bg-primary-950/300',
   'bg-blue-500',
   'bg-purple-500',
   'bg-orange-500',
@@ -224,6 +226,20 @@ export default function LearningProgressPage() {
     return streak;
   }, [completedBookings]);
 
+  // -- Achievement system --
+  const achievementStats = useMemo(() => {
+    if (loading) return null;
+    return {
+      totalSessions,
+      currentStreak,
+      totalHours,
+      uniqueSubjects: subjectStats.length,
+      uniqueTutors,
+    };
+  }, [loading, totalSessions, currentStreak, totalHours, subjectStats, uniqueTutors]);
+
+  const { achievements } = useAchievements(achievementStats, user?.id);
+
   // -- Recent tutors --
   const recentTutors = useMemo(() => {
     const seen = new Set<string>();
@@ -258,7 +274,7 @@ export default function LearningProgressPage() {
           {[0, 1, 2, 3].map((i) => (
             <div
               key={i}
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6"
+              className="bg-white dark:bg-slate-800/80 dark:bg-slate-800/80 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6"
             >
               <div className="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-700 mb-3" />
               <div className="h-6 w-16 rounded bg-slate-200 dark:bg-slate-700 mb-1" />
@@ -267,8 +283,8 @@ export default function LearningProgressPage() {
           ))}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6 h-64" />
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6 h-64" />
+          <div className="bg-white dark:bg-slate-800/80 dark:bg-slate-800/80 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6 h-64" />
+          <div className="bg-white dark:bg-slate-800/80 dark:bg-slate-800/80 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6 h-64" />
         </div>
       </div>
     );
@@ -279,7 +295,7 @@ export default function LearningProgressPage() {
       {/* Page Header */}
       <div>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-          <TrendingUp className="w-7 h-7 text-teal-600 dark:text-teal-400" />
+          <TrendingUp className="w-7 h-7 text-primary-600 dark:text-primary-400 dark:text-teal-400" />
           My Learning Progress
         </h1>
         <p className="text-slate-500 dark:text-slate-400 mt-1">
@@ -290,8 +306,8 @@ export default function LearningProgressPage() {
       {/* Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          icon={<CheckCircle className="w-6 h-6 text-teal-600 dark:text-teal-400" />}
-          bgIcon="bg-teal-100 dark:bg-teal-900/30"
+          icon={<CheckCircle className="w-6 h-6 text-primary-600 dark:text-primary-400 dark:text-teal-400" />}
+          bgIcon="bg-primary-100 dark:bg-primary-900/30 dark:bg-teal-900/30"
           value={totalSessions}
           label="Sessions Completed"
         />
@@ -315,12 +331,15 @@ export default function LearningProgressPage() {
         />
       </div>
 
+      {/* 🏆 Achievements Section */}
+      <AchievementsShowcase achievements={achievements} />
+
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Weekly Activity */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6">
+        <div className="bg-white dark:bg-slate-800/80 dark:bg-slate-800/80 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-1 flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+            <BarChart3 className="w-5 h-5 text-primary-600 dark:text-primary-400 dark:text-teal-400" />
             Weekly Activity
           </h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 mb-5">
@@ -355,7 +374,7 @@ export default function LearningProgressPage() {
         </div>
 
         {/* Subject Breakdown */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6">
+        <div className="bg-white dark:bg-slate-800/80 dark:bg-slate-800/80 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-1 flex items-center gap-2">
             <BookOpen className="w-5 h-5 text-purple-600 dark:text-purple-400" />
             Subject Breakdown
@@ -394,7 +413,7 @@ export default function LearningProgressPage() {
       {/* Bottom Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Tutors */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6">
+        <div className="bg-white dark:bg-slate-800/80 dark:bg-slate-800/80 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
               <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -402,7 +421,7 @@ export default function LearningProgressPage() {
             </h2>
             <Link
               href="/student/search"
-              className="text-sm text-teal-600 dark:text-teal-400 hover:underline flex items-center gap-1"
+              className="text-sm text-primary-600 dark:text-primary-400 dark:text-teal-400 hover:underline flex items-center gap-1"
             >
               Find more <ArrowRight size={14} />
             </Link>
@@ -421,7 +440,7 @@ export default function LearningProgressPage() {
                 <Link
                   key={t.id}
                   href={`/student/tutors/${t.id}`}
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group"
+                  className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group"
                 >
                   <img
                     src={`https://ui-avatars.com/api/?name=${encodeURIComponent(t.name)}&background=0d9488&color=fff`}
@@ -429,7 +448,7 @@ export default function LearningProgressPage() {
                     className="w-10 h-10 rounded-full"
                   />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-900 dark:text-white truncate group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
+                    <p className="text-sm font-medium text-slate-900 dark:text-white truncate group-hover:text-primary-600 dark:text-primary-400 dark:group-hover:text-teal-400 transition-colors">
                       {t.name}
                     </p>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -438,7 +457,7 @@ export default function LearningProgressPage() {
                   </div>
                   <ArrowRight
                     size={16}
-                    className="text-slate-400 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors"
+                    className="text-slate-400 group-hover:text-primary-600 dark:text-primary-400 dark:group-hover:text-teal-400 transition-colors"
                   />
                 </Link>
               ))}
@@ -447,7 +466,7 @@ export default function LearningProgressPage() {
         </div>
 
         {/* Learning Goals */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6">
+        <div className="bg-white dark:bg-slate-800/80 dark:bg-slate-800/80 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
               <Target className="w-5 h-5 text-orange-600 dark:text-orange-400" />
@@ -455,7 +474,7 @@ export default function LearningProgressPage() {
             </h2>
             <Link
               href="/student/settings"
-              className="text-sm text-teal-600 dark:text-teal-400 hover:underline flex items-center gap-1"
+              className="text-sm text-primary-600 dark:text-primary-400 dark:text-teal-400 hover:underline flex items-center gap-1"
             >
               Edit <ArrowRight size={14} />
             </Link>
@@ -469,7 +488,7 @@ export default function LearningProgressPage() {
               </p>
               <Link
                 href="/student/settings"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl hover:from-primary-600 hover:to-primary-700 transition-colors text-sm font-medium"
               >
                 <Target size={16} />
                 Set Goals
@@ -493,7 +512,7 @@ export default function LearningProgressPage() {
                           key={subj}
                           className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium ${
                             completed
-                              ? 'bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300'
+                              ? 'bg-primary-100 dark:bg-primary-900/30 dark:bg-teal-900/30 text-primary-700 dark:text-primary-300 dark:text-teal-300'
                               : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                           }`}
                         >
@@ -539,15 +558,15 @@ export default function LearningProgressPage() {
       </div>
 
       {/* Recent Completed Sessions */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6">
+      <div className="bg-white dark:bg-slate-800/80 dark:bg-slate-800/80 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+            <Calendar className="w-5 h-5 text-primary-600 dark:text-primary-400 dark:text-teal-400" />
             Recent Sessions
           </h2>
           <Link
             href="/student/schedule"
-            className="text-sm text-teal-600 dark:text-teal-400 hover:underline flex items-center gap-1"
+            className="text-sm text-primary-600 dark:text-primary-400 dark:text-teal-400 hover:underline flex items-center gap-1"
           >
             View all <ArrowRight size={14} />
           </Link>
@@ -564,7 +583,7 @@ export default function LearningProgressPage() {
             </p>
             <Link
               href="/student/search"
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl hover:from-primary-600 hover:to-primary-700 transition-colors text-sm font-medium"
             >
               Find a Tutor
             </Link>
@@ -612,7 +631,7 @@ export default function LearningProgressPage() {
                       <td className="py-3 px-3">
                         <Link
                           href={`/student/tutors/${b.tutor_id}`}
-                          className="text-slate-900 dark:text-white hover:text-teal-600 dark:hover:text-teal-400 font-medium transition-colors"
+                          className="text-slate-900 dark:text-white hover:text-primary-600 dark:text-primary-400 dark:hover:text-teal-400 font-medium transition-colors"
                         >
                           {tutorName}
                         </Link>
@@ -656,7 +675,7 @@ function StatCard({
   label: string;
 }) {
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6">
+    <div className="bg-white dark:bg-slate-800/80 dark:bg-slate-800/80 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6">
       <div className="flex items-center gap-4">
         <div className={`p-3 rounded-full ${bgIcon}`}>{icon}</div>
         <div>

@@ -6,6 +6,7 @@ import useSWR from 'swr';
 import { useAuth } from '@/context/auth-context';
 import { motion } from 'framer-motion';
 import { Sparkles, Star, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
+import { API_BASE } from '@/lib/api-config';
 
 // -- SWR Config --
 const fetcher = (url) => fetch(url).then((res) => res.json());
@@ -60,8 +61,8 @@ const SmartRecommendations = () => {
 
   // Build URL with student_id if user is authenticated
   const url = user?.id
-    ? `http://localhost:8000/api/recommendations/?student_id=${user.id}`
-    : `http://localhost:8000/api/recommendations/`;
+    ? `${API_BASE}/recommendations/?student_id=${user.id}`
+    : `${API_BASE}/recommendations/`;
 
   const { data, error, isLoading } = useSWR(url, fetcher, SWR_OPTIONS);
 

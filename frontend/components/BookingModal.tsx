@@ -155,7 +155,7 @@ export default function BookingModal({ isOpen, onClose, tutor }: BookingModalPro
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden"
+            className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-glass-lg dark:shadow-glass-dark-lg border border-slate-200/60 dark:border-slate-700/50 overflow-hidden max-h-[90vh] overflow-y-auto scrollbar-thin"
           >
             {/* ── Header ───────────────────────────────────────────────── */}
             <div className="bg-gradient-to-r from-teal-600 to-teal-500 px-6 py-5 flex items-center justify-between">
@@ -272,16 +272,16 @@ export default function BookingModal({ isOpen, onClose, tutor }: BookingModalPro
                   <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                     Duration
                   </label>
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {DURATION_OPTIONS.map((opt) => (
                       <button
                         key={opt.value}
                         type="button"
                         onClick={() => setDuration(opt.value)}
-                        className={`py-2 rounded-lg text-sm font-medium border transition-colors ${
+                        className={`py-2.5 rounded-xl text-sm font-semibold border-2 transition-all duration-200 ${
                           duration === opt.value
-                            ? 'bg-teal-600 text-white border-teal-600'
-                            : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:border-teal-400'
+                            ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white border-primary-600 shadow-md shadow-primary-500/20'
+                            : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-primary-300 dark:hover:border-primary-600'
                         }`}
                       >
                         {opt.label}
@@ -305,8 +305,8 @@ export default function BookingModal({ isOpen, onClose, tutor }: BookingModalPro
                 </div>
 
                 {/* Price Summary */}
-                <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 flex items-center justify-between">
-                  <span className="text-sm text-slate-600 dark:text-slate-400">
+                <div className="bg-gradient-to-r from-slate-50 to-primary-50/30 dark:from-slate-800 dark:to-primary-950/30 rounded-xl p-4 flex items-center justify-between border border-slate-100 dark:border-slate-700/50">
+                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
                     Estimated Cost
                   </span>
                   <span className="text-xl font-bold text-slate-900 dark:text-white">
@@ -318,7 +318,7 @@ export default function BookingModal({ isOpen, onClose, tutor }: BookingModalPro
                 <button
                   type="submit"
                   disabled={state === 'submitting'}
-                  className="w-full bg-teal-600 hover:bg-teal-700 disabled:bg-teal-400 text-white font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+                  className="btn-primary w-full py-3.5 flex items-center justify-center gap-2"
                 >
                   {state === 'submitting' ? (
                     <>

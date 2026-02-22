@@ -494,41 +494,94 @@ def recommend_tutors(request):
         from django.db.models import Q, Avg
         from .recommender import get_recommendations
         
-        # Get top-rated tutors
-        tutors = Tutor.objects.annotate(
-            avg_rating=Avg('ratings__rating')
-        ).filter(
-            avg_rating__gte=4.0
-        ).order_by('-avg_rating')[:10]
+        data = request.data
+        query = data.get('query', '').strip()
+        max_price = data.get('max_price')
+        limit = data.get('limit', 10)
         
-        recommendations = []
+        try:
+            limit = max(1, min(50, int(limit)))
+        except (ValueError, TypeError):
+            limit = 10
         
-        for i, tutor in enumerate(tutors):
-            profile = tutor.profile
-            subjects = [s.name for s in tutor.subjects.all()]
-            
-            # Calculate match percentage based on rating and availability
-            match_percentage = min(99, int((profile.average_rating or 0) * 10))
-            
-            recommendation = {
-                "id": str(profile.id),
-                "full_name": f"{profile.first_name} {profile.last_name}".strip(),
-                "subjects": subjects,
-                "match_percentage": match_percentage,
-                "similarity_score": round(profile.average_rating / 5.0, 3) if profile.average_rating else 0,
-                "explanation": f"{profile.first_name} is an excellent tutor with a {profile.average_rating or 0:.1f}/5 rating. Specializes in {', '.join(subjects[:2]) if subjects else 'multiple subjects'}.",
-                "is_online": getattr(profile, 'is_online', False),
-                "average_rating": profile.average_rating or 0,
-                "hourly_rate": tutor.hourly_rate or 0,
-                "image": f"https://ui-avatars.com/api/?name={profile.first_name}+{profile.last_name}&background=0d9488&color=fff"
-            }
-            
-            recommendations.append(recommendation)
+        if max_price is not None:
+            try:
+                max_price = float(max_price)
+            except (ValueError, TypeError):
+                max_price = None
         
-        return Response({
+        # ── Response-level cache (60s) keyed by query ──
+        query_hash = hashlib.md5(f"{query}_{max_price}_{limit}".encode()).hexdigest()[:16]
+        cache_key = f"recommend_{query_hash}"
+        cached = cache.get(cache_key)
+        if cached is not None:
+            logger.info(f"[Recommend] Cache HIT for key={cache_key}")
+            return Response(cached, status=status.HTTP_200_OK)
+        
+        if query:
+            # Use ML-powered recommendation based on query
+            logger.info(f"Using ML recommender with query: {query}")
+            results = get_recommendations(
+                query=query,
+                max_price=max_price,
+                top_n=limit
+            )
+            
+            recommendations = []
+            for result in results:
+                explanation = result.get('explanation', {})
+                if isinstance(explanation, dict):
+                    explanation_text = explanation.get('summary', 'Recommended based on your query')
+                else:
+                    explanation_text = str(explanation)
+                
+                recommendation = {
+                    "id": str(result.get('id')),
+                    "full_name": result.get('full_name', 'Unknown'),
+                    "subjects": result.get('subjects', []),
+                    "match_percentage": int(result.get('match_percentage', 0)),
+                    "similarity_score": round(float(result.get('similarity_score', 0)), 3),
+                    "explanation": explanation_text,
+                    "is_online": result.get('is_online', False),
+                    "average_rating": float(result.get('average_rating', 0)),
+                    "hourly_rate": float(result.get('hourly_rate', 0)),
+                    "image": result.get('image', f"https://ui-avatars.com/api/?name={result.get('full_name', 'Tutor')}")
+                }
+                recommendations.append(recommendation)
+        else:
+            # Fall back to top-rated tutors
+            tutors = Tutor.objects.select_related('profile').order_by('-average_rating')[:limit]
+            
+            recommendations = []
+            for tutor in tutors:
+                profile = tutor.profile
+                subjects = list(tutor.qualifications) if isinstance(tutor.qualifications, list) else []
+                match_percentage = min(99, int((tutor.average_rating or 0) * 10))
+                
+                recommendation = {
+                    "id": str(profile.id),
+                    "full_name": f"{profile.first_name} {profile.last_name}".strip(),
+                    "subjects": subjects,
+                    "match_percentage": match_percentage,
+                    "similarity_score": round(float(tutor.average_rating or 0) / 5.0, 3),
+                    "explanation": f"{profile.first_name} is a top-rated tutor with a {tutor.average_rating or 0:.1f}/5 rating.",
+                    "is_online": getattr(profile, 'is_online', False),
+                    "average_rating": float(tutor.average_rating or 0),
+                    "hourly_rate": float(tutor.hourly_rate or 0),
+                    "image": f"https://ui-avatars.com/api/?name={profile.first_name}+{profile.last_name}&background=0d9488&color=fff"
+                }
+                recommendations.append(recommendation)
+        
+        response_data = {
             "status": "success",
+            "query": query or None,
+            "count": len(recommendations),
             "data": recommendations
-        }, status=status.HTTP_200_OK)
+        }
+        
+        cache.set(cache_key, response_data, timeout=60)
+        
+        return Response(response_data, status=status.HTTP_200_OK)
         
     except Exception as e:
         logger.error(f"Smart recommendations error: {str(e)}")
@@ -671,6 +724,14 @@ def analyze_review(request):
         # Check if detailed analysis is requested
         detailed = data.get('detailed', False)
         
+        # ── Response-level cache (10 min) keyed by comment hash ──
+        comment_hash = hashlib.md5(comment.encode()).hexdigest()
+        cache_key = f"sentiment_{'det' if detailed else 'std'}_{comment_hash}"
+        cached = cache.get(cache_key)
+        if cached is not None:
+            logger.info(f"[Sentiment] Cache HIT for key={cache_key}")
+            return Response(cached, status=status.HTTP_200_OK)
+        
         # Import sentiment analysis module
         from .sentiment import analyze_sentiment, analyze_sentiment_detailed
         
@@ -691,11 +752,15 @@ def analyze_review(request):
         
         logger.info(f"Sentiment analysis completed: {result.get('sentiment_label')} ({result.get('polarity_score')})")
         
-        return Response({
+        response_data = {
             'status': 'success',
             'original_text': comment[:200] + '...' if len(comment) > 200 else comment,
             **result
-        }, status=status.HTTP_200_OK)
+        }
+        
+        cache.set(cache_key, response_data, timeout=600)
+        
+        return Response(response_data, status=status.HTTP_200_OK)
         
     except Exception as e:
         logger.error(f"Sentiment analysis error: {str(e)}")
@@ -1003,6 +1068,13 @@ def predict_price(request):
         # Optional subject parameter
         subject = data.get('subject', '').strip() or None
         
+        # ── Response-level cache (5 min) keyed by experience+subject ──
+        cache_key = f"price_pred_{experience}_{subject or 'all'}"
+        cached = cache.get(cache_key)
+        if cached is not None:
+            logger.info(f"[PricePredict] Cache HIT for key={cache_key}")
+            return Response(cached, status=status.HTTP_200_OK)
+        
         # Import and call pricing module
         from .pricing import predict_rate
         
@@ -1014,7 +1086,7 @@ def predict_price(request):
             subject=subject
         )
         
-        return Response({
+        response_data = {
             'status': 'success',
             'suggested_price': result.get('suggested_rate'),
             'base_rate': result.get('base_rate'),
@@ -1023,7 +1095,12 @@ def predict_price(request):
             'confidence': result.get('confidence'),
             'model_stats': result.get('model_stats'),
             'input': result.get('input')
-        }, status=status.HTTP_200_OK)
+        }
+        
+        cache.set(cache_key, response_data, timeout=300)
+        logger.info(f"[PricePredict] Cache SET for key={cache_key}")
+        
+        return Response(response_data, status=status.HTTP_200_OK)
         
     except Exception as e:
         logger.error(f"Price prediction error: {str(e)}")
@@ -1052,11 +1129,20 @@ def market_analysis(request):
     try:
         subject = request.query_params.get('subject')
         
+        # ── Response-level cache (10 min) ──
+        cache_key = f"market_analysis_{subject or 'all'}"
+        cached = cache.get(cache_key)
+        if cached is not None:
+            logger.info(f"[MarketAnalysis] Cache HIT for key={cache_key}")
+            return Response(cached, status=status.HTTP_200_OK)
+        
         from .pricing import get_market_analysis
         
         result = get_market_analysis(subject=subject)
         
-        # Return the result as-is (don't override status)
+        cache.set(cache_key, result, timeout=600)
+        logger.info(f"[MarketAnalysis] Cache SET for key={cache_key}")
+        
         return Response(result, status=status.HTTP_200_OK)
         
     except Exception as e:
@@ -1072,7 +1158,15 @@ def market_analysis(request):
 def debug_db_check(request):
     """
     Debug endpoint to check database connection and tutor data.
+    Only available when DEBUG=True.
     """
+    from django.conf import settings as django_settings
+    if not django_settings.DEBUG:
+        return Response(
+            {'status': 'error', 'message': 'Debug endpoint disabled in production.'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
     from django.db import connection
     
     try:
@@ -1341,9 +1435,20 @@ def get_study_tips(request):
         except (ValueError, TypeError):
             count = 5
         
+        # ── Response-level cache (30 min) keyed by topic+count ──
+        topic_hash = hashlib.md5(topic.lower().encode()).hexdigest()[:12]
+        cache_key = f"study_tips_{topic_hash}_{count}"
+        cached = cache.get(cache_key)
+        if cached is not None:
+            logger.info(f"[StudyTips] Cache HIT for key={cache_key}")
+            return Response(cached, status=status.HTTP_200_OK)
+        
         from .study_planner import get_quick_tips
         
         result = get_quick_tips(topic=topic, count=count)
+        
+        cache.set(cache_key, result, timeout=1800)
+        logger.info(f"[StudyTips] Cache SET for key={cache_key}")
         
         return Response(result, status=status.HTTP_200_OK)
         
