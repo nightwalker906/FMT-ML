@@ -4,6 +4,7 @@ API URLs for the core app.
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views
+from .ai.quick_tutor import quick_tutor_chat
 
 router = DefaultRouter()
 router.register(r'profiles', views.ProfileViewSet, basename='profile')
@@ -35,4 +36,7 @@ urlpatterns = [
     path('generate-plan/', views.generate_plan, name='generate-plan'),
     path('study-tips/', views.get_study_tips, name='study-tips'),
     path('estimate-time/', views.estimate_study_time_view, name='estimate-time'),
+    
+    # Quick Tutor AI (Gemini + Serper)
+    path('ai/quick-tutor/', quick_tutor_chat, name='quick-tutor-chat'),
 ]
