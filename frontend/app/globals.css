@@ -2,35 +2,307 @@
 @tailwind components;
 @tailwind utilities;
 
-/* EdTech Color Palette */
+/* ═══════════════════════════════════════════════════════════════════════════
+   FIND MY TUTOR — Premium Design System
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── CSS Custom Properties ──────────────────────────────────────────────── */
 :root {
-  --color-primary: #0d9488;   /* Teal 600 */
-  --color-secondary: #34d399;  /* Emerald 400 */
-  --color-accent: #f59e0b;     /* Amber 500 */
-  --color-dark: #1e293b;       /* Slate 800 */
-  --color-background: #f8fafc; /* Slate 50 */
+  --color-primary: #0d9488;
+  --color-secondary: #34d399;
+  --color-accent: #f59e0b;
+
+  /* Glass effect variables */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  --glass-blur: 12px;
+
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: 500ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
-/* Smooth transitions */
+.dark {
+  --glass-bg: rgba(15, 23, 42, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* ── Base Layer — Font Smoothing & Selection ────────────────────────────── */
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    scroll-behavior: smooth;
+  }
+
+  ::selection {
+    @apply bg-primary-200 text-primary-900;
+  }
+  .dark ::selection {
+    @apply bg-primary-800 text-primary-100;
+  }
+
+  /* Focus ring system — accessibility + beauty */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-primary-500/50 ring-offset-2 ring-offset-white dark:ring-offset-slate-900;
+  }
+}
+
+/* ── Component Layer — Reusable Design Tokens ───────────────────────────── */
 @layer components {
+
+  /* ─── Buttons ──────────────────────────────────────────────────────────── */
   .btn-primary {
-    @apply px-4 py-2 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed;
+    @apply px-5 py-2.5 bg-gradient-to-r from-primary-600 to-primary-500
+           text-white font-semibold rounded-xl
+           shadow-md shadow-primary-500/20
+           hover:shadow-lg hover:shadow-primary-500/30
+           hover:from-primary-700 hover:to-primary-600
+           active:scale-[0.98]
+           disabled:from-slate-400 disabled:to-slate-400 disabled:shadow-none disabled:cursor-not-allowed
+           transition-all duration-200;
   }
 
   .btn-secondary {
-    @apply px-4 py-2 bg-emerald-400 text-slate-900 font-semibold rounded-lg hover:bg-emerald-500 transition-colors;
+    @apply px-5 py-2.5 bg-white dark:bg-slate-800
+           text-primary-700 dark:text-primary-400
+           font-semibold rounded-xl
+           border border-primary-200 dark:border-primary-800
+           hover:bg-primary-50 dark:hover:bg-primary-950
+           hover:border-primary-300 dark:hover:border-primary-700
+           active:scale-[0.98]
+           shadow-sm hover:shadow-md
+           transition-all duration-200;
+  }
+
+  .btn-ghost {
+    @apply px-4 py-2 text-slate-600 dark:text-slate-400
+           font-medium rounded-xl
+           hover:bg-slate-100 dark:hover:bg-slate-800
+           hover:text-slate-900 dark:hover:text-white
+           active:scale-[0.98]
+           transition-all duration-200;
   }
 
   .btn-text {
-    @apply font-semibold text-teal-600 hover:text-teal-700 transition-colors;
+    @apply font-semibold text-primary-600 dark:text-primary-400
+           hover:text-primary-700 dark:hover:text-primary-300
+           transition-colors duration-200;
   }
 
-  .input-field {
-    @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-600 focus:border-transparent;
+  .btn-danger {
+    @apply px-5 py-2.5 bg-red-500 text-white font-semibold rounded-xl
+           shadow-md shadow-red-500/20
+           hover:bg-red-600 hover:shadow-lg hover:shadow-red-500/30
+           active:scale-[0.98]
+           transition-all duration-200;
   }
 
+  /* ─── Cards ────────────────────────────────────────────────────────────── */
   .card {
-    @apply bg-white rounded-2xl shadow-lg p-8 space-y-6;
+    @apply bg-white dark:bg-slate-900
+           rounded-2xl shadow-glass dark:shadow-glass-dark
+           border border-slate-200/60 dark:border-slate-700/50
+           p-6 sm:p-8 space-y-6
+           transition-all duration-300;
+  }
+
+  .card-glass {
+    @apply rounded-2xl p-6 sm:p-8 space-y-6
+           border border-white/20 dark:border-white/5
+           shadow-glass dark:shadow-glass-dark
+           transition-all duration-300;
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+  }
+
+  .card-interactive {
+    @apply card cursor-pointer
+           hover:shadow-card-hover dark:hover:shadow-card-hover-dark
+           hover:border-primary-200 dark:hover:border-primary-800
+           hover:-translate-y-1
+           active:translate-y-0 active:shadow-glass;
+  }
+
+  .card-stat {
+    @apply bg-white dark:bg-slate-900
+           rounded-2xl
+           border border-slate-200/60 dark:border-slate-700/50
+           p-6 shadow-glass dark:shadow-glass-dark
+           hover:shadow-card-hover dark:hover:shadow-card-hover-dark
+           hover:border-primary-200/50 dark:hover:border-primary-800/50
+           transition-all duration-300;
+  }
+
+  /* ─── Inputs ───────────────────────────────────────────────────────────── */
+  .input-field {
+    @apply w-full px-4 py-2.5
+           bg-white dark:bg-slate-800
+           border border-slate-200 dark:border-slate-700
+           rounded-xl
+           text-slate-900 dark:text-white
+           placeholder:text-slate-400 dark:placeholder:text-slate-500
+           focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500
+           hover:border-slate-300 dark:hover:border-slate-600
+           transition-all duration-200;
+  }
+
+  .input-field-glass {
+    @apply input-field bg-white/50 dark:bg-slate-800/50
+           backdrop-blur-sm;
+  }
+
+  /* ─── Badges ───────────────────────────────────────────────────────────── */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-1
+           rounded-full text-xs font-semibold
+           transition-colors duration-200;
+  }
+  .badge-primary {
+    @apply badge bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300;
+  }
+  .badge-secondary {
+    @apply badge bg-secondary-100 dark:bg-secondary-900/30 text-secondary-700 dark:text-secondary-300;
+  }
+  .badge-accent {
+    @apply badge bg-accent-100 dark:bg-accent-200/20 text-accent-500;
+  }
+  .badge-neutral {
+    @apply badge bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400;
+  }
+
+  /* ─── Section Headers ──────────────────────────────────────────────────── */
+  .section-title {
+    @apply text-xl font-bold text-slate-900 dark:text-white
+           flex items-center gap-2.5;
+  }
+
+  .section-subtitle {
+    @apply text-sm text-slate-500 dark:text-slate-400;
+  }
+
+  /* ─── Skeleton Loading ─────────────────────────────────────────────────── */
+  .skeleton {
+    @apply rounded-lg bg-slate-200 dark:bg-slate-700;
+    background-image: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.4) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  .skeleton-dark {
+    background-image: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.08) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  /* ─── Dividers ─────────────────────────────────────────────────────────── */
+  .divider {
+    @apply h-px bg-gradient-to-r from-transparent via-slate-200 dark:via-slate-700 to-transparent;
+  }
+
+  /* ─── Notification Dot ─────────────────────────────────────────────────── */
+  .notification-dot {
+    @apply absolute -top-0.5 -right-0.5 w-2.5 h-2.5
+           bg-red-500 rounded-full
+           ring-2 ring-white dark:ring-slate-900
+           animate-pulse-soft;
+  }
+
+  /* ─── Gradient Text ────────────────────────────────────────────────────── */
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary-600 via-primary-500 to-secondary-400
+           bg-clip-text text-transparent;
+  }
+  .text-gradient-dark {
+    @apply bg-gradient-to-r from-primary-400 via-primary-300 to-secondary-300
+           bg-clip-text text-transparent;
+  }
+}
+
+/* ── Utility Layer ──────────────────────────────────────────────────────── */
+@layer utilities {
+
+  /* Scrollbar hiding */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Custom thin scrollbar */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(148 163 184) transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-slate-300 dark:bg-slate-600 rounded-full;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-400 dark:bg-slate-500;
+  }
+
+  /* Glass background utility */
+  .bg-glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+  }
+
+  /* Mesh gradient backgrounds */
+  .bg-mesh {
+    background-image: radial-gradient(at 40% 20%, rgba(13,148,136,0.08) 0px, transparent 50%),
+                      radial-gradient(at 80% 0%, rgba(52,211,153,0.06) 0px, transparent 50%),
+                      radial-gradient(at 0% 50%, rgba(245,158,11,0.04) 0px, transparent 50%);
+  }
+  .dark .bg-mesh {
+    background-image: radial-gradient(at 40% 20%, rgba(13,148,136,0.15) 0px, transparent 50%),
+                      radial-gradient(at 80% 0%, rgba(52,211,153,0.1) 0px, transparent 50%),
+                      radial-gradient(at 0% 50%, rgba(245,158,11,0.05) 0px, transparent 50%);
+  }
+
+  /* Staggered animation delays */
+  .stagger-1 { animation-delay: 50ms; }
+  .stagger-2 { animation-delay: 100ms; }
+  .stagger-3 { animation-delay: 150ms; }
+  .stagger-4 { animation-delay: 200ms; }
+  .stagger-5 { animation-delay: 250ms; }
+  .stagger-6 { animation-delay: 300ms; }
+
+  /* Hover lift effect */
+  .hover-lift {
+    @apply transition-all duration-300
+           hover:-translate-y-1 hover:shadow-card-hover dark:hover:shadow-card-hover-dark;
+  }
+
+  /* Glow effect on focus/active */
+  .glow-on-hover {
+    @apply transition-shadow duration-300
+           hover:shadow-glow-teal;
   }
 }
 

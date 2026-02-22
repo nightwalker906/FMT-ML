@@ -1,10 +1,9 @@
 /**
  * API Client for Django Backend
  * Provides functions to interact with the Django REST API
- * Base URL: http://localhost:8000/api
  */
 
-const API_BASE = 'http://localhost:8000/api';
+import { API_BASE } from '@/lib/api-config';
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -314,8 +313,3 @@ export async function createRating(
   });
 }
 
-// ============================================================================
-// EXPORT TYPE ALIASES
-// ============================================================================
-
-export type { Tutor, Student, Profile, Subject, Session, Rating };

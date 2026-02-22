@@ -4,6 +4,7 @@ Maps to existing Supabase PostgreSQL tables.
 """
 import uuid
 from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 
 class Profile(models.Model):
@@ -20,7 +21,7 @@ class Profile(models.Model):
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     email = models.EmailField(unique=True)
-    user_type = models.CharField(max_length=50)
+    user_type = models.CharField(max_length=50, choices=USER_TYPE_CHOICES)
     is_online = models.BooleanField(default=False)
     created_at = models.DateTimeField()
     updated_at = models.DateTimeField()
@@ -70,8 +71,8 @@ class Tutor(models.Model):
         to_field='id',
         db_column='profile_id'
     )
-    experience_years = models.IntegerField()
-    hourly_rate = models.DecimalField(max_digits=10, decimal_places=2)
+    experience_years = models.IntegerField(validators=[MinValueValidator(0)])
+    hourly_rate = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
     qualifications = models.JSONField(default=list, blank=True)
     teaching_style = models.CharField(max_length=100, null=True, blank=True)
     bio_text = models.TextField(blank=True, null=True)
@@ -170,10 +171,10 @@ class Rating(models.Model):
         to_field='profile_id',
         db_column='tutor_id'
     )
-    knowledge_rating = models.IntegerField(null=True, blank=True)
-    teaching_style_rating = models.IntegerField(null=True, blank=True)
-    communication_rating = models.IntegerField(null=True, blank=True)
-    overall_rating = models.DecimalField(max_digits=3, decimal_places=2, null=True, blank=True)
+    knowledge_rating = models.IntegerField(null=True, blank=True, validators=[MinValueValidator(1), MaxValueValidator(5)])
+    teaching_style_rating = models.IntegerField(null=True, blank=True, validators=[MinValueValidator(1), MaxValueValidator(5)])
+    communication_rating = models.IntegerField(null=True, blank=True, validators=[MinValueValidator(1), MaxValueValidator(5)])
+    overall_rating = models.DecimalField(max_digits=3, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(0), MaxValueValidator(5)])
     review_text = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField()
 

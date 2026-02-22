@@ -41,7 +41,9 @@ Date: December 2024
 """
 
 import os
+import time
 import logging
+import threading
 from typing import List, Dict, Any, Optional
 from decimal import Decimal
 
@@ -57,6 +59,14 @@ from django.conf import settings
 
 # Configure logging
 logger = logging.getLogger(__name__)
+
+# =============================================================================
+# CACHED SINGLETON - Keeps the fitted model in memory across requests
+# =============================================================================
+_recommender_instance = None
+_recommender_lock = threading.Lock()
+_last_fitted_at = 0
+CACHE_TTL_SECONDS = 300  # Re-fit every 5 minutes
 
 
 class TutorRecommender:
@@ -610,6 +620,69 @@ class TutorRecommender:
 # MAIN API FUNCTION
 # =============================================================================
 
+def _get_or_create_recommender(max_price: Optional[float] = None) -> TutorRecommender:
+    """
+    Return the cached singleton recommender, re-fitting only when the cache
+    has expired (every 5 minutes).  Thread-safe.
+    """
+    global _recommender_instance, _last_fitted_at
+
+    now = time.time()
+    needs_refresh = (
+        _recommender_instance is None
+        or (now - _last_fitted_at) > CACHE_TTL_SECONDS
+    )
+
+    if needs_refresh:
+        with _recommender_lock:
+            # Double-check after acquiring lock
+            if _recommender_instance is None or (time.time() - _last_fitted_at) > CACHE_TTL_SECONDS:
+                start = time.time()
+                logger.info("[Recommender] Fitting TF-IDF model (cache miss / expired)...")
+
+                recommender = TutorRecommender()
+                tutors_df = recommender.fetch_tutors_from_database(max_price=max_price)
+
+                if tutors_df.empty:
+                    logger.warning("No tutors found in database")
+                    return recommender  # return unfitted; callers handle this
+
+                recommender.fit_transform(tutors_df)
+                _recommender_instance = recommender
+                _last_fitted_at = time.time()
+
+                elapsed = round(time.time() - start, 3)
+                logger.info(f"[Recommender] Model fitted in {elapsed}s  "
+                            f"({len(tutors_df)} tutors, vocab={len(recommender.vectorizer.vocabulary_)})")
+
+    return _recommender_instance
+
+
+def warmup_recommender() -> None:
+    """
+    Pre-fit the recommender at server startup so the first request is instant.
+    Called from CoreConfig.ready().
+    """
+    try:
+        logger.info("[Recommender] Warming up recommendation engine...")
+        _get_or_create_recommender()
+        logger.info("[Recommender] ✅ Warm-up complete — first request will be instant.")
+    except Exception as e:
+        logger.warning(f"[Recommender] ⚠️ Warm-up failed (non-fatal): {e}")
+
+
+def invalidate_recommender_cache() -> None:
+    """
+    Force the recommender to re-fit on next request.
+    Call this when tutors are added/updated/deleted.
+    """
+    global _recommender_instance, _last_fitted_at
+    with _recommender_lock:
+        _recommender_instance = None
+        _last_fitted_at = 0
+    logger.info("[Recommender] Cache invalidated — will re-fit on next request.")
+
+
 def get_recommendations(
     query: str,
     max_price: Optional[float] = None,
@@ -618,12 +691,8 @@ def get_recommendations(
     """
     Main entry point for the recommendation system.
     
-    This function is called by the Django view to get tutor recommendations.
-    It handles the complete workflow:
-    1. Initialize the recommender
-    2. Fetch tutors from database
-    3. Fit the TF-IDF model
-    4. Get recommendations for the query
+    Uses a cached singleton recommender so the expensive TF-IDF fitting
+    only happens once every 5 minutes, not on every request.
     
     Args:
         query: Student's search query
@@ -632,36 +701,28 @@ def get_recommendations(
         
     Returns:
         List of recommended tutors with similarity scores
-        
-    Raises:
-        Exception: If database connection fails or other errors occur
     """
     try:
-        # Initialize the recommender
-        recommender = TutorRecommender()
-        
-        # Fetch tutors from database with optional price filter
-        tutors_df = recommender.fetch_tutors_from_database(max_price=max_price)
-        
-        # Check if we have any tutors
-        if tutors_df.empty:
-            logger.warning("No tutors found in database matching criteria")
+        start = time.time()
+
+        recommender = _get_or_create_recommender(max_price=max_price)
+
+        if recommender.tutor_matrix is None:
+            logger.warning("Recommender has no fitted data")
             return []
-        
-        # Fit the TF-IDF model on tutor data
-        recommender.fit_transform(tutors_df)
-        
-        # Get recommendations
+
         recommendations = recommender.get_recommendations(
             query=query,
             top_n=top_n
         )
-        
+
+        elapsed = round(time.time() - start, 3)
+        logger.info(f"[Recommender] Recommendations served in {elapsed}s (cached model)")
+
         return recommendations
         
     except Exception as e:
         logger.error(f"Recommendation error: {str(e)}")
-        # Return empty list instead of crashing
         return []
 
 
@@ -674,6 +735,7 @@ def get_similar_tutors(tutor_id: str, top_n: int = 5) -> List[Dict[str, Any]]:
     Find tutors similar to a given tutor.
     
     This can be used for "Students also viewed" or "Similar tutors" features.
+    Uses the cached singleton recommender for instant results.
     
     Args:
         tutor_id: UUID of the reference tutor
@@ -683,21 +745,19 @@ def get_similar_tutors(tutor_id: str, top_n: int = 5) -> List[Dict[str, Any]]:
         List of similar tutors
     """
     try:
-        recommender = TutorRecommender()
-        tutors_df = recommender.fetch_tutors_from_database()
+        recommender = _get_or_create_recommender()
         
-        if tutors_df.empty:
+        if recommender.tutors_df is None or recommender.tutors_df.empty:
             return []
         
-        # Find the reference tutor
-        ref_tutor = tutors_df[tutors_df['id'] == tutor_id]
-        if ref_tutor.empty:
+        # Find the reference tutor in the cached dataframe
+        ref_rows = recommender.tutors_df[recommender.tutors_df['id'] == tutor_id]
+        if ref_rows.empty:
             logger.warning(f"Tutor {tutor_id} not found")
             return []
         
         # Use the tutor's text soup as the query
-        recommender.fit_transform(tutors_df)
-        ref_text = recommender.tutors_df[recommender.tutors_df['id'] == tutor_id]['text_soup'].iloc[0]
+        ref_text = ref_rows['text_soup'].iloc[0]
         
         # Get recommendations excluding the reference tutor
         results = recommender.get_recommendations(query=ref_text, top_n=top_n + 1)
@@ -715,8 +775,7 @@ def get_similar_tutors(tutor_id: str, top_n: int = 5) -> List[Dict[str, Any]]:
 def explain_recommendation(query: str, tutor_id: str) -> Dict[str, Any]:
     """
     Explain why a tutor was recommended for a query.
-    
-    Useful for transparency and debugging the recommendation logic.
+    Uses the cached singleton recommender for instant results.
     
     Args:
         query: The search query
@@ -726,13 +785,10 @@ def explain_recommendation(query: str, tutor_id: str) -> Dict[str, Any]:
         Dictionary with explanation details
     """
     try:
-        recommender = TutorRecommender()
-        tutors_df = recommender.fetch_tutors_from_database()
+        recommender = _get_or_create_recommender()
         
-        if tutors_df.empty:
+        if recommender.tutors_df is None or recommender.tutors_df.empty:
             return {'error': 'No tutors found'}
-        
-        recommender.fit_transform(tutors_df)
         
         # Get query terms with non-zero TF-IDF weights
         query_vector = recommender.vectorizer.transform([query.lower()])
@@ -750,7 +806,7 @@ def explain_recommendation(query: str, tutor_id: str) -> Dict[str, Any]:
         query_terms.sort(key=lambda x: x['weight'], reverse=True)
         
         # Find the tutor
-        tutor_idx = tutors_df[tutors_df['id'] == tutor_id].index
+        tutor_idx = recommender.tutors_df[recommender.tutors_df['id'] == tutor_id].index
         if len(tutor_idx) == 0:
             return {'error': 'Tutor not found'}
         

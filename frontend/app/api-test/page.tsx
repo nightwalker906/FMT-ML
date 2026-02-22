@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { API_BASE } from '@/lib/api-config';
 
 export default function ApiTestPage() {
   const [tutors, setTutors] = useState<any[]>([]);
@@ -11,7 +12,7 @@ export default function ApiTestPage() {
     const fetchTutors = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:8000/api/tutors/');
+        const response = await fetch(`${API_BASE}/tutors/`);
         const data = await response.json();
         
         if (Array.isArray(data)) {

@@ -22,6 +22,7 @@ import {
   GraduationCap,
   Bell,
   BookOpen,
+  TrendingUp,
 } from 'lucide-react';
 
 export interface SidebarLink {
@@ -47,6 +48,7 @@ export const studentLinks: SidebarLink[] = [
   { label: 'Find a Tutor', href: '/student/search', icon: <Search size={20} /> },
   { label: 'Study Planner', href: '/student/study-planner', icon: <BookOpen size={20} /> },
   { label: 'My Schedule', href: '/student/schedule', icon: <Calendar size={20} /> },
+  { label: 'My Learning', href: '/student/progress', icon: <TrendingUp size={20} /> },
   { label: 'Messages', href: '/student/messages', icon: <MessageSquare size={20} /> },
   { label: 'Notifications', href: '/student/notifications', icon: <Bell size={20} /> },
   { label: 'Settings', href: '/student/settings', icon: <Settings size={20} /> },
@@ -88,15 +90,15 @@ export function Sidebar({ links, userType, onSignOut, onLinkClick, userName, use
   
   // Theme colors - now supports dark mode via Tailwind classes
   const theme = {
-    bg: 'bg-white dark:bg-slate-900',
+    bg: 'bg-white/90 dark:bg-slate-900/95 backdrop-blur-xl',
     bgHover: 'bg-slate-50 dark:bg-slate-800',
-    border: 'border-slate-200 dark:border-slate-700/50',
+    border: 'border-slate-200/60 dark:border-slate-700/40',
     text: 'text-slate-600 dark:text-slate-400',
     textMuted: 'text-slate-400 dark:text-slate-500',
     textBrand: 'text-slate-900 dark:text-white',
-    hover: 'hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white',
-    active: 'bg-gradient-to-r from-teal-50 dark:from-teal-600/20 to-transparent text-teal-700 dark:text-teal-400',
-    activeIcon: 'text-teal-600 dark:text-teal-400',
+    hover: 'hover:bg-slate-100/80 dark:hover:bg-slate-800/80 hover:text-slate-900 dark:hover:text-white',
+    active: 'bg-gradient-to-r from-primary-50 dark:from-primary-600/20 to-transparent text-primary-700 dark:text-primary-400',
+    activeIcon: 'text-primary-600 dark:text-primary-400',
   };
 
   if (!mounted) {
@@ -127,8 +129,8 @@ export function Sidebar({ links, userType, onSignOut, onLinkClick, userName, use
         <div className={cn(
           'flex items-center justify-center flex-shrink-0',
           'w-10 h-10 rounded-xl',
-          'bg-gradient-to-br from-teal-500 to-teal-600',
-          'text-white shadow-lg shadow-teal-500/20'
+          'bg-gradient-to-br from-primary-500 to-primary-600',
+          'text-white shadow-lg shadow-primary-500/25'
         )}>
           <GraduationCap size={22} />
         </div>
@@ -198,7 +200,7 @@ export function Sidebar({ links, userType, onSignOut, onLinkClick, userName, use
                 'absolute left-0 top-1/2 -translate-y-1/2',
                 'w-1 h-6 rounded-r-full',
                 'transition-all duration-200',
-                isActive ? 'bg-teal-500 opacity-100' : 'opacity-0'
+                isActive ? 'bg-primary-500 opacity-100' : 'opacity-0'
               )} />
 
               {/* Icon */}
@@ -206,7 +208,7 @@ export function Sidebar({ links, userType, onSignOut, onLinkClick, userName, use
                 'flex items-center justify-center flex-shrink-0',
                 'transition-all duration-200',
                 isCollapsed && 'w-10 h-10 rounded-xl',
-                isCollapsed && isActive && 'bg-teal-100 dark:bg-teal-600/30',
+                isCollapsed && isActive && 'bg-primary-100 dark:bg-primary-600/30',
                 isCollapsed && !isActive && 'group-hover:bg-slate-100 dark:group-hover:bg-slate-800',
                 isActive && theme.activeIcon
               )}>
@@ -276,15 +278,15 @@ export function Sidebar({ links, userType, onSignOut, onLinkClick, userName, use
               <img 
                 src={userAvatar} 
                 alt={userName || 'User'} 
-                className="w-9 h-9 rounded-full object-cover ring-2 ring-teal-500/30 flex-shrink-0"
+                className="w-9 h-9 rounded-full object-cover ring-2 ring-primary-500/30 flex-shrink-0"
               />
             ) : (
               <div className={cn(
                 'w-9 h-9 rounded-full flex-shrink-0',
                 'flex items-center justify-center',
                 'text-sm font-semibold text-white',
-                'bg-gradient-to-br from-teal-500 to-teal-600',
-                'ring-2 ring-teal-500/30'
+                'bg-gradient-to-br from-primary-500 to-primary-600',
+                'ring-2 ring-primary-500/30'
               )}>
                 {userInitials || 'U'}
               </div>
@@ -371,12 +373,12 @@ export function MobileSidebar({
   // Theme colors - now supports dark mode via Tailwind classes
   const theme = {
     bg: 'bg-white dark:bg-slate-900',
-    border: 'border-slate-200 dark:border-slate-700/50',
+    border: 'border-slate-200/60 dark:border-slate-700/40',
     text: 'text-slate-600 dark:text-slate-400',
     textMuted: 'text-slate-400 dark:text-slate-500',
     textBrand: 'text-slate-900 dark:text-white',
     hover: 'hover:bg-slate-100 dark:hover:bg-slate-800',
-    active: 'bg-gradient-to-r from-teal-50 dark:from-teal-600/20 to-transparent text-teal-700 dark:text-teal-400',
+    active: 'bg-gradient-to-r from-primary-50 dark:from-primary-600/20 to-transparent text-primary-700 dark:text-primary-400',
   };
 
   return (
@@ -407,8 +409,8 @@ export function MobileSidebar({
             <div className={cn(
               'flex items-center justify-center',
               'w-10 h-10 rounded-xl',
-              'bg-gradient-to-br from-teal-500 to-teal-600',
-              'text-white shadow-lg shadow-teal-500/20'
+              'bg-gradient-to-br from-primary-500 to-primary-600',
+              'text-white shadow-lg shadow-primary-500/25'
             )}>
               <GraduationCap size={22} />
             </div>
@@ -419,7 +421,7 @@ export function MobileSidebar({
           <button
             onClick={onClose}
             className={cn(
-              'p-2 rounded-lg transition-colors',
+              'p-2 rounded-xl transition-colors',
               theme.text,
               theme.hover
             )}
@@ -443,15 +445,15 @@ export function MobileSidebar({
               <img 
                 src={userAvatar} 
                 alt={userName || 'User'} 
-                className="w-11 h-11 rounded-full object-cover ring-2 ring-teal-500/30"
+                className="w-11 h-11 rounded-full object-cover ring-2 ring-primary-500/30"
               />
             ) : (
               <div className={cn(
                 'w-11 h-11 rounded-full',
                 'flex items-center justify-center',
                 'text-sm font-semibold text-white',
-                'bg-gradient-to-br from-teal-500 to-teal-600',
-                'ring-2 ring-teal-500/30'
+                'bg-gradient-to-br from-primary-500 to-primary-600',
+                'ring-2 ring-primary-500/30'
               )}>
                 {userInitials || 'U'}
               </div>
@@ -492,12 +494,12 @@ export function MobileSidebar({
                 {/* Active indicator */}
                 <div className={cn(
                   'absolute left-0 top-1/2 -translate-y-1/2',
-                  'w-1 h-6 rounded-r-full bg-teal-500',
+                  'w-1 h-6 rounded-r-full bg-primary-500',
                   'transition-opacity duration-200',
                   isActive ? 'opacity-100' : 'opacity-0'
                 )} />
                 
-                <span className={cn(isActive && 'text-teal-600')}>{link.icon}</span>
+                <span className={cn(isActive && 'text-primary-600')}>{link.icon}</span>
                 <span className={cn('font-medium', isActive && 'font-semibold')}>
                   {link.label}
                 </span>

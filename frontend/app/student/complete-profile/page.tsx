@@ -183,7 +183,7 @@ export default function StudentCompleteProfilePage() {
   if (authLoading || initialLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-teal-50">
-        <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary-600 dark:text-primary-400" />
       </div>
     );
   }
@@ -208,7 +208,7 @@ export default function StudentCompleteProfilePage() {
               <div
                 className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-colors ${
                   step >= s
-                    ? 'bg-teal-600 text-white'
+                    ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white'
                     : 'bg-slate-200 text-slate-500'
                 }`}
               >
@@ -217,7 +217,7 @@ export default function StudentCompleteProfilePage() {
               {s < 3 && (
                 <div
                   className={`w-16 h-1 mx-2 rounded ${
-                    step > s ? 'bg-teal-600' : 'bg-slate-200'
+                    step > s ? 'bg-gradient-to-r from-primary-500 to-primary-600' : 'bg-slate-200'
                   }`}
                 />
               )}
@@ -226,7 +226,7 @@ export default function StudentCompleteProfilePage() {
         </div>
 
         {/* Form Card */}
-        <div className="bg-white rounded-xl shadow-lg p-8">
+        <div className="bg-white dark:bg-slate-800/80 rounded-xl shadow-lg p-8">
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
               {error}
@@ -238,7 +238,7 @@ export default function StudentCompleteProfilePage() {
             <div className="space-y-6">
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-3 bg-teal-100 rounded-lg">
-                  <User className="w-6 h-6 text-teal-600" />
+                  <User className="w-6 h-6 text-primary-600 dark:text-primary-400" />
                 </div>
                 <div>
                   <h2 className="text-xl font-semibold text-slate-900">
@@ -259,7 +259,7 @@ export default function StudentCompleteProfilePage() {
                     type="text"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all bg-white text-gray-900 placeholder-gray-400"
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-teal-500 outline-none transition-all bg-white dark:bg-slate-800/80 text-slate-900 dark:text-white placeholder-gray-400"
                     placeholder="John"
                   />
                 </div>
@@ -271,7 +271,7 @@ export default function StudentCompleteProfilePage() {
                     type="text"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all bg-white text-gray-900 placeholder-gray-400"
+                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-teal-500 outline-none transition-all bg-white dark:bg-slate-800/80 text-slate-900 dark:text-white placeholder-gray-400"
                     placeholder="Doe"
                   />
                 </div>
@@ -285,7 +285,7 @@ export default function StudentCompleteProfilePage() {
                   type="tel"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all bg-white text-gray-900 placeholder-gray-400"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-teal-500 outline-none transition-all bg-white dark:bg-slate-800/80 text-slate-900 dark:text-white placeholder-gray-400"
                   placeholder="+1 (555) 123-4567"
                 />
               </div>
@@ -293,7 +293,7 @@ export default function StudentCompleteProfilePage() {
               <button
                 onClick={() => setStep(2)}
                 disabled={!canProceedStep1}
-                className="w-full mt-6 py-3 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                className="w-full mt-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold rounded-lg hover:from-primary-600 hover:to-primary-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
               >
                 Continue <ArrowRight className="w-5 h-5" />
               </button>
@@ -305,7 +305,7 @@ export default function StudentCompleteProfilePage() {
             <div className="space-y-6">
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-3 bg-teal-100 rounded-lg">
-                  <BookOpen className="w-6 h-6 text-teal-600" />
+                  <BookOpen className="w-6 h-6 text-primary-600 dark:text-primary-400" />
                 </div>
                 <div>
                   <h2 className="text-xl font-semibold text-slate-900">
@@ -324,7 +324,7 @@ export default function StudentCompleteProfilePage() {
                 <select
                   value={gradeLevel}
                   onChange={(e) => setGradeLevel(e.target.value)}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all bg-white text-gray-900"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-teal-500 outline-none transition-all bg-white dark:bg-slate-800/80 text-slate-900 dark:text-white"
                 >
                   <option value="">Select your grade level</option>
                   {GRADE_LEVELS.map((level) => (
@@ -347,7 +347,7 @@ export default function StudentCompleteProfilePage() {
                       onClick={() => toggleSubject(subject)}
                       className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
                         preferredSubjects.includes(subject)
-                          ? 'border-teal-500 bg-teal-50 text-teal-700'
+                          ? 'border-teal-500 bg-primary-50 dark:bg-primary-950/30 text-primary-700 dark:text-primary-300'
                           : 'border-slate-200 hover:border-slate-300 text-slate-600'
                       }`}
                     >
@@ -367,7 +367,7 @@ export default function StudentCompleteProfilePage() {
                 <button
                   onClick={() => setStep(3)}
                   disabled={!canProceedStep2}
-                  className="flex-1 py-3 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold rounded-lg hover:from-primary-600 hover:to-primary-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
                 >
                   Continue <ArrowRight className="w-5 h-5" />
                 </button>
@@ -380,7 +380,7 @@ export default function StudentCompleteProfilePage() {
             <div className="space-y-6">
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-3 bg-teal-100 rounded-lg">
-                  <Target className="w-6 h-6 text-teal-600" />
+                  <Target className="w-6 h-6 text-primary-600 dark:text-primary-400" />
                 </div>
                 <div>
                   <h2 className="text-xl font-semibold text-slate-900">
@@ -400,7 +400,7 @@ export default function StudentCompleteProfilePage() {
                   value={learningGoals}
                   onChange={(e) => setLearningGoals(e.target.value)}
                   rows={3}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all resize-none bg-white text-gray-900 placeholder-gray-400"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-teal-500 outline-none transition-all resize-none bg-white dark:bg-slate-800/80 text-slate-900 dark:text-white placeholder-gray-400"
                   placeholder="What do you want to achieve? (one goal per line)&#10;e.g., Improve my math grades&#10;Prepare for SAT exams"
                 />
               </div>
@@ -417,7 +417,7 @@ export default function StudentCompleteProfilePage() {
                       onClick={() => setLearningStyle(style)}
                       className={`p-4 rounded-lg border-2 text-left transition-all ${
                         learningStyle === style
-                          ? 'border-teal-500 bg-teal-50'
+                          ? 'border-teal-500 bg-primary-50 dark:bg-primary-950/30'
                           : 'border-slate-200 hover:border-slate-300'
                       }`}
                     >
@@ -425,14 +425,14 @@ export default function StudentCompleteProfilePage() {
                         <Brain
                           className={`w-5 h-5 ${
                             learningStyle === style
-                              ? 'text-teal-600'
+                              ? 'text-primary-600 dark:text-primary-400'
                               : 'text-slate-400'
                           }`}
                         />
                         <span
                           className={`font-medium ${
                             learningStyle === style
-                              ? 'text-teal-700'
+                              ? 'text-primary-700 dark:text-primary-300'
                               : 'text-slate-700'
                           }`}
                         >
@@ -454,7 +454,7 @@ export default function StudentCompleteProfilePage() {
                 <button
                   onClick={handleSubmit}
                   disabled={!canSubmit || loading}
-                  className="flex-1 py-3 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold rounded-lg hover:from-primary-600 hover:to-primary-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     <>

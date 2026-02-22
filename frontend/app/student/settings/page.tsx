@@ -297,7 +297,7 @@ export default function StudentSettingsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary-600 dark:text-primary-400" />
       </div>
     )
   }
@@ -305,8 +305,8 @@ export default function StudentSettingsPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-8 pb-12">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Settings</h1>
-        <p className="text-gray-600 dark:text-slate-400">Manage your account settings and preferences</p>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white dark:text-white">Settings</h1>
+        <p className="text-slate-600 dark:text-slate-400 dark:text-slate-400">Manage your account settings and preferences</p>
       </div>
 
       {/* Error Toast */}
@@ -317,25 +317,25 @@ export default function StudentSettingsPage() {
       )}
 
       {/* Section A: Profile */}
-      <section id="profile" className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+      <section id="profile" className="bg-white dark:bg-slate-800/80 dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200/60 dark:border-slate-700/40 dark:border-slate-700 p-6">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg">
-            <User className="h-5 w-5 text-teal-600 dark:text-teal-400" />
+            <User className="h-5 w-5 text-primary-600 dark:text-primary-400 dark:text-teal-400" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Profile</h2>
-            <p className="text-sm text-gray-500 dark:text-slate-400">Update your personal information</p>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white dark:text-white">Profile</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-400">Update your personal information</p>
           </div>
         </div>
 
         {/* Avatar Upload */}
         <div className="flex items-center gap-6 mb-6">
           <div className="relative">
-            <div className="h-24 w-24 rounded-full bg-gray-200 dark:bg-slate-700 overflow-hidden">
+            <div className="h-24 w-24 rounded-full bg-slate-200 dark:bg-slate-700 dark:bg-slate-700 overflow-hidden">
               {avatarUrl ? (
                 <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
               ) : (
-                <div className="h-full w-full flex items-center justify-center text-gray-400 dark:text-slate-400 text-2xl font-semibold">
+                <div className="h-full w-full flex items-center justify-center text-slate-400 dark:text-slate-500 dark:text-slate-400 text-2xl font-semibold">
                   {firstName?.[0]}{lastName?.[0]}
                 </div>
               )}
@@ -343,7 +343,7 @@ export default function StudentSettingsPage() {
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={saving === 'avatar'}
-              className="absolute bottom-0 right-0 p-2 bg-teal-600 rounded-full text-white hover:bg-teal-700 transition-colors disabled:opacity-50"
+              className="absolute bottom-0 right-0 p-2 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full text-white hover:from-primary-600 hover:to-primary-700 transition-colors disabled:opacity-50"
             >
               {saving === 'avatar' ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -360,8 +360,8 @@ export default function StudentSettingsPage() {
             />
           </div>
           <div>
-            <p className="text-sm font-medium text-gray-700 dark:text-slate-300">Profile Photo</p>
-            <p className="text-xs text-gray-500 dark:text-slate-400">JPG, PNG. Max 5MB</p>
+            <p className="text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300">Profile Photo</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-400">JPG, PNG. Max 5MB</p>
             {success === 'avatar' && (
               <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
                 <Check className="h-3 w-3" /> Avatar updated!
@@ -373,63 +373,63 @@ export default function StudentSettingsPage() {
         {/* Profile Form */}
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">First Name</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 mb-1">First Name</label>
             <input
               type="text"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white dark:bg-slate-800 text-gray-900 dark:text-white"
+              className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-slate-800/80 dark:bg-slate-800 text-slate-900 dark:text-white dark:text-white"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Last Name</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 mb-1">Last Name</label>
             <input
               type="text"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white dark:bg-slate-800 text-gray-900 dark:text-white"
+              className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-slate-800/80 dark:bg-slate-800 text-slate-900 dark:text-white dark:text-white"
             />
           </div>
         </div>
 
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Email</label>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 mb-1">Email</label>
           <input
             type="email"
             value={email}
             disabled
-            className="w-full px-4 py-2 border border-gray-200 dark:border-slate-700 rounded-lg bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-slate-400"
+            className="w-full px-4 py-2 border border-slate-200/60 dark:border-slate-700/40 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800/50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 dark:text-slate-400"
           />
-          <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">Email cannot be changed</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-500 mt-1">Email cannot be changed</p>
         </div>
 
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Phone Number</label>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 mb-1">Phone Number</label>
           <input
             type="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             placeholder="+1 (555) 000-0000"
-            className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-500"
+            className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-slate-800/80 dark:bg-slate-800 text-slate-900 dark:text-white dark:text-white placeholder-gray-400 dark:placeholder-slate-500"
           />
         </div>
 
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Learning Goals</label>
-          <p className="text-xs text-gray-500 dark:text-slate-400 mb-2">Enter your learning goals, one per line. This helps us find the best tutors for you!</p>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 mb-1">Learning Goals</label>
+          <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-2">Enter your learning goals, one per line. This helps us find the best tutors for you!</p>
           <textarea
             value={bio}
             onChange={(e) => setBio(e.target.value)}
             rows={4}
             placeholder="e.g., Improve my math grades&#10;Prepare for SAT exams&#10;Learn Python programming&#10;Master calculus"
-            className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none bg-white dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-500"
+            className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none bg-white dark:bg-slate-800/80 dark:bg-slate-800 text-slate-900 dark:text-white dark:text-white placeholder-gray-400 dark:placeholder-slate-500"
           />
         </div>
 
         <button
           onClick={handleProfileSave}
           disabled={saving === 'profile'}
-          className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-lg hover:from-primary-600 hover:to-primary-700 transition-colors disabled:opacity-50"
         >
           {saving === 'profile' ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -443,36 +443,36 @@ export default function StudentSettingsPage() {
       </section>
 
       {/* Section B: Security */}
-      <section id="security" className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+      <section id="security" className="bg-white dark:bg-slate-800/80 dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200/60 dark:border-slate-700/40 dark:border-slate-700 p-6">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
             <Lock className="h-5 w-5 text-orange-600 dark:text-orange-400" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Security</h2>
-            <p className="text-sm text-gray-500 dark:text-slate-400">Update your password</p>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white dark:text-white">Security</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-400">Update your password</p>
           </div>
         </div>
 
         <div className="space-y-4 mb-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">New Password</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 mb-1">New Password</label>
             <input
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="Enter new password"
-              className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-500"
+              className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-slate-800/80 dark:bg-slate-800 text-slate-900 dark:text-white dark:text-white placeholder-gray-400 dark:placeholder-slate-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Confirm Password</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 dark:text-slate-300 mb-1">Confirm Password</label>
             <input
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Confirm new password"
-              className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-500"
+              className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-slate-800/80 dark:bg-slate-800 text-slate-900 dark:text-white dark:text-white placeholder-gray-400 dark:placeholder-slate-500"
             />
           </div>
         </div>
@@ -494,20 +494,20 @@ export default function StudentSettingsPage() {
       </section>
 
       {/* Section C: Preferences */}
-      <section id="preferences" className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+      <section id="preferences" className="bg-white dark:bg-slate-800/80 dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200/60 dark:border-slate-700/40 dark:border-slate-700 p-6">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
             <Bell className="h-5 w-5 text-purple-600 dark:text-purple-400" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Preferences</h2>
-            <p className="text-sm text-gray-500 dark:text-slate-400">Manage your notification settings</p>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white dark:text-white">Preferences</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-400">Manage your notification settings</p>
           </div>
         </div>
 
         <div className="space-y-4 mb-6">
           {/* Dark Mode Toggle */}
-          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800 rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 dark:bg-slate-800 rounded-lg">
             <div className="flex items-center gap-3">
               {theme === 'dark' ? (
                 <Moon className="h-5 w-5 text-slate-400" />
@@ -515,8 +515,8 @@ export default function StudentSettingsPage() {
                 <Sun className="h-5 w-5 text-amber-500" />
               )}
               <div>
-                <p className="font-medium text-gray-900 dark:text-white">Dark Mode</p>
-                <p className="text-sm text-gray-500 dark:text-slate-400">
+                <p className="font-medium text-slate-900 dark:text-white dark:text-white">Dark Mode</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-400">
                   {theme === 'dark' ? 'Currently using dark theme' : 'Currently using light theme'}
                 </p>
               </div>
@@ -524,30 +524,30 @@ export default function StudentSettingsPage() {
             <button
               onClick={toggleTheme}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                theme === 'dark' ? 'bg-teal-600' : 'bg-gray-300'
+                theme === 'dark' ? 'bg-gradient-to-r from-primary-500 to-primary-600' : 'bg-gray-300'
               }`}
             >
               <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-slate-800/80 transition-transform ${
                   theme === 'dark' ? 'translate-x-6' : 'translate-x-1'
                 }`}
               />
             </button>
           </div>
 
-          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800 rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 dark:bg-slate-800 rounded-lg">
             <div>
-              <p className="font-medium text-gray-900 dark:text-white">Email Notifications</p>
-              <p className="text-sm text-gray-500 dark:text-slate-400">Receive email updates about bookings and messages</p>
+              <p className="font-medium text-slate-900 dark:text-white dark:text-white">Email Notifications</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-400">Receive email updates about bookings and messages</p>
             </div>
             <button
               onClick={() => setEmailNotifications(!emailNotifications)}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                emailNotifications ? 'bg-teal-600' : 'bg-gray-300'
+                emailNotifications ? 'bg-gradient-to-r from-primary-500 to-primary-600' : 'bg-gray-300'
               }`}
             >
               <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-slate-800/80 transition-transform ${
                   emailNotifications ? 'translate-x-6' : 'translate-x-1'
                 }`}
               />

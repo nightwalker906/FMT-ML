@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, BookOpen, Calendar, ChevronDown, ChevronUp, BrainCircuit, Target, Clock, AlertCircle } from 'lucide-react';
 import StudyPlanTimeline from '@/components/study-planner/StudyPlanTimeline';
+import { API_BASE } from '@/lib/api-config';
 interface StudyPlan {
   week: number;
   theme: string;
@@ -78,9 +79,13 @@ export default function StudyPlannerPage() {
     const weeksNum = Math.max(1, Math.min(12, parseInt(weeks) || 4));
 
     try {
+      // AbortController for 30s timeout
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000);
+
       // Minimum delay to show the cool animation
       const [response] = await Promise.all([
-        fetch('http://localhost:8000/api/generate-plan/', {
+        fetch(`${API_BASE}/generate-plan/`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -88,8 +93,13 @@ export default function StudyPlannerPage() {
             weakness,
             weeks: weeksNum,
             context: context || ''
-          })
-        }).then(res => res.json()),
+          }),
+          signal: controller.signal,
+        }).then(res => {
+          clearTimeout(timeout);
+          if (!res.ok) throw new Error(`Server error (${res.status})`);
+          return res.json();
+        }),
         new Promise(resolve => setTimeout(resolve, 3000))
       ]);
 
@@ -100,7 +110,13 @@ export default function StudyPlannerPage() {
         setError(response.message || 'Failed to generate study plan');
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        setError('Request timed out. The AI service may be busy — please try again.');
+      } else if (err instanceof TypeError && err.message.includes('fetch')) {
+        setError('Cannot reach the server. Make sure the backend is running.');
+      } else {
+        setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+      }
     } finally {
       setLoading(false);
     }
@@ -291,4 +307,6 @@ export default function StudyPlannerPage() {
   );
 }
 
-/*fghfghdfgdfefdjedf */
+
+
+
