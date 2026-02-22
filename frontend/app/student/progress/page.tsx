@@ -38,6 +38,7 @@ interface TutorInfo {
   id: string;
   first_name: string;
   last_name: string;
+  avatar?: string;
 }
 
 interface SubjectStat {
@@ -101,7 +102,7 @@ export default function LearningProgressPage() {
     if (tutorIds.length > 0) {
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name')
+        .select('id, first_name, last_name, avatar')
         .in('id', tutorIds);
 
       const map: Record<string, TutorInfo> = {};
@@ -243,7 +244,7 @@ export default function LearningProgressPage() {
   // -- Recent tutors --
   const recentTutors = useMemo(() => {
     const seen = new Set<string>();
-    const result: { id: string; name: string; sessions: number; lastSession: string }[] = [];
+    const result: { id: string; name: string; sessions: number; lastSession: string; avatar?: string }[] = [];
 
     for (const b of allBookings) {
       if (!seen.has(b.tutor_id)) {
@@ -258,6 +259,7 @@ export default function LearningProgressPage() {
           name,
           sessions: tutorSessions,
           lastSession: b.scheduled_at,
+          avatar: info?.avatar,
         });
       }
       if (result.length >= 5) break;
@@ -443,7 +445,7 @@ export default function LearningProgressPage() {
                   className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group"
                 >
                   <img
-                    src={`https://ui-avatars.com/api/?name=${encodeURIComponent(t.name)}&background=0d9488&color=fff`}
+                    src={t.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(t.name)}&background=0d9488&color=fff`}
                     alt={t.name}
                     className="w-10 h-10 rounded-full"
                   />

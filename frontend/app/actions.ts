@@ -132,7 +132,7 @@ export async function getConversations() {
     // Fetch profiles for these users
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('id, first_name, last_name, user_type')
+      .select('id, first_name, last_name, user_type, avatar')
       .in('id', Array.from(otherUserIds));
 
     if (profilesError) {
@@ -164,12 +164,13 @@ export async function getConversations() {
           ? `${profile.first_name} ${profile.last_name}` 
           : 'Unknown Tutor';
         
+        const tutorProfile = profilesMap.get(tutorId);
         conversationsMap.set(tutorId, {
           id: tutorId,
           user_id: tutorId,
           user_name: userName,
           user_type: 'tutor',
-          user_avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=14b8a6&color=fff`,
+          user_avatar: tutorProfile?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=14b8a6&color=fff`,
           last_message: `📚 Booked: ${booking.subject}`,
           last_message_time: booking.scheduled_at,
           unread_count: 0,
@@ -188,12 +189,13 @@ export async function getConversations() {
           ? `${profile.first_name} ${profile.last_name}` 
           : 'Unknown Student';
         
+        const studentProfile = profilesMap.get(studentId);
         conversationsMap.set(studentId, {
           id: studentId,
           user_id: studentId,
           user_name: userName,
           user_type: 'student',
-          user_avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=6366f1&color=fff`,
+          user_avatar: studentProfile?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=6366f1&color=fff`,
           last_message: `📚 Session: ${booking.subject}`,
           last_message_time: booking.scheduled_at,
           unread_count: 0,
@@ -225,7 +227,7 @@ export async function getConversations() {
           user_id: otherUserId,
           user_name: userName,
           user_type: profile?.user_type || 'unknown',
-          user_avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=14b8a6&color=fff`,
+          user_avatar: profile?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=14b8a6&color=fff`,
           last_message: msg.content,
           last_message_time: msg.created_at,
           unread_count: existingConv?.unread_count || 0,

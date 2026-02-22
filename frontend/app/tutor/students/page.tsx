@@ -116,7 +116,7 @@ export default function TutorStudentsPage() {
     // Get profiles directly since student_id in bookings = profile.id = auth.users.id
     const { data: profiles } = await supabase
       .from('profiles')
-      .select('id, first_name, last_name')
+      .select('id, first_name, last_name, avatar')
       .in('id', studentIds);
 
     // Create a map of student_id -> profile
@@ -125,7 +125,7 @@ export default function TutorStudentsPage() {
       const name = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Student';
       studentProfileMap[profile.id] = {
         name,
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=14b8a6&color=fff`,
+        avatar: profile.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=14b8a6&color=fff`,
       };
     });
 

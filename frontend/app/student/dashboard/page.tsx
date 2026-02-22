@@ -74,7 +74,7 @@ export default function StudentDashboardPage() {
         const tutorIds = [...new Set(sessions.map((s) => s.tutor_id))];
         const { data: tutorProfiles } = await supabase
           .from('profiles')
-          .select('id, first_name, last_name')
+          .select('id, first_name, last_name, avatar')
           .in('id', tutorIds);
 
         const profileMap = new Map(
@@ -90,7 +90,7 @@ export default function StudentDashboardPage() {
             return {
               id: s.id,
               tutorName,
-              tutorAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(tutorName)}&background=0d9488&color=fff`,
+              tutorAvatar: tutor?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(tutorName)}&background=0d9488&color=fff`,
               subject: s.subject,
               scheduledAt: s.scheduled_at,
             };

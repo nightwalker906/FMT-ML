@@ -190,7 +190,7 @@ export default function MessagesPage() {
       // Fetch the tutor's profile info
       const { data: profile } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name')
+        .select('id, first_name, last_name, avatar')
         .eq('id', chatWithId)
         .single();
 
@@ -203,7 +203,7 @@ export default function MessagesPage() {
           id: profile.id,
           user_id: profile.id,
           user_name: userName,
-          user_avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=14b8a6&color=fff`,
+          user_avatar: profile.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=14b8a6&color=fff`,
           last_message: '',
           last_message_time: new Date().toISOString(),
           unread_count: 0,
@@ -360,7 +360,7 @@ export default function MessagesPage() {
             id: newChatUser.id,
             user_id: newChatUser.id,
             user_name: newChatUser.name,
-            user_avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(newChatUser.name)}&background=14b8a6&color=fff`,
+            user_avatar: selectedConversation?.user_avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(newChatUser.name)}&background=14b8a6&color=fff`,
             last_message: messageInput,
             last_message_time: new Date().toISOString(),
             unread_count: 0,

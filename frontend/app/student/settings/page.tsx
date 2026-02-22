@@ -51,7 +51,7 @@ export default function StudentSettingsPage() {
       // Get profile data
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, user_type, is_online')
+        .select('id, first_name, last_name, user_type, is_online, avatar')
         .eq('id', user.id)
         .single()
 
@@ -62,9 +62,13 @@ export default function StudentSettingsPage() {
       if (profile) {
         setFirstName(profile.first_name || '')
         setLastName(profile.last_name || '')
-        // Generate avatar from name (avatar_url column doesn't exist in profiles table)
-        const generatedAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.first_name || '')}+${encodeURIComponent(profile.last_name || '')}&background=0d9488&color=fff`
-        setAvatarUrl(generatedAvatar)
+        // Use stored avatar if available, otherwise generate placeholder
+        if (profile.avatar) {
+          setAvatarUrl(profile.avatar)
+        } else {
+          const generatedAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.first_name || '')}+${encodeURIComponent(profile.last_name || '')}&background=0d9488&color=fff`
+          setAvatarUrl(generatedAvatar)
+        }
       }
 
       // Get student-specific data (includes phone_number)
@@ -151,9 +155,9 @@ export default function StudentSettingsPage() {
     const fileExt = file.name.split('.').pop()
     const fileName = `${user.id}/avatar.${fileExt}`
 
-    // Upload to Supabase Storage
+    // Upload to Supabase Storage (Profile Picture bucket)
     const { error: uploadError } = await supabase.storage
-      .from('avatars')
+      .from('Profile Picture')
       .upload(fileName, file, { upsert: true, contentType: file.type })
 
     if (uploadError) {
@@ -164,13 +168,13 @@ export default function StudentSettingsPage() {
 
     // Get public URL
     const { data: { publicUrl } } = supabase.storage
-      .from('avatars')
+      .from('Profile Picture')
       .getPublicUrl(fileName)
 
     // Update profile with avatar URL
     const { error: updateError } = await supabase
       .from('profiles')
-      .update({ avatar_url: publicUrl })
+      .update({ avatar: publicUrl })
       .eq('id', user.id)
 
     if (updateError) {

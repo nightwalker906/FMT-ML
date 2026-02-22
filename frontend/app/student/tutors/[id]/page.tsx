@@ -42,6 +42,7 @@ interface TutorDetail {
   reviews_count: number;
   total_students?: number;
   response_time?: string;
+  avatar?: string;
 }
 
 interface Message {
@@ -124,7 +125,7 @@ export default function TutorDetailPage() {
       // Fetch tutor profile
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('*')
+        .select('*, avatar')
         .eq('id', tutorId)
         .single();
 
@@ -177,6 +178,7 @@ export default function TutorDetailPage() {
         reviews_count: reviewData?.length || 0,
         total_students: studentCount || 0,
         response_time: availabilityDays || 'Flexible',
+        avatar: profile.avatar || undefined,
       });
 
       setReviews(reviewData || []);
@@ -403,7 +405,7 @@ export default function TutorDetailPage() {
             <div className="flex items-start gap-6">
               {/* Avatar */}
               <img
-                src={`https://ui-avatars.com/api/?name=${tutor.first_name}+${tutor.last_name}&background=0d9488&color=fff&size=120`}
+                src={tutor.avatar || `https://ui-avatars.com/api/?name=${tutor.first_name}+${tutor.last_name}&background=0d9488&color=fff&size=120`}
                 alt={`${tutor.first_name} ${tutor.last_name}`}
                 className="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-white shadow-lg"
               />

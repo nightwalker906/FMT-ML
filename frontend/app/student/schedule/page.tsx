@@ -15,12 +15,14 @@ type Booking = {
     id: string
     first_name: string
     last_name: string
+    avatar?: string
   }
   hasReview?: boolean
 }
 
-// Helper to generate avatar URL from name
-function getAvatarUrl(firstName: string, lastName: string) {
+// Helper to get avatar URL — uses real profile picture if available, otherwise generates placeholder
+function getAvatarUrl(firstName: string, lastName: string, avatar?: string | null) {
+  if (avatar) return avatar
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(firstName || '')}+${encodeURIComponent(lastName || '')}&background=0d9488&color=fff`
 }
 
@@ -150,7 +152,7 @@ export default function StudentSchedulePage() {
                   <div className="flex items-center gap-4">
                     <div className="h-12 w-12 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden flex-shrink-0">
                       <img
-                        src={getAvatarUrl(booking.tutor?.first_name || '', booking.tutor?.last_name || '')}
+                        src={getAvatarUrl(booking.tutor?.first_name || '', booking.tutor?.last_name || '', booking.tutor?.avatar)}
                         alt=""
                         className="h-full w-full object-cover"
                       />
@@ -212,7 +214,7 @@ export default function StudentSchedulePage() {
                   <div className="flex items-center gap-4">
                     <div className="h-12 w-12 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden flex-shrink-0">
                       <img
-                        src={getAvatarUrl(booking.tutor?.first_name || '', booking.tutor?.last_name || '')}
+                        src={getAvatarUrl(booking.tutor?.first_name || '', booking.tutor?.last_name || '', booking.tutor?.avatar)}
                         alt=""
                         className="h-full w-full object-cover"
                       />
@@ -288,7 +290,7 @@ export default function StudentSchedulePage() {
                 <div className="flex items-center gap-3 mb-6">
                   <div className="h-12 w-12 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
                     <img
-                      src={getAvatarUrl(selectedBooking.tutor?.first_name || '', selectedBooking.tutor?.last_name || '')}
+                      src={getAvatarUrl(selectedBooking.tutor?.first_name || '', selectedBooking.tutor?.last_name || '', selectedBooking.tutor?.avatar)}
                       alt=""
                       className="h-full w-full object-cover"
                     />

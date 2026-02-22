@@ -17,11 +17,13 @@ type Tutor = {
     first_name: string
     last_name: string
     is_online: boolean
+    avatar?: string
   }
 }
 
-// Helper to generate avatar URL from name
-function getAvatarUrl(firstName: string, lastName: string) {
+// Helper to get avatar URL — uses real profile picture if available, otherwise generates placeholder
+function getAvatarUrl(firstName: string, lastName: string, avatar?: string | null) {
+  if (avatar) return avatar
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(firstName || '')}+${encodeURIComponent(lastName || '')}&background=0d9488&color=fff`
 }
 
@@ -351,7 +353,7 @@ export default function StudentSearchPage() {
                   <div className="relative">
                     <div className="h-16 w-16 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
                       <img
-                        src={getAvatarUrl(tutor.profile?.first_name || '', tutor.profile?.last_name || '')}
+                        src={getAvatarUrl(tutor.profile?.first_name || '', tutor.profile?.last_name || '', tutor.profile?.avatar)}
                         alt=""
                         className="h-full w-full object-cover"
                       />
@@ -486,7 +488,7 @@ export default function StudentSearchPage() {
                 <div className="flex items-center gap-3 mb-6 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
                   <div className="h-12 w-12 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
                     <img
-                      src={getAvatarUrl(selectedTutor.profile?.first_name || '', selectedTutor.profile?.last_name || '')}
+                      src={getAvatarUrl(selectedTutor.profile?.first_name || '', selectedTutor.profile?.last_name || '', selectedTutor.profile?.avatar)}
                       alt=""
                       className="h-full w-full object-cover"
                     />

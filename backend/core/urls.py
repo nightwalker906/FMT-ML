@@ -5,6 +5,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views
 from .ai.quick_tutor import quick_tutor_chat
+from .ai.tutor_assistant import tutor_command_chat
 
 router = DefaultRouter()
 router.register(r'profiles', views.ProfileViewSet, basename='profile')
@@ -39,4 +40,7 @@ urlpatterns = [
     
     # Quick Tutor AI (Gemini + Serper)
     path('ai/quick-tutor/', quick_tutor_chat, name='quick-tutor-chat'),
+    
+    # Tutor AI Command Center (Spotlight Search)
+    path('ai/tutor-command/', tutor_command_chat, name='tutor-command-chat'),
 ]
