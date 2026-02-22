@@ -111,6 +111,62 @@ print(result['status'])  # 'success' or 'fallback'
 
 ---
 
+## Quick Tutor AI — Backend Setup
+
+Quick Tutor uses a **cascading backend** system — it tries each AI service in
+order and uses the first one that responds:
+
+```
+Gemini  →  Groq (free)  →  Ollama (local)  →  Serper search-only  →  Mock
+```
+
+### Option A: Groq Cloud (Recommended — Free & Fast)
+
+Groq provides free access to Llama 3.3 70B with very fast inference.
+
+```bash
+# 1. Sign up at https://console.groq.com (free, no credit card)
+# 2. Create an API key from the dashboard
+# 3. Add to backend/.env:
+GROQ_API_KEY=gsk_xxxxxxxxxxxxxxxxxxxx
+# 4. Restart Django server
+```
+
+**Free tier limits:** ~30 requests/minute, 14,400/day — more than enough.
+
+### Option B: Google Gemini (Free Tier)
+
+```bash
+# 1. Go to https://aistudio.google.com/apikey
+# 2. Click "Create API Key"
+# 3. Add to backend/.env:
+GEMINI_API_KEY=AIzaSyxxxxxxxxxxxxxxxxx
+# 4. Restart Django server
+```
+
+**Free tier limits:** 15 requests/minute, 1,500/day.
+
+### Option C: Ollama (Local — No API Key Needed)
+
+```bash
+# 1. Install from https://ollama.ai
+# 2. Pull a model:
+ollama pull mistral
+# 3. Start the server:
+ollama serve
+# Quick Tutor auto-detects Ollama on localhost:11434
+```
+
+### Option D: Serper Search Only (Already Configured!)
+
+If no LLM is available, Quick Tutor falls back to **Serper web search** — it
+searches the web for your question and returns structured results. Not as
+conversational as an LLM, but still useful for factual questions.
+
+This works right now with `SERPER_API_KEY` already set in your `.env`.
+
+---
+
 ## Recommendations
 
 | Use Case | Best Option |
@@ -119,4 +175,6 @@ print(result['status'])  # 'success' or 'fallback'
 | Production (scalable) | Ollama + Hugging Face fallback |
 | Quick testing | Hugging Face (no setup) |
 | High volume | Ollama (local, unlimited) |
+| **Quick Tutor — fastest setup** | **Groq (free, 2-min signup)** |
+| **Quick Tutor — no signup** | **Ollama (local, offline)** |
 

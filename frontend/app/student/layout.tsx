@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/context/auth-context';
 import { createClient } from '@/utils/supabase/client';
 import { Sidebar, MobileSidebar, studentLinks, SidebarLink } from '@/components/layout/sidebar';
+import { useOnlinePresence } from '@/hooks/useOnlinePresence';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Bell, Menu, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -21,29 +22,40 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [displayName, setDisplayName] = useState('');
   const [initials, setInitials] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
+
+  // ── Track online presence (heartbeat + auto-offline) ──
+  const { goOffline } = useOnlinePresence(user?.id);
 
   // Fetch user profile and notifications
   useEffect(() => {
     if (!user) return;
 
     const fetchData = async () => {
-      // Fetch profile (no avatar_url - using initials instead)
+      // Fetch profile (including avatar for real profile pictures)
       const { data: profile } = await supabase
         .from('profiles')
-        .select('first_name, last_name')
+        .select('first_name, last_name, avatar')
         .eq('id', user.id)
         .single();
 
       if (profile?.first_name) {
         setDisplayName(`${profile.first_name} ${profile.last_name || ''}`.trim());
-        // Get first letter of first name and last name for initials
         const firstInitial = profile.first_name.charAt(0).toUpperCase();
         const lastInitial = profile.last_name ? profile.last_name.charAt(0).toUpperCase() : '';
         setInitials(`${firstInitial}${lastInitial}`);
+        // Use stored profile picture if available, otherwise generate placeholder
+        if (profile.avatar) {
+          setAvatarUrl(profile.avatar);
+        } else {
+          const fullName = `${profile.first_name} ${profile.last_name || ''}`;
+          setAvatarUrl(`https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=14b8a6&color=fff`);
+        }
       } else {
         const emailName = user.email?.split('@')[0] || 'Student';
         setDisplayName(emailName);
         setInitials(emailName.substring(0, 2).toUpperCase());
+        setAvatarUrl('');
       }
 
       // Fetch notification count (unread)
@@ -113,6 +125,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   }, [user, isLoading, router]);
 
   const handleSignOut = async () => {
+    await goOffline();
     await signOut();
     router.push('/login');
   };
@@ -150,6 +163,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         onSignOut={handleSignOut}
         userName={displayName}
         userInitials={initials}
+        userAvatar={avatarUrl}
       />
 
       {/* Mobile Sidebar */}
@@ -161,6 +175,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         onSignOut={handleSignOut}
         userName={displayName}
         userInitials={initials}
+        userAvatar={avatarUrl}
       />
 
       {/* Main Content Area */}
@@ -206,9 +221,17 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
 
               {/* User Avatar - Clickable to Settings */}
               <Link href="/student/settings" className="flex items-center gap-3 cursor-pointer group">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white font-semibold text-sm ring-2 ring-primary-200/50 dark:ring-primary-700/30 group-hover:ring-primary-300 dark:group-hover:ring-primary-600 transition-all">
-                  {initials || 'ST'}
-                </div>
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt={displayName}
+                    className="w-9 h-9 rounded-full object-cover ring-2 ring-primary-200/50 dark:ring-primary-700/30 group-hover:ring-primary-300 dark:group-hover:ring-primary-600 transition-all"
+                  />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white font-semibold text-sm ring-2 ring-primary-200/50 dark:ring-primary-700/30 group-hover:ring-primary-300 dark:group-hover:ring-primary-600 transition-all">
+                    {initials || 'ST'}
+                  </div>
+                )}
                 <div className="hidden md:block">
                   <p className="text-sm font-semibold text-slate-900 dark:text-white group-hover:text-primary-700 dark:group-hover:text-primary-400 transition-colors">{displayName}</p>
                   <p className="text-xs text-slate-500 dark:text-slate-400">Student</p>

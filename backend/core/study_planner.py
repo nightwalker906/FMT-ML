@@ -8,11 +8,12 @@ It generates personalized, week-by-week study plans based on student goals.
 
 GENERATIVE AI OVERVIEW:
 -----------------------
-Service Priority:
-1. Google Gemini API (primary - powerful & reliable)
-2. Ollama (local, completely free)
-3. Hugging Face (free tier)
-4. Mock fallback (template plans)
+Service Priority (cascading — same backend system as Quick Tutor):
+1. Google Gemini 1.5 Flash  (GEMINI_API_KEY)
+2. Groq Cloud — Llama 3.3   (GROQ_API_KEY — free at groq.com)
+3. Ollama local              (auto-detected on localhost:11434)
+4. Serper-enhanced template  (SERPER_API_KEY — web search + templates)
+5. Template fallback         (no API key required)
 
 PROMPT ENGINEERING STRATEGY:
 ----------------------------
@@ -29,7 +30,7 @@ PROMPT ENGINEERING STRATEGY:
    - Controls response scope and detail level
 
 Author: FMT Development Team
-Date: January 2026
+Date: January 2026 (Updated February 2026 — Multi-LLM Backend)
 =============================================================================
 """
 
@@ -52,31 +53,69 @@ from .serper_service import SerperSearchService, search_for_study_resources
 logger = logging.getLogger(__name__)
 
 # =============================================================================
-# SERPER AI CONFIGURATION (Primary Service)
+# AI CONFIGURATION (shared keys with Quick Tutor)
 # =============================================================================
 
 SERPER_API_KEY = os.environ.get("SERPER_API_KEY", "")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+
+GEMINI_MODEL = "gemini-1.5-flash"
+GEMINI_URL = (
+    f"https://generativelanguage.googleapis.com/v1beta/models/"
+    f"{GEMINI_MODEL}:generateContent"
+)
+
+GROQ_MODEL = "llama-3.3-70b-versatile"
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+
+OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
+OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "mistral")
 
 
-def _initialize_ai_client():
-    """
-    Initialize the AI client for Serper service.
-    
-    Returns:
-        Dictionary with Serper service info
-        
-    Raises:
-        ValueError if SERPER_API_KEY is not configured
-    """
-    if not SERPER_API_KEY:
-        raise ValueError(
-            "SERPER_API_KEY is not configured. "
-            "Please add your Serper API key to the .env file. "
-            "Get a free key at: https://serper.dev"
-        )
-    
-    logger.info("Using Serper AI for study resource gathering")
-    return {"service": "serper", "api_key": SERPER_API_KEY}
+# =============================================================================
+# STUDY PLAN PROMPT
+# =============================================================================
+
+STUDY_PLAN_SYSTEM_PROMPT = """You are a Senior Academic Advisor AI built into the "Find My Tutor" education platform.
+
+Your job is to create a detailed, personalized, week-by-week study plan.
+
+## Rules
+1. Return ONLY valid JSON — no markdown, no commentary, no code fences.
+2. The JSON must be an array of weekly objects.
+3. Each object MUST have exactly these keys:
+   - "week": integer (1, 2, 3, …)
+   - "theme": string — a short motivating name for this week's phase
+   - "topic": string — the main topic/concept for this week
+   - "learning_objectives": array of 3 strings — specific, measurable objectives
+   - "action_items": array of 4 strings — concrete tasks the student should do
+   - "resources": array of 3-5 strings — suggested learning resources (books, websites, videos)
+   - "milestone": string — a clear checkpoint to verify progress
+4. Make the plan PROGRESSIVE — start with foundations, build to mastery.
+5. Tailor everything to the student's specific goal and weak areas.
+6. Be specific, not generic. Reference the actual subject matter.
+7. Each week should build on the previous one.
+"""
+
+
+def _build_user_prompt(student_goal: str, weak_areas: str, duration_weeks: int, additional_context: Optional[str] = None) -> str:
+    """Build the user prompt for study plan generation."""
+    prompt = (
+        f"Create a {duration_weeks}-week study plan for a student.\n\n"
+        f"GOAL: {student_goal}\n"
+        f"WEAK AREAS: {weak_areas}\n"
+        f"DURATION: {duration_weeks} weeks\n"
+    )
+    if additional_context:
+        prompt += f"ADDITIONAL CONTEXT: {additional_context}\n"
+    prompt += (
+        f"\nReturn a JSON array with exactly {duration_weeks} weekly objects. "
+        f"Each object must have: week, theme, topic, learning_objectives (3), "
+        f"action_items (4), resources (3-5), milestone."
+    )
+    return prompt
+
 
 def _parse_json_response(response_text: str) -> List[Dict[str, Any]]:
     """
@@ -84,20 +123,10 @@ def _parse_json_response(response_text: str) -> List[Dict[str, Any]]:
     
     LLMs sometimes include markdown code blocks or extra text.
     This function extracts and parses the JSON content.
-    
-    Args:
-        response_text: Raw text response from the LLM
-        
-    Returns:
-        Parsed JSON as a list of dictionaries
-        
-    Raises:
-        ValueError: If JSON parsing fails
     """
-    # Remove markdown code blocks if present
     text = response_text.strip()
     
-    # Try to extract JSON from code blocks
+    # Remove markdown code blocks if present
     json_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', text)
     if json_match:
         text = json_match.group(1)
@@ -109,20 +138,309 @@ def _parse_json_response(response_text: str) -> List[Dict[str, Any]]:
     if start_idx != -1 and end_idx != -1:
         text = text[start_idx:end_idx + 1]
     
-    # Parse the JSON
     try:
         parsed = json.loads(text)
-        
-        # Validate structure
         if not isinstance(parsed, list):
             raise ValueError("Response is not a JSON array")
-        
         return parsed
-        
     except json.JSONDecodeError as e:
         logger.error(f"JSON parsing error: {str(e)}")
         logger.debug(f"Raw response: {response_text[:500]}...")
         raise ValueError(f"Failed to parse study plan JSON: {str(e)}")
+
+
+def _validate_plan_structure(plan: List[Dict[str, Any]], expected_weeks: int) -> List[Dict[str, Any]]:
+    """Validate and normalize the AI-generated plan structure."""
+    validated = []
+    for i, week in enumerate(plan):
+        entry = {
+            "week": week.get("week", i + 1),
+            "theme": week.get("theme", f"Week {i + 1}"),
+            "topic": week.get("topic", "Study Session"),
+            "learning_objectives": week.get("learning_objectives", [])[:3] or ["Complete weekly study tasks"],
+            "action_items": week.get("action_items", [])[:4] or ["Review study materials"],
+            "resources": week.get("resources", [])[:5] or ["Online learning platforms"],
+            "milestone": week.get("milestone", f"Complete Week {i + 1} objectives"),
+        }
+        validated.append(entry)
+    return validated
+
+
+# =============================================================================
+# LLM BACKEND CALLS (same cascade as Quick Tutor)
+# =============================================================================
+
+def _call_groq_for_plan(user_prompt: str) -> Optional[str]:
+    """Call Groq API (free) for study plan generation."""
+    if not GROQ_API_KEY:
+        return None
+    
+    try:
+        response = requests.post(
+            GROQ_URL,
+            headers={
+                "Authorization": f"Bearer {GROQ_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": GROQ_MODEL,
+                "messages": [
+                    {"role": "system", "content": STUDY_PLAN_SYSTEM_PROMPT},
+                    {"role": "user", "content": user_prompt},
+                ],
+                "temperature": 0.7,
+                "max_tokens": 4096,
+                "top_p": 0.9,
+            },
+            timeout=30,
+        )
+        response.raise_for_status()
+        data = response.json()
+        choices = data.get("choices", [])
+        if choices:
+            return choices[0].get("message", {}).get("content", "").strip()
+        return None
+    except Exception as e:
+        logger.error(f"Groq study plan error: {str(e)}")
+        return None
+
+
+def _call_gemini_for_plan(user_prompt: str) -> Optional[str]:
+    """Call Gemini API for study plan generation."""
+    if not GEMINI_API_KEY:
+        return None
+    
+    try:
+        response = requests.post(
+            f"{GEMINI_URL}?key={GEMINI_API_KEY}",
+            headers={"Content-Type": "application/json"},
+            json={
+                "system_instruction": {
+                    "parts": [{"text": STUDY_PLAN_SYSTEM_PROMPT}],
+                },
+                "contents": [
+                    {"role": "user", "parts": [{"text": user_prompt}]},
+                ],
+                "generationConfig": {
+                    "temperature": 0.7,
+                    "topP": 0.9,
+                    "topK": 40,
+                    "maxOutputTokens": 4096,
+                },
+            },
+            timeout=30,
+        )
+        response.raise_for_status()
+        data = response.json()
+        candidates = data.get("candidates", [])
+        if candidates:
+            parts = candidates[0].get("content", {}).get("parts", [])
+            if parts:
+                return parts[0].get("text", "")
+        return None
+    except Exception as e:
+        logger.error(f"Gemini study plan error: {str(e)}")
+        return None
+
+
+def _call_ollama_for_plan(user_prompt: str) -> Optional[str]:
+    """Call Ollama (local) for study plan generation."""
+    try:
+        # Quick check if Ollama is running
+        r = requests.get(f"{OLLAMA_URL}/api/tags", timeout=2)
+        if r.status_code != 200:
+            return None
+    except Exception:
+        return None
+    
+    try:
+        prompt = f"{STUDY_PLAN_SYSTEM_PROMPT}\n\n{user_prompt}"
+        response = requests.post(
+            f"{OLLAMA_URL}/api/generate",
+            json={
+                "model": OLLAMA_MODEL,
+                "prompt": prompt,
+                "stream": False,
+                "options": {"temperature": 0.7, "num_predict": 4096},
+            },
+            timeout=90,
+        )
+        response.raise_for_status()
+        return response.json().get("response", "").strip()
+    except Exception as e:
+        logger.error(f"Ollama study plan error: {str(e)}")
+        return None
+
+
+def _generate_ai_study_plan(
+    student_goal: str,
+    weak_areas: str,
+    duration_weeks: int,
+    additional_context: Optional[str] = None,
+) -> Optional[List[Dict[str, Any]]]:
+    """
+    Generate a study plan using the best available LLM backend.
+    Returns the parsed plan list, or None if all backends fail.
+    """
+    user_prompt = _build_user_prompt(student_goal, weak_areas, duration_weeks, additional_context)
+    
+    backends = [
+        ("gemini", _call_gemini_for_plan),
+        ("groq", _call_groq_for_plan),
+        ("ollama", _call_ollama_for_plan),
+    ]
+    
+    for name, call_fn in backends:
+        logger.info(f"Study Planner: trying {name}...")
+        raw = call_fn(user_prompt)
+        if raw:
+            try:
+                plan = _parse_json_response(raw)
+                validated = _validate_plan_structure(plan, duration_weeks)
+                logger.info(f"Study Planner: {name} produced {len(validated)}-week plan")
+                return validated
+            except (ValueError, json.JSONDecodeError) as e:
+                logger.warning(f"Study Planner: {name} returned unparseable JSON: {e}")
+                continue
+    
+    logger.warning("Study Planner: all LLM backends failed, falling back to Serper-enhanced template")
+    return None
+
+
+# =============================================================================
+# SERPER-POWERED SMART TEMPLATE
+# =============================================================================
+
+def _serper_search_topics(query: str, num_results: int = 5) -> Dict:
+    """Perform a Serper search and return the raw response data."""
+    if not SERPER_API_KEY:
+        return {}
+    
+    import hashlib
+    from django.core.cache import cache as django_cache
+    
+    cache_key = f"serper_sp_{hashlib.md5(query.encode()).hexdigest()}"
+    cached = django_cache.get(cache_key)
+    if cached:
+        return cached
+    
+    try:
+        response = requests.post(
+            "https://google.serper.dev/search",
+            headers={"X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json"},
+            json={"q": query, "num": num_results, "gl": "us", "hl": "en"},
+            timeout=8,
+        )
+        response.raise_for_status()
+        data = response.json()
+        django_cache.set(cache_key, data, 600)
+        return data
+    except Exception as e:
+        logger.warning(f"Serper topic search error: {str(e)}")
+        return {}
+
+
+def _generate_serper_smart_plan(
+    student_goal: str,
+    weak_areas: str,
+    duration_weeks: int
+) -> Optional[List[Dict[str, Any]]]:
+    """
+    Generate a study plan using Serper searches to discover real topics,
+    subtopics, and learning progressions. Much smarter than generic templates.
+    """
+    if not SERPER_API_KEY:
+        return None
+    
+    logger.info("Study Planner: generating Serper-smart plan...")
+    
+    # ── Search for topic breakdown / syllabus ──
+    syllabus_data = _serper_search_topics(
+        f"{weak_areas} study plan syllabus topics order learn", num_results=5
+    )
+    subtopics_data = _serper_search_topics(
+        f"{weak_areas} key concepts subtopics beginners to advanced", num_results=5
+    )
+    tips_data = _serper_search_topics(
+        f"how to study {weak_areas} tips strategies", num_results=3
+    )
+    
+    # ── Extract subtopics from search results ──
+    discovered_topics = []
+    all_snippets = []
+    
+    for data in [syllabus_data, subtopics_data]:
+        for item in data.get("organic", []):
+            snippet = item.get("snippet", "")
+            if snippet:
+                all_snippets.append(snippet)
+                # Extract potential topic names from snippets
+                # Look for numbered items, comma-separated lists, etc.
+                # Split on common delimiters
+                for sep in [", ", "; ", " - ", "• ", "· "]:
+                    if sep in snippet:
+                        parts = snippet.split(sep)
+                        for part in parts:
+                            clean = part.strip().rstrip(".")
+                            if 3 < len(clean) < 60 and clean not in discovered_topics:
+                                discovered_topics.append(clean)
+    
+    # Extract study tips
+    study_tips = []
+    for item in tips_data.get("organic", []):
+        snippet = item.get("snippet", "")
+        if snippet:
+            study_tips.append(snippet.split(". ")[0].strip())
+    
+    # ── Build the plan ──
+    phases = ["Foundation", "Core Concepts", "Application", "Practice & Review", "Advanced", "Mastery"]
+    
+    plan = []
+    for week in range(1, duration_weeks + 1):
+        phase_idx = min(int((week - 1) / max(1, duration_weeks - 1) * (len(phases) - 1)), len(phases) - 1)
+        phase_name = phases[phase_idx]
+        
+        # Pick a discovered topic for this week if available
+        if discovered_topics:
+            topic_idx = (week - 1) % len(discovered_topics)
+            week_topic = discovered_topics[topic_idx]
+        else:
+            week_topic = f"{weak_areas} — Week {week}"
+        
+        # Pick a study tip if available
+        tip = study_tips[(week - 1) % len(study_tips)] if study_tips else f"Focus on understanding {week_topic}"
+        
+        # Use search snippet content for objectives
+        snippet_idx = (week - 1) % max(1, len(all_snippets))
+        context_snippet = all_snippets[snippet_idx] if all_snippets else ""
+        
+        week_entry = {
+            "week": week,
+            "theme": f"{phase_name} — {week_topic[:50]}",
+            "topic": week_topic,
+            "learning_objectives": [
+                f"Understand the key concepts of {week_topic}",
+                f"Apply {week_topic} to {student_goal}",
+                f"Practice problems related to {week_topic}",
+            ],
+            "action_items": [
+                f"Study: {tip}" if tip else f"Study {week_topic} fundamentals",
+                f"Complete practice exercises on {week_topic}",
+                f"Create summary notes for {week_topic}",
+                f"Review previous weeks and connect to {week_topic}",
+            ],
+            "resources": [
+                f"Search: '{week_topic} tutorial' on YouTube",
+                f"Search: '{week_topic} practice problems'",
+                f"Khan Academy / Coursera — {weak_areas}",
+            ],
+            "milestone": f"Can explain and solve problems about {week_topic} with confidence",
+        }
+        
+        plan.append(week_entry)
+    
+    logger.info(f"Study Planner: Serper-smart plan generated with {len(discovered_topics)} discovered topics")
+    return plan
 
 
 def _generate_mock_study_plan(
@@ -306,17 +624,16 @@ def generate_study_plan(
     additional_context: Optional[str] = None
 ) -> Dict[str, Any]:
     """
-    Generate a personalized study plan using Serper AI for resource discovery.
+    Generate a personalized study plan using AI + Serper resource discovery.
     
     This is the main entry point for the study planner feature.
-    Uses Serper to search for real learning resources and enhances 
-    a structured study plan with actual URLs and materials.
     
     WORKFLOW:
     1. Validate inputs
-    2. Generate base study plan (structured template)
-    3. Enhance with Serper search results for real resources
-    4. Return enriched plan with actual learning materials
+    2. Try AI-generated plan (Gemini → Groq → Ollama)
+    3. Fall back to template plan if all AI backends fail
+    4. Enhance with Serper search results for real resource URLs
+    5. Return enriched plan with actual learning materials
     
     Args:
         student_goal: What the student wants to achieve (e.g., "Pass Calculus Exam")
@@ -369,28 +686,52 @@ def generate_study_plan(
     try:
         logger.info(f"Generating {duration_weeks}-week study plan for: {student_goal}")
         
-        # Generate base study plan (structured template)
-        study_plan = _generate_mock_study_plan(
+        # ── Step 1: Try AI-generated plan (Gemini → Groq → Ollama) ──
+        study_plan = _generate_ai_study_plan(
             student_goal=student_goal,
             weak_areas=weak_areas,
-            duration_weeks=duration_weeks
+            duration_weeks=duration_weeks,
+            additional_context=additional_context,
         )
+        
+        ai_method = "ai_generated"
+        
+        # ── Step 2: Try Serper-smart plan (uses web search to discover topics) ──
+        if not study_plan:
+            logger.info("Trying Serper-smart plan generation...")
+            study_plan = _generate_serper_smart_plan(
+                student_goal=student_goal,
+                weak_areas=weak_areas,
+                duration_weeks=duration_weeks
+            )
+            if study_plan:
+                ai_method = "serper_smart"
+        
+        # ── Step 3: Fallback to generic template ──
+        if not study_plan:
+            logger.info("Falling back to template-based plan generation")
+            study_plan = _generate_mock_study_plan(
+                student_goal=student_goal,
+                weak_areas=weak_areas,
+                duration_weeks=duration_weeks
+            )
+            ai_method = "template_fallback"
         
         # Validate the plan structure
         if not study_plan or len(study_plan) == 0:
             raise ValueError("Failed to generate study plan")
         
-        # Enhance plan with Serper search resources
+        # ── Step 3: Enhance with Serper search resources ──
         logger.info("Adding Serper search resources to study plan...")
         study_plan = _enhance_plan_with_serper_resources(study_plan, weak_areas)
         
-        logger.info(f"Successfully generated {len(study_plan)}-week study plan with Serper resources")
+        logger.info(f"Successfully generated {len(study_plan)}-week plan via {ai_method}")
         
         return {
             'status': 'success',
-            'message': 'Study plan generated successfully with Serper AI resource discovery',
+            'message': f'Study plan generated successfully via {ai_method}',
             'plan': study_plan,
-            'metadata': {**metadata, 'method': 'serper_enhanced', 'weeks_generated': len(study_plan)}
+            'metadata': {**metadata, 'method': ai_method, 'weeks_generated': len(study_plan)}
         }
         
     except ValueError as e:

@@ -106,13 +106,15 @@ const RecommendationCard = memo(function RecommendationCard({ rec }) {
     tutor_id,
     match_percentage = 0,
     explanation = '',
-    avatar_url,
+    image,
     subjects = [],
     hourly_rate,
     average_rating,
   } = rec
 
-  const initials = getInitials(tutor_name)
+  // Also support full_name from API (backend sends full_name, not tutor_name)
+  const displayName = rec.full_name || tutor_name
+  const initials = getInitials(displayName)
   const matchGradient = getMatchGradient(match_percentage)
 
   return (
@@ -134,10 +136,10 @@ const RecommendationCard = memo(function RecommendationCard({ rec }) {
         <div className="flex items-center gap-3 mb-4">
           {/* Circular Avatar with Initials Fallback */}
           <div className="relative w-12 h-12 flex-shrink-0">
-            {avatar_url ? (
+            {image && !image.includes('ui-avatars.com') ? (
               <img
-                src={avatar_url}
-                alt={tutor_name}
+                src={image}
+                alt={displayName}
                 className="w-12 h-12 rounded-full object-cover ring-2 ring-slate-200 dark:ring-slate-600"
                 loading="lazy"
               />
@@ -146,11 +148,14 @@ const RecommendationCard = memo(function RecommendationCard({ rec }) {
                 <span className="text-white font-semibold text-sm">{initials}</span>
               </div>
             )}
+            {rec.is_online && (
+              <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-slate-800 animate-pulse" />
+            )}
           </div>
 
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-slate-800 dark:text-slate-100 text-sm truncate">
-              {tutor_name}
+              {displayName}
             </h3>
             <div className="flex items-center gap-1.5 mt-0.5">
               {average_rating != null && (

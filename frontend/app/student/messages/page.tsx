@@ -7,6 +7,7 @@ import { createClient } from '@/utils/supabase/client';
 import { sendMessage, getMessageHistory, markMessagesAsRead, getConversations } from '@/app/actions';
 import { formatDistanceToNow } from 'date-fns';
 import { Send, MessageCircle, Search, ArrowLeft, Check, CheckCheck } from 'lucide-react';
+import { OnlineDot, OnlineStatusText } from '@/components/OnlineStatusIndicator';
 
 interface Message {
   id: string;
@@ -23,6 +24,8 @@ interface Conversation {
   user_name: string;
   user_avatar: string;
   user_type?: string;
+  is_online?: boolean;
+  last_seen?: string | null;
   last_message: string;
   last_message_time: string;
   unread_count: number;
@@ -117,11 +120,14 @@ function ConversationItem({
       }`}
     >
       <div className="flex items-start gap-3">
-        <img
-          src={conversation.user_avatar}
-          alt={conversation.user_name}
-          className="w-12 h-12 rounded-full flex-shrink-0"
-        />
+        <div className="relative flex-shrink-0">
+          <img
+            src={conversation.user_avatar}
+            alt={conversation.user_name}
+            className="w-12 h-12 rounded-full"
+          />
+          <OnlineDot isOnline={conversation.is_online ?? false} size="sm" />
+        </div>
         <div className="flex-1 min-w-0">
           <div className="flex justify-between items-start gap-2">
             <div className="flex items-center gap-2 min-w-0">
@@ -190,7 +196,7 @@ export default function MessagesPage() {
       // Fetch the tutor's profile info
       const { data: profile } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name')
+        .select('id, first_name, last_name, avatar')
         .eq('id', chatWithId)
         .single();
 
@@ -203,7 +209,7 @@ export default function MessagesPage() {
           id: profile.id,
           user_id: profile.id,
           user_name: userName,
-          user_avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=14b8a6&color=fff`,
+          user_avatar: profile.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=14b8a6&color=fff`,
           last_message: '',
           last_message_time: new Date().toISOString(),
           unread_count: 0,
@@ -360,7 +366,7 @@ export default function MessagesPage() {
             id: newChatUser.id,
             user_id: newChatUser.id,
             user_name: newChatUser.name,
-            user_avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(newChatUser.name)}&background=14b8a6&color=fff`,
+            user_avatar: selectedConversation?.user_avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(newChatUser.name)}&background=14b8a6&color=fff`,
             last_message: messageInput,
             last_message_time: new Date().toISOString(),
             unread_count: 0,
@@ -470,7 +476,10 @@ export default function MessagesPage() {
                 <h3 className="font-semibold text-gray-900 dark:text-gray-100">
                   {selectedConversation.user_name}
                 </h3>
-                <p className="text-sm text-green-500">Online</p>
+                <OnlineStatusText
+                  isOnline={selectedConversation.is_online ?? false}
+                  lastSeen={selectedConversation.last_seen}
+                />
               </div>
             </div>
 

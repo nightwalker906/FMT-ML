@@ -245,14 +245,15 @@ export async function getBookingRequests(): Promise<{
     if (studentIds.length > 0) {
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name')
+        .select('id, first_name, last_name, avatar, is_online, last_seen')
         .in('id', studentIds);
 
       if (profiles) {
         profilesMap = profiles.reduce((acc, p) => {
+          const name = `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Student';
           acc[p.id] = {
-            full_name: `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Student',
-            avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(`${p.first_name || ''} ${p.last_name || ''}`)}`,
+            full_name: name,
+            avatar_url: p.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`,
           };
           return acc;
         }, {} as Record<string, { full_name: string; avatar_url: string }>);
@@ -322,14 +323,15 @@ export async function getUpcomingSessions(): Promise<{
     if (studentIds.length > 0) {
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name')
+        .select('id, first_name, last_name, avatar, is_online, last_seen')
         .in('id', studentIds);
 
       if (profiles) {
         profilesMap = profiles.reduce((acc, p) => {
+          const name = `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Student';
           acc[p.id] = {
-            full_name: `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Student',
-            avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(`${p.first_name || ''} ${p.last_name || ''}`)}`,
+            full_name: name,
+            avatar_url: p.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`,
           };
           return acc;
         }, {} as Record<string, { full_name: string; avatar_url: string }>);
@@ -529,7 +531,7 @@ export async function getPendingRequests(): Promise<{
     if (studentIds.length > 0) {
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name')
+        .select('id, first_name, last_name, avatar, is_online, last_seen')
         .in('id', studentIds);
 
       if (profiles) {
@@ -537,7 +539,7 @@ export async function getPendingRequests(): Promise<{
           const name = `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Student';
           acc[p.id] = {
             name,
-            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0d9488&color=fff`,
+            avatar: p.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0d9488&color=fff`,
           };
           return acc;
         }, {} as Record<string, { name: string; avatar: string }>);

@@ -6,8 +6,10 @@ import Link from 'next/link';
 import { useAuth } from '@/context/auth-context';
 import { createClient } from '@/utils/supabase/client';
 import { Sidebar, MobileSidebar, tutorLinks, SidebarLink } from '@/components/layout/sidebar';
+import { useOnlinePresence } from '@/hooks/useOnlinePresence';
 import dynamic from 'next/dynamic';
 const PricePredictorModal = dynamic(() => import('@/components/ai/PricePredictorModal'), { ssr: false });
+const TutorCommandCenter = dynamic(() => import('@/components/ai/TutorCommandCenter'), { ssr: false });
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Bell, Menu, Loader2 } from 'lucide-react';
 
@@ -27,27 +29,33 @@ export default function TutorLayout({ children }: { children: React.ReactNode })
   const [hourlyRate, setHourlyRate] = useState(0);
   const [showPricingModal, setShowPricingModal] = useState(false);
 
+  // ── Track online presence (heartbeat + auto-offline) ──
+  const { goOffline } = useOnlinePresence(user?.id);
+
   // Fetch user profile and notifications
   useEffect(() => {
     if (!user) return;
 
     const fetchData = async () => {
-      // Fetch profile
+      // Fetch profile (including avatar for real profile pictures)
       const { data: profile } = await supabase
         .from('profiles')
-        .select('first_name, last_name')
+        .select('first_name, last_name, avatar')
         .eq('id', user.id)
         .single();
 
       if (profile?.first_name) {
         setDisplayName(`${profile.first_name} ${profile.last_name || ''}`.trim());
-        // Get first letter of first name and last name for initials
         const firstInitial = profile.first_name.charAt(0).toUpperCase();
         const lastInitial = profile.last_name ? profile.last_name.charAt(0).toUpperCase() : '';
         setInitials(`${firstInitial}${lastInitial}`);
-        // Generate avatar URL from name
-        const fullName = `${profile.first_name} ${profile.last_name || ''}`;
-        setAvatarUrl(`https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=14b8a6&color=fff`);
+        // Use stored profile picture if available, otherwise generate placeholder
+        if (profile.avatar) {
+          setAvatarUrl(profile.avatar);
+        } else {
+          const fullName = `${profile.first_name} ${profile.last_name || ''}`;
+          setAvatarUrl(`https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=14b8a6&color=fff`);
+        }
       } else {
         const emailName = user.email?.split('@')[0] || 'Tutor';
         setDisplayName(emailName);
@@ -142,6 +150,7 @@ export default function TutorLayout({ children }: { children: React.ReactNode })
   }, [searchParams, pathname, router]);
 
   const handleSignOut = async () => {
+    await goOffline();
     await signOut();
     router.push('/login');
   };
@@ -234,6 +243,11 @@ export default function TutorLayout({ children }: { children: React.ReactNode })
             <div className="lg:hidden flex items-center gap-2">
               <span className="text-xl">🎓</span>
               <span className="font-bold text-slate-900 dark:text-white">FMT</span>
+            </div>
+
+            {/* AI Command Center — Spotlight Search */}
+            <div className="hidden sm:flex flex-1 max-w-md mx-4 justify-center">
+              <TutorCommandCenter />
             </div>
 
             {/* Right Side Actions */}

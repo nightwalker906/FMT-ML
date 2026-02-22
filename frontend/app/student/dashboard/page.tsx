@@ -10,6 +10,7 @@ import { MiniAchievements } from '@/components/achievements/AchievementsShowcase
 import { useAchievements } from '@/hooks/useAchievements';
 import { PageTransition, StaggerContainer, StaggerItem, AnimatedCounter } from '@/components/ui/motion';
 import { SkeletonStatsGrid, SkeletonList } from '@/components/ui/skeleton';
+import { OnlineDot } from '@/components/OnlineStatusIndicator';
 import {
   Search,
   Calendar,
@@ -26,6 +27,7 @@ interface UpcomingSession {
   id: string;
   tutorName: string;
   tutorAvatar: string;
+  isOnline: boolean;
   subject: string;
   scheduledAt: string;
 }
@@ -74,7 +76,7 @@ export default function StudentDashboardPage() {
         const tutorIds = [...new Set(sessions.map((s) => s.tutor_id))];
         const { data: tutorProfiles } = await supabase
           .from('profiles')
-          .select('id, first_name, last_name')
+          .select('id, first_name, last_name, avatar, is_online')
           .in('id', tutorIds);
 
         const profileMap = new Map(
@@ -90,7 +92,8 @@ export default function StudentDashboardPage() {
             return {
               id: s.id,
               tutorName,
-              tutorAvatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(tutorName)}&background=0d9488&color=fff`,
+              tutorAvatar: tutor?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(tutorName)}&background=0d9488&color=fff`,
+              isOnline: tutor?.is_online ?? false,
               subject: s.subject,
               scheduledAt: s.scheduled_at,
             };
@@ -306,11 +309,14 @@ export default function StudentDashboardPage() {
                 <StaggerItem key={session.id}>
                   <div className="card-stat p-4 hover:border-primary-200/50 dark:hover:border-primary-800/50 transition-all duration-300">
                     <div className="flex items-center gap-4">
-                      <img
-                        src={session.tutorAvatar}
-                        alt={session.tutorName}
-                        className="w-12 h-12 rounded-full ring-2 ring-primary-200/50 dark:ring-primary-700/30"
-                      />
+                      <div className="relative">
+                        <img
+                          src={session.tutorAvatar}
+                          alt={session.tutorName}
+                          className="w-12 h-12 rounded-full ring-2 ring-primary-200/50 dark:ring-primary-700/30"
+                        />
+                        <OnlineDot isOnline={session.isOnline} size="sm" />
+                      </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-slate-900 dark:text-white truncate">
                           {session.tutorName}

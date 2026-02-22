@@ -281,6 +281,7 @@ export default function StudyPlannerPage() {
                 exit={{ opacity: 0 }}
               >
                 <StudyPlanTimeline 
+                  planData={plan}
                   isLoading={false}
                   method={method}
                 />
