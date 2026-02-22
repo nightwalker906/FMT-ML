@@ -245,7 +245,7 @@ export async function getBookingRequests(): Promise<{
     if (studentIds.length > 0) {
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, avatar')
+        .select('id, first_name, last_name, avatar, is_online, last_seen')
         .in('id', studentIds);
 
       if (profiles) {
@@ -323,7 +323,7 @@ export async function getUpcomingSessions(): Promise<{
     if (studentIds.length > 0) {
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, avatar')
+        .select('id, first_name, last_name, avatar, is_online, last_seen')
         .in('id', studentIds);
 
       if (profiles) {
@@ -531,7 +531,7 @@ export async function getPendingRequests(): Promise<{
     if (studentIds.length > 0) {
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, avatar')
+        .select('id, first_name, last_name, avatar, is_online, last_seen')
         .in('id', studentIds);
 
       if (profiles) {

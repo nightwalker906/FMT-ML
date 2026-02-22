@@ -7,6 +7,7 @@ import { createClient } from '@/utils/supabase/client';
 import { sendMessage, getMessageHistory, markMessagesAsRead, getConversations } from '@/app/actions';
 import { formatDistanceToNow } from 'date-fns';
 import { Send, MessageCircle, Search, ArrowLeft, GraduationCap, Check, CheckCheck } from 'lucide-react';
+import { OnlineDot, OnlineStatusText } from '@/components/OnlineStatusIndicator';
 
 interface Message {
   id: string;
@@ -23,6 +24,8 @@ interface Conversation {
   user_name: string;
   user_avatar: string;
   user_type?: string;
+  is_online?: boolean;
+  last_seen?: string | null;
   last_message: string;
   last_message_time: string;
   unread_count: number;
@@ -117,11 +120,14 @@ function ConversationItem({
       }`}
     >
       <div className="flex items-start gap-3">
-        <img
-          src={conversation.user_avatar}
-          alt={conversation.user_name}
-          className="w-12 h-12 rounded-full flex-shrink-0"
-        />
+        <div className="relative flex-shrink-0">
+          <img
+            src={conversation.user_avatar}
+            alt={conversation.user_name}
+            className="w-12 h-12 rounded-full"
+          />
+          <OnlineDot isOnline={conversation.is_online ?? false} size="sm" />
+        </div>
         <div className="flex-1 min-w-0">
           <div className="flex justify-between items-start gap-2">
             <div className="flex items-center gap-2 min-w-0">
@@ -471,7 +477,10 @@ export default function TutorMessagesPage() {
                   {selectedConversation.user_name}
                 </h3>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-green-500">Online</span>
+                  <OnlineStatusText
+                    isOnline={selectedConversation.is_online ?? false}
+                    lastSeen={selectedConversation.last_seen}
+                  />
                   {selectedConversation.has_booking && (
                     <span className="text-xs px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300">
                       Student

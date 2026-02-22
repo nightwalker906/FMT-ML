@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/context/auth-context';
 import { createClient } from '@/utils/supabase/client';
 import { Sidebar, MobileSidebar, studentLinks, SidebarLink } from '@/components/layout/sidebar';
+import { useOnlinePresence } from '@/hooks/useOnlinePresence';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Bell, Menu, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -22,6 +23,9 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   const [displayName, setDisplayName] = useState('');
   const [initials, setInitials] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
+
+  // ── Track online presence (heartbeat + auto-offline) ──
+  const { goOffline } = useOnlinePresence(user?.id);
 
   // Fetch user profile and notifications
   useEffect(() => {
@@ -121,6 +125,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   }, [user, isLoading, router]);
 
   const handleSignOut = async () => {
+    await goOffline();
     await signOut();
     router.push('/login');
   };

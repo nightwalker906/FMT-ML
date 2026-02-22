@@ -49,11 +49,11 @@ export async function getStudentBookings() {
   
   const { data: tutorProfiles } = await supabase
     .from('profiles')
-    .select('id, first_name, last_name, avatar')
+    .select('id, first_name, last_name, avatar, is_online, last_seen')
     .in('id', tutorIds)
 
   // Create tutor map
-  const tutorMap: Record<string, { id: string; first_name: string; last_name: string; avatar?: string }> = {}
+  const tutorMap: Record<string, { id: string; first_name: string; last_name: string; avatar?: string; is_online?: boolean; last_seen?: string | null }> = {}
   tutorProfiles?.forEach(p => {
     tutorMap[p.id] = p
   })
@@ -205,7 +205,7 @@ export async function searchTutors(filters?: {
   const profileIds = tutorsData.map(t => t.profile_id)
   const { data: profilesData, error: profilesError } = await supabase
     .from('profiles')
-    .select('id, first_name, last_name, is_online, avatar')
+    .select('id, first_name, last_name, is_online, last_seen, avatar')
     .in('id', profileIds)
 
   if (profilesError) {

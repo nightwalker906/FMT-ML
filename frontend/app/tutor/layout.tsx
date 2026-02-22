@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/context/auth-context';
 import { createClient } from '@/utils/supabase/client';
 import { Sidebar, MobileSidebar, tutorLinks, SidebarLink } from '@/components/layout/sidebar';
+import { useOnlinePresence } from '@/hooks/useOnlinePresence';
 import dynamic from 'next/dynamic';
 const PricePredictorModal = dynamic(() => import('@/components/ai/PricePredictorModal'), { ssr: false });
 const TutorCommandCenter = dynamic(() => import('@/components/ai/TutorCommandCenter'), { ssr: false });
@@ -27,6 +28,9 @@ export default function TutorLayout({ children }: { children: React.ReactNode })
   const [avatarUrl, setAvatarUrl] = useState('');
   const [hourlyRate, setHourlyRate] = useState(0);
   const [showPricingModal, setShowPricingModal] = useState(false);
+
+  // ── Track online presence (heartbeat + auto-offline) ──
+  const { goOffline } = useOnlinePresence(user?.id);
 
   // Fetch user profile and notifications
   useEffect(() => {
@@ -146,6 +150,7 @@ export default function TutorLayout({ children }: { children: React.ReactNode })
   }, [searchParams, pathname, router]);
 
   const handleSignOut = async () => {
+    await goOffline();
     await signOut();
     router.push('/login');
   };

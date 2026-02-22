@@ -128,7 +128,8 @@ class TutorRecommender:
                     t.hourly_rate,
                     t.average_rating,
                     t.experience_years,
-                    p.is_online
+                    p.is_online,
+                    p.avatar
                 FROM tutors t
                 INNER JOIN profiles p ON t.profile_id = p.id
                 WHERE p.user_type = 'tutor'
@@ -606,6 +607,7 @@ class TutorRecommender:
                 'is_online': bool(row['is_online']) if pd.notna(row['is_online']) else False,
                 'similarity_score': round(float(row['similarity_score']), 4),
                 'match_percentage': round(float(row['match_percentage']), 1),
+                'avatar': row['avatar'] if pd.notna(row.get('avatar')) else None,
                 # XAI Explanation fields
                 'explanation': explanation
             }

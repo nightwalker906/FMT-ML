@@ -21,6 +21,7 @@ import {
   CheckCircle,
   BarChart3,
 } from 'lucide-react';
+import { OnlineDot } from '@/components/OnlineStatusIndicator';
 
 // -- Types --
 interface Booking {
@@ -39,6 +40,7 @@ interface TutorInfo {
   first_name: string;
   last_name: string;
   avatar?: string;
+  is_online?: boolean;
 }
 
 interface SubjectStat {
@@ -102,7 +104,7 @@ export default function LearningProgressPage() {
     if (tutorIds.length > 0) {
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, avatar')
+        .select('id, first_name, last_name, avatar, is_online')
         .in('id', tutorIds);
 
       const map: Record<string, TutorInfo> = {};
@@ -244,7 +246,7 @@ export default function LearningProgressPage() {
   // -- Recent tutors --
   const recentTutors = useMemo(() => {
     const seen = new Set<string>();
-    const result: { id: string; name: string; sessions: number; lastSession: string; avatar?: string }[] = [];
+    const result: { id: string; name: string; sessions: number; lastSession: string; avatar?: string; isOnline?: boolean }[] = [];
 
     for (const b of allBookings) {
       if (!seen.has(b.tutor_id)) {
@@ -260,6 +262,7 @@ export default function LearningProgressPage() {
           sessions: tutorSessions,
           lastSession: b.scheduled_at,
           avatar: info?.avatar,
+          isOnline: info?.is_online,
         });
       }
       if (result.length >= 5) break;
@@ -444,11 +447,14 @@ export default function LearningProgressPage() {
                   href={`/student/tutors/${t.id}`}
                   className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group"
                 >
-                  <img
-                    src={t.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(t.name)}&background=0d9488&color=fff`}
-                    alt={t.name}
-                    className="w-10 h-10 rounded-full"
-                  />
+                  <div className="relative flex-shrink-0">
+                    <img
+                      src={t.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(t.name)}&background=0d9488&color=fff`}
+                      alt={t.name}
+                      className="w-10 h-10 rounded-full"
+                    />
+                    <OnlineDot isOnline={t.isOnline ?? false} size="sm" />
+                  </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-slate-900 dark:text-white truncate group-hover:text-primary-600 dark:text-primary-400 dark:group-hover:text-teal-400 transition-colors">
                       {t.name}

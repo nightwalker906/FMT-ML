@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
+import { OnlineDot, OnlineStatusText } from '@/components/OnlineStatusIndicator';
 
 // Database enum: 'pending', 'accepted', 'rejected', 'completed', 'cancelled'
 type BookingStatus = 'pending' | 'accepted' | 'rejected' | 'completed' | 'cancelled';
@@ -25,6 +26,8 @@ type StudentBooking = {
   student_id: string;
   student_name: string;
   student_avatar: string;
+  is_online: boolean;
+  last_seen: string | null;
   subject: string;
   scheduled_at: string;
   duration: number;
@@ -116,16 +119,18 @@ export default function TutorStudentsPage() {
     // Get profiles directly since student_id in bookings = profile.id = auth.users.id
     const { data: profiles } = await supabase
       .from('profiles')
-      .select('id, first_name, last_name, avatar')
+      .select('id, first_name, last_name, avatar, is_online, last_seen')
       .in('id', studentIds);
 
     // Create a map of student_id -> profile
-    const studentProfileMap: Record<string, { name: string; avatar: string }> = {};
+    const studentProfileMap: Record<string, { name: string; avatar: string; is_online: boolean; last_seen: string | null }> = {};
     profiles?.forEach((profile) => {
       const name = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Student';
       studentProfileMap[profile.id] = {
         name,
         avatar: profile.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=14b8a6&color=fff`,
+        is_online: profile.is_online ?? false,
+        last_seen: profile.last_seen ?? null,
       };
     });
 
@@ -146,6 +151,8 @@ export default function TutorStudentsPage() {
       student_id: b.student_id,
       student_name: studentProfileMap[b.student_id]?.name || 'Student',
       student_avatar: studentProfileMap[b.student_id]?.avatar || `https://ui-avatars.com/api/?name=Student&background=14b8a6&color=fff`,
+      is_online: studentProfileMap[b.student_id]?.is_online ?? false,
+      last_seen: studentProfileMap[b.student_id]?.last_seen ?? null,
       subject: b.subject || 'General Tutoring',
       scheduled_at: b.scheduled_at,
       duration: 60, // Duration stored in notes field
@@ -356,11 +363,14 @@ export default function TutorStudentsPage() {
               <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                 {/* Student Info */}
                 <div className="flex items-center gap-4 flex-1">
-                  <img
-                    src={student.student_avatar}
-                    alt={student.student_name}
-                    className="h-12 w-12 rounded-full flex-shrink-0"
-                  />
+                  <div className="relative flex-shrink-0">
+                    <img
+                      src={student.student_avatar}
+                      alt={student.student_name}
+                      className="h-12 w-12 rounded-full"
+                    />
+                    <OnlineDot isOnline={student.is_online} size="sm" />
+                  </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold text-slate-900 dark:text-white dark:text-gray-100 truncate">

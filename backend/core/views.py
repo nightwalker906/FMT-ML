@@ -334,7 +334,7 @@ def get_smart_recommendations(request):
                     "is_online": result.get('is_online', False),
                     "average_rating": float(result.get('average_rating', 0)),
                     "hourly_rate": float(result.get('hourly_rate', 0)),
-                    "image": result.get('image', f"https://ui-avatars.com/api/?name={result.get('full_name', 'Tutor')}")
+                    "image": result.get('avatar') or f"https://ui-avatars.com/api/?name={result.get('full_name', 'Tutor')}&background=0d9488&color=fff"
                 }
                 recommendations.append(recommendation)
         else:
@@ -368,7 +368,7 @@ def get_smart_recommendations(request):
                     "is_online": getattr(profile, 'is_online', False),
                     "average_rating": profile.average_rating or 0,
                     "hourly_rate": tutor.hourly_rate or 0,
-                    "image": f"https://ui-avatars.com/api/?name={profile.first_name}+{profile.last_name}&background=0d9488&color=fff"
+                    "image": getattr(profile, 'avatar', None) or f"https://ui-avatars.com/api/?name={profile.first_name}+{profile.last_name}&background=0d9488&color=fff"
                 }
                 
                 recommendations.append(recommendation)
@@ -545,7 +545,7 @@ def recommend_tutors(request):
                     "is_online": result.get('is_online', False),
                     "average_rating": float(result.get('average_rating', 0)),
                     "hourly_rate": float(result.get('hourly_rate', 0)),
-                    "image": result.get('image', f"https://ui-avatars.com/api/?name={result.get('full_name', 'Tutor')}")
+                    "image": result.get('avatar') or f"https://ui-avatars.com/api/?name={result.get('full_name', 'Tutor')}&background=0d9488&color=fff"
                 }
                 recommendations.append(recommendation)
         else:
@@ -568,7 +568,7 @@ def recommend_tutors(request):
                     "is_online": getattr(profile, 'is_online', False),
                     "average_rating": float(tutor.average_rating or 0),
                     "hourly_rate": float(tutor.hourly_rate or 0),
-                    "image": f"https://ui-avatars.com/api/?name={profile.first_name}+{profile.last_name}&background=0d9488&color=fff"
+                    "image": getattr(profile, 'avatar', None) or f"https://ui-avatars.com/api/?name={profile.first_name}+{profile.last_name}&background=0d9488&color=fff"
                 }
                 recommendations.append(recommendation)
         

@@ -132,7 +132,7 @@ export async function getConversations() {
     // Fetch profiles for these users
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('id, first_name, last_name, user_type, avatar')
+      .select('id, first_name, last_name, user_type, avatar, is_online, last_seen')
       .in('id', Array.from(otherUserIds));
 
     if (profilesError) {
@@ -148,6 +148,8 @@ export async function getConversations() {
       user_name: string;
       user_avatar: string;
       user_type: string;
+      is_online: boolean;
+      last_seen: string | null;
       last_message: string;
       last_message_time: string;
       unread_count: number;
@@ -171,6 +173,8 @@ export async function getConversations() {
           user_name: userName,
           user_type: 'tutor',
           user_avatar: tutorProfile?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=14b8a6&color=fff`,
+          is_online: tutorProfile?.is_online ?? false,
+          last_seen: tutorProfile?.last_seen ?? null,
           last_message: `📚 Booked: ${booking.subject}`,
           last_message_time: booking.scheduled_at,
           unread_count: 0,
@@ -196,6 +200,8 @@ export async function getConversations() {
           user_name: userName,
           user_type: 'student',
           user_avatar: studentProfile?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=6366f1&color=fff`,
+          is_online: studentProfile?.is_online ?? false,
+          last_seen: studentProfile?.last_seen ?? null,
           last_message: `📚 Session: ${booking.subject}`,
           last_message_time: booking.scheduled_at,
           unread_count: 0,
@@ -228,6 +234,8 @@ export async function getConversations() {
           user_name: userName,
           user_type: profile?.user_type || 'unknown',
           user_avatar: profile?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=14b8a6&color=fff`,
+          is_online: profile?.is_online ?? false,
+          last_seen: profile?.last_seen ?? null,
           last_message: msg.content,
           last_message_time: msg.created_at,
           unread_count: existingConv?.unread_count || 0,

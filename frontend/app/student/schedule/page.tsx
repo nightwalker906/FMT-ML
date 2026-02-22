@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Calendar, Clock, Star, X, Loader2, CheckCircle, MessageSquare } from 'lucide-react'
 import { getStudentBookings, submitReview } from '@/app/actions/student'
+import { OnlineDot } from '@/components/OnlineStatusIndicator'
 
 type Booking = {
   id: string
@@ -16,6 +17,7 @@ type Booking = {
     first_name: string
     last_name: string
     avatar?: string
+    is_online?: boolean
   }
   hasReview?: boolean
 }
@@ -212,12 +214,13 @@ export default function StudentSchedulePage() {
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden flex-shrink-0">
+                    <div className="relative h-12 w-12 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden flex-shrink-0">
                       <img
                         src={getAvatarUrl(booking.tutor?.first_name || '', booking.tutor?.last_name || '', booking.tutor?.avatar)}
                         alt=""
                         className="h-full w-full object-cover"
                       />
+                      <OnlineDot isOnline={booking.tutor?.is_online ?? false} size="sm" />
                     </div>
                     <div>
                       <h3 className="font-semibold text-slate-900 dark:text-white">

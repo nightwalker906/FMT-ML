@@ -23,6 +23,8 @@ class Profile(models.Model):
     email = models.EmailField(unique=True)
     user_type = models.CharField(max_length=50, choices=USER_TYPE_CHOICES)
     is_online = models.BooleanField(default=False)
+    avatar = models.TextField(null=True, blank=True)
+    last_seen = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField()
     updated_at = models.DateTimeField()
 

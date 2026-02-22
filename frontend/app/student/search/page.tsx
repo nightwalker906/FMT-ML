@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Search, Filter, Star, DollarSign, Clock, ChevronDown, X, Loader2, MapPin, BookOpen, Send } from 'lucide-react'
 import { searchTutors, getSubjects, bookSession } from '@/app/actions/student'
+import { OnlineDot, OnlineStatusText } from '@/components/OnlineStatusIndicator'
 
 type Tutor = {
   profile_id: string
@@ -17,6 +18,7 @@ type Tutor = {
     first_name: string
     last_name: string
     is_online: boolean
+    last_seen?: string | null
     avatar?: string
   }
 }
@@ -359,13 +361,18 @@ export default function StudentSearchPage() {
                       />
                     </div>
                     {tutor.profile?.is_online && (
-                      <div className="absolute bottom-0 right-0 h-4 w-4 bg-green-500 border-2 border-white rounded-full" />
+                      <OnlineDot isOnline={true} size="md" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-slate-900 dark:text-white truncate">
                       {tutor.profile?.first_name} {tutor.profile?.last_name}
                     </h3>
+                    <OnlineStatusText
+                      isOnline={tutor.profile?.is_online ?? false}
+                      lastSeen={tutor.profile?.last_seen}
+                      className="text-xs"
+                    />
                     {tutor.average_rating && (
                       <div className="flex items-center gap-1 mt-1">
                         <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />

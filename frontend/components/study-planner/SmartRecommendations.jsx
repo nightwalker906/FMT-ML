@@ -267,7 +267,7 @@ const SmartCard = React.memo(function SmartCard({ recommendation, index, shouldA
         {/* Avatar + Info */}
         <div className="flex items-start gap-3 mb-4">
           <div className="relative flex-shrink-0">
-            {recommendation.image ? (
+            {recommendation.image && !recommendation.image.includes('ui-avatars.com') ? (
               <img
                 src={recommendation.image}
                 alt={tutorName}
