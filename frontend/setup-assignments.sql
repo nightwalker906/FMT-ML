@@ -85,3 +85,5 @@ DROP POLICY IF EXISTS "Authenticated delete student material" ON storage.objects
 CREATE POLICY "Authenticated delete student material"
   ON storage.objects FOR DELETE
   USING (bucket_id = 'student material' AND auth.role() = 'authenticated');
+
+
