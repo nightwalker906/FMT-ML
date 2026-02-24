@@ -327,7 +327,7 @@ EXTRA: Sign Out Button
                          🔑 KEY FUNCTIONS & APIS
 ═════════════════════════════════════════════════════════════════════════════════
 
-MESSAGING APIs (app/actions.ts)
+MESSAGING APIs (app/actions.ts)......
 ────────────────────────────────
 
 1. sendMessage(receiverId, content)
