@@ -21,6 +21,12 @@ import {
   Phone,
   Send,
   X,
+  GraduationCap,
+  Users,
+  Video,
+  Calendar,
+  Sparkles,
+  ArrowRight,
 } from 'lucide-react';
 import BookingModal from '@/components/BookingModal';
 import { OnlineStatusBadge, OnlineStatusText } from '@/components/OnlineStatusIndicator';
@@ -45,6 +51,21 @@ interface TutorDetail {
   total_students?: number;
   response_time?: string;
   avatar?: string;
+}
+
+interface TutorCourse {
+  id: string;
+  title: string;
+  description: string | null;
+  price: number;
+  max_students: number;
+  is_active: boolean;
+  created_at: string;
+  subject_name: string | null;
+  enrolled_count: number;
+  spots_remaining: number;
+  next_session: { title: string; scheduled_start: string; scheduled_end: string } | null;
+  total_sessions: number;
 }
 
 interface Message {
@@ -74,9 +95,14 @@ export default function TutorDetailPage() {
   const [newMessage, setNewMessage] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
   const [chatLoading, setChatLoading] = useState(false);
+  const [tutorCourses, setTutorCourses] = useState<TutorCourse[]>([]);
+  const [coursesLoading, setCoursesLoading] = useState(true);
+  const [enrollingCourse, setEnrollingCourse] = useState<string | null>(null);
+  const [enrolledCourseIds, setEnrolledCourseIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchTutorDetails();
+    fetchTutorCourses();
   }, [tutorId]);
 
   // Load chat when modal opens
@@ -190,6 +216,138 @@ export default function TutorDetailPage() {
       setError(err instanceof Error ? err.message : 'Failed to load tutor details');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function fetchTutorCourses() {
+    try {
+      setCoursesLoading(true);
+
+      // Fetch courses taught by this tutor
+      const { data: coursesData, error: coursesError } = await supabase
+        .from('courses')
+        .select(`
+          id, title, description, price, max_students, is_active, created_at, subject_id,
+          subjects ( id, name, category )
+        `)
+        .eq('tutor_id', tutorId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+
+      if (coursesError || !coursesData || coursesData.length === 0) {
+        setTutorCourses([]);
+        setCoursesLoading(false);
+        return;
+      }
+
+      const courseIds = coursesData.map(c => c.id);
+
+      // Fetch enrollment counts and sessions in parallel
+      const [enrollmentsRes, sessionsRes] = await Promise.all([
+        supabase
+          .from('enrollments')
+          .select('course_id, student_id')
+          .in('course_id', courseIds)
+          .eq('status', 'enrolled'),
+        supabase
+          .from('course_sessions')
+          .select('id, course_id, title, scheduled_start, scheduled_end, status')
+          .in('course_id', courseIds)
+          .gte('scheduled_start', new Date().toISOString())
+          .eq('status', 'scheduled')
+          .order('scheduled_start', { ascending: true }),
+      ]);
+
+      const enrollments = enrollmentsRes.data || [];
+      const sessions = sessionsRes.data || [];
+
+      // Build maps
+      const enrollCountMap: Record<string, number> = {};
+      const userEnrolled = new Set<string>();
+      for (const e of enrollments) {
+        enrollCountMap[e.course_id] = (enrollCountMap[e.course_id] || 0) + 1;
+        if (user && e.student_id === user.id) {
+          userEnrolled.add(e.course_id);
+        }
+      }
+      setEnrolledCourseIds(userEnrolled);
+
+      const nextSessionMap: Record<string, any> = {};
+      const sessionCountMap: Record<string, number> = {};
+      for (const s of sessions) {
+        sessionCountMap[s.course_id] = (sessionCountMap[s.course_id] || 0) + 1;
+        if (!nextSessionMap[s.course_id]) {
+          nextSessionMap[s.course_id] = s;
+        }
+      }
+
+      const fullCourses: TutorCourse[] = coursesData.map(c => {
+        const subj = c.subjects as any;
+        const enrolledCount = enrollCountMap[c.id] || 0;
+        return {
+          id: c.id,
+          title: c.title,
+          description: c.description,
+          price: c.price,
+          max_students: c.max_students,
+          is_active: c.is_active,
+          created_at: c.created_at,
+          subject_name: subj?.name || null,
+          enrolled_count: enrolledCount,
+          spots_remaining: Math.max(0, c.max_students - enrolledCount),
+          next_session: nextSessionMap[c.id] || null,
+          total_sessions: sessionCountMap[c.id] || 0,
+        };
+      });
+
+      setTutorCourses(fullCourses);
+    } catch (err) {
+      console.error('Error fetching tutor courses:', err);
+    } finally {
+      setCoursesLoading(false);
+    }
+  }
+
+  async function handleCourseEnroll(courseId: string) {
+    if (!user) {
+      alert('Please sign in to enroll in a course.');
+      return;
+    }
+
+    setEnrollingCourse(courseId);
+    try {
+      const { data: existingEnrollment } = await supabase
+        .from('enrollments')
+        .select('id')
+        .eq('student_id', user.id)
+        .eq('course_id', courseId)
+        .single();
+
+      if (existingEnrollment) {
+        alert('You are already enrolled in this course.');
+        setEnrolledCourseIds(prev => new Set([...prev, courseId]));
+        return;
+      }
+
+      const { error: enrollError } = await supabase
+        .from('enrollments')
+        .insert({ student_id: user.id, course_id: courseId, status: 'enrolled' });
+
+      if (enrollError) throw enrollError;
+
+      setEnrolledCourseIds(prev => new Set([...prev, courseId]));
+      setTutorCourses(prev =>
+        prev.map(c =>
+          c.id === courseId
+            ? { ...c, enrolled_count: c.enrolled_count + 1, spots_remaining: c.spots_remaining - 1 }
+            : c
+        )
+      );
+    } catch (err) {
+      console.error('Error enrolling:', err);
+      alert('Failed to enroll. Please try again.');
+    } finally {
+      setEnrollingCourse(null);
     }
   }
 
@@ -496,6 +654,148 @@ export default function TutorDetailPage() {
                     </div>
                   </div>
                 )}
+
+                {/* ── Group Classes by This Tutor ── */}
+                <div>
+                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                    <GraduationCap className="w-6 h-6 text-primary-600 dark:text-primary-400" />
+                    Group Classes
+                  </h2>
+
+                  {coursesLoading ? (
+                    <div className="flex items-center gap-3 p-6 bg-slate-50 dark:bg-slate-700/30 rounded-xl">
+                      <Loader2 className="w-5 h-5 animate-spin text-primary-600 dark:text-primary-400" />
+                      <span className="text-slate-500 dark:text-slate-400">Loading courses...</span>
+                    </div>
+                  ) : tutorCourses.length === 0 ? (
+                    <div className="p-6 bg-slate-50 dark:bg-slate-700/30 rounded-xl text-center">
+                      <GraduationCap className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
+                      <p className="text-slate-500 dark:text-slate-400">
+                        This tutor hasn&apos;t created any group classes yet.
+                      </p>
+                      <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">
+                        You can still book a 1-on-1 session above.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {tutorCourses.map((course) => {
+                        const isEnrolled = enrolledCourseIds.has(course.id);
+                        const isFull = course.spots_remaining <= 0;
+
+                        return (
+                          <div
+                            key={course.id}
+                            className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/50 rounded-xl p-5 hover:shadow-md hover:border-primary-200 dark:hover:border-primary-700/40 transition-all"
+                          >
+                            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                              {/* Course Info */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-2">
+                                  {course.subject_name && (
+                                    <span className="px-2 py-0.5 bg-primary-50 dark:bg-teal-900/25 text-primary-700 dark:text-primary-400 text-xs font-medium rounded-full border border-primary-100 dark:border-teal-700/30">
+                                      {course.subject_name}
+                                    </span>
+                                  )}
+                                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                                    isFull
+                                      ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
+                                      : course.spots_remaining <= 5
+                                        ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                                        : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                  }`}>
+                                    {isFull ? 'Full' : `${course.spots_remaining} spots left`}
+                                  </span>
+                                </div>
+
+                                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">
+                                  {course.title}
+                                </h3>
+
+                                {course.description && (
+                                  <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 mb-3">
+                                    {course.description}
+                                  </p>
+                                )}
+
+                                {/* Stats */}
+                                <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+                                  <span className="flex items-center gap-1">
+                                    <Users size={13} className="text-blue-500" />
+                                    {course.enrolled_count}/{course.max_students} students
+                                  </span>
+                                  {course.total_sessions > 0 && (
+                                    <span className="flex items-center gap-1">
+                                      <Video size={13} className="text-purple-500" />
+                                      {course.total_sessions} session{course.total_sessions !== 1 ? 's' : ''}
+                                    </span>
+                                  )}
+                                  {course.next_session && (
+                                    <span className="flex items-center gap-1">
+                                      <Calendar size={13} className="text-amber-500" />
+                                      Next: {new Date(course.next_session.scheduled_start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Price & Action */}
+                              <div className="flex sm:flex-col items-center sm:items-end gap-3 sm:gap-2 flex-shrink-0">
+                                <div className="text-right">
+                                  <span className="text-xl font-bold text-slate-900 dark:text-white">
+                                    R{Number(course.price).toFixed(0)}
+                                  </span>
+                                  <span className="text-xs text-slate-400 dark:text-slate-500 ml-1">/ course</span>
+                                </div>
+
+                                {isEnrolled ? (
+                                  <span className="inline-flex items-center gap-1.5 px-4 py-2 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-sm font-medium rounded-xl border border-green-200 dark:border-green-800/40">
+                                    <Check size={14} />
+                                    Enrolled
+                                  </span>
+                                ) : (
+                                  <button
+                                    onClick={() => handleCourseEnroll(course.id)}
+                                    disabled={isFull || enrollingCourse === course.id}
+                                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white text-sm font-medium rounded-xl hover:from-primary-600 hover:to-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                                  >
+                                    {enrollingCourse === course.id ? (
+                                      <Loader2 size={14} className="animate-spin" />
+                                    ) : (
+                                      <Sparkles size={14} />
+                                    )}
+                                    {isFull ? 'Full' : enrollingCourse === course.id ? 'Enrolling...' : 'Enroll'}
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Enrollment Progress Bar */}
+                            <div className="mt-3">
+                              <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-700/50 rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full transition-all duration-500 ${
+                                    isFull ? 'bg-red-500' : course.spots_remaining <= 5 ? 'bg-amber-500' : 'bg-primary-500'
+                                  }`}
+                                  style={{ width: `${Math.min(100, (course.enrolled_count / course.max_students) * 100)}%` }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {/* Link to all courses */}
+                      <Link
+                        href={`/student/courses`}
+                        className="flex items-center justify-center gap-2 p-3 text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 hover:bg-primary-50 dark:hover:bg-teal-900/20 rounded-xl transition-colors"
+                      >
+                        Browse all group classes
+                        <ArrowRight size={16} />
+                      </Link>
+                    </div>
+                  )}
+                </div>
 
                 {/* Reviews */}
                 {reviews.length > 0 && (
