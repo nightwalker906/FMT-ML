@@ -186,3 +186,138 @@ class Rating(models.Model):
 
     def __str__(self):
         return f"Rating: {self.overall_rating}/5 - {self.student.profile.first_name} -> {self.tutor.profile.first_name}"
+
+
+# ─── Virtual Classrooms / Group Courses ──────────────────────────────────────
+
+class Course(models.Model):
+    """
+    Virtual classroom / group course created by a tutor.
+    Maps to the 'courses' table in PostgreSQL.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    tutor = models.ForeignKey(
+        Profile,
+        on_delete=models.CASCADE,
+        db_column='tutor_id',
+        related_name='courses_teaching',
+    )
+    subject = models.ForeignKey(
+        Subject,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        db_column='subject_id',
+        related_name='courses',
+    )
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    class_code = models.CharField(max_length=8, unique=True, blank=True, null=True)
+    price = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
+    max_students = models.IntegerField(default=30, validators=[MinValueValidator(1)])
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'courses'
+        managed = False
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.title} (by {self.tutor.first_name} {self.tutor.last_name})"
+
+
+class Enrollment(models.Model):
+    """
+    Student enrollment in a course.
+    Maps to the 'enrollments' table in PostgreSQL.
+    """
+    STATUS_CHOICES = [
+        ('enrolled', 'Enrolled'),
+        ('dropped', 'Dropped'),
+        ('completed', 'Completed'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    student = models.ForeignKey(
+        Profile,
+        on_delete=models.CASCADE,
+        db_column='student_id',
+        related_name='enrollments',
+    )
+    course = models.ForeignKey(
+        Course,
+        on_delete=models.CASCADE,
+        db_column='course_id',
+        related_name='enrollments',
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='enrolled')
+    enrolled_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'enrollments'
+        managed = False
+        unique_together = [('student', 'course')]
+
+    def __str__(self):
+        return f"{self.student.first_name} → {self.course.title} ({self.status})"
+
+
+class CourseSession(models.Model):
+    """
+    A scheduled live session within a course (Zoom-style meeting slot).
+    Maps to the 'course_sessions' table in PostgreSQL.
+    """
+    STATUS_CHOICES = [
+        ('scheduled', 'Scheduled'),
+        ('live', 'Live'),
+        ('completed', 'Completed'),
+        ('cancelled', 'Cancelled'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    course = models.ForeignKey(
+        Course,
+        on_delete=models.CASCADE,
+        db_column='course_id',
+        related_name='sessions',
+    )
+    title = models.CharField(max_length=255)
+    scheduled_start = models.DateTimeField()
+    scheduled_end = models.DateTimeField()
+    meeting_url = models.TextField(blank=True, null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='scheduled')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'course_sessions'
+        managed = False
+        ordering = ['scheduled_start']
+
+    def __str__(self):
+        return f"{self.title} ({self.scheduled_start:%Y-%m-%d %H:%M})"
+
+
+class CourseResource(models.Model):
+    """
+    Uploaded resource / material for a course (PDFs, slides, links).
+    Maps to the 'course_resources' table in PostgreSQL.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    course = models.ForeignKey(
+        Course,
+        on_delete=models.CASCADE,
+        db_column='course_id',
+        related_name='resources',
+    )
+    title = models.CharField(max_length=255)
+    file_url = models.TextField()
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'course_resources'
+        managed = False
+        ordering = ['-uploaded_at']
+
+    def __str__(self):
+        return f"{self.title} ({self.course.title})"

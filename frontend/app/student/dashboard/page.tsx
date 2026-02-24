@@ -21,6 +21,8 @@ import {
   ArrowRight,
   Users,
   Sparkles,
+  GraduationCap,
+  Video,
 } from 'lucide-react';
 
 interface UpcomingSession {
@@ -40,12 +42,28 @@ interface RecentTutor {
   rating: number;
 }
 
+interface FeaturedCourse {
+  id: string;
+  title: string;
+  price: number;
+  subject_name: string | null;
+  tutor_name: string;
+  tutor_id: string;
+  tutor_avatar: string;
+  tutor_is_online: boolean;
+  enrolled_count: number;
+  max_students: number;
+  spots_remaining: number;
+  next_session_date: string | null;
+}
+
 export default function StudentDashboardPage() {
   const { user } = useAuth();
   const supabase = createClient();
 
   const [upcomingSessions, setUpcomingSessions] = useState<UpcomingSession[]>([]);
   const [recentTutors, setRecentTutors] = useState<RecentTutor[]>([]);
+  const [featuredCourses, setFeaturedCourses] = useState<FeaturedCourse[]>([]);
   const [stats, setStats] = useState({
     totalSessions: 0,
     totalHours: 0,
@@ -156,6 +174,90 @@ export default function StudentDashboardPage() {
         uniqueSubjects: uniqueSubjectCount,
       });
 
+      // Fetch featured courses (popular, with spots available)
+      try {
+        const { data: coursesData } = await supabase
+          .from('courses')
+          .select('id, title, price, max_students, is_active, created_at, subject_id, tutor_id')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .limit(6);
+
+        if (coursesData && coursesData.length > 0) {
+          const courseIds = coursesData.map(c => c.id);
+          const tutorIds = [...new Set(coursesData.map(c => c.tutor_id).filter(Boolean))];
+          const subjectIds = [...new Set(coursesData.map(c => c.subject_id).filter(Boolean))];
+
+          const [enrollRes, sessionRes, tutorProfilesRes, subjectsRes] = await Promise.all([
+            supabase
+              .from('enrollments')
+              .select('course_id')
+              .in('course_id', courseIds)
+              .eq('status', 'enrolled'),
+            supabase
+              .from('course_sessions')
+              .select('course_id, scheduled_start')
+              .in('course_id', courseIds)
+              .gte('scheduled_start', new Date().toISOString())
+              .eq('status', 'scheduled')
+              .order('scheduled_start', { ascending: true })
+              .limit(20),
+            tutorIds.length > 0
+              ? supabase.from('profiles').select('id, first_name, last_name, avatar, is_online').in('id', tutorIds)
+              : Promise.resolve({ data: [], error: null }),
+            subjectIds.length > 0
+              ? supabase.from('subjects').select('id, name').in('id', subjectIds)
+              : Promise.resolve({ data: [], error: null }),
+          ]);
+
+          const tutorMap: Record<string, any> = {};
+          (tutorProfilesRes.data || []).forEach((t: any) => { tutorMap[t.id] = t; });
+
+          const subjectNameMap: Record<string, string> = {};
+          (subjectsRes.data || []).forEach((s: any) => { subjectNameMap[s.id] = s.name; });
+
+          const enrollCountMap: Record<string, number> = {};
+          for (const e of (enrollRes.data || [])) {
+            enrollCountMap[e.course_id] = (enrollCountMap[e.course_id] || 0) + 1;
+          }
+
+          const nextSessionMap: Record<string, string> = {};
+          for (const s of (sessionRes.data || [])) {
+            if (!nextSessionMap[s.course_id]) {
+              nextSessionMap[s.course_id] = s.scheduled_start;
+            }
+          }
+
+          const featured: FeaturedCourse[] = coursesData
+            .map(c => {
+              const profile = tutorMap[c.tutor_id] || null;
+              const tutorName = profile ? `${profile.first_name} ${profile.last_name}` : 'Tutor';
+              const enrolledCount = enrollCountMap[c.id] || 0;
+              return {
+                id: c.id,
+                title: c.title,
+                price: c.price,
+                subject_name: subjectNameMap[c.subject_id] || null,
+                tutor_name: tutorName,
+                tutor_id: profile?.id || '',
+                tutor_avatar: profile?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(tutorName)}&background=0d9488&color=fff`,
+                tutor_is_online: profile?.is_online || false,
+                enrolled_count: enrolledCount,
+                max_students: c.max_students,
+                spots_remaining: Math.max(0, c.max_students - enrolledCount),
+                next_session_date: nextSessionMap[c.id] || null,
+              };
+            })
+            .filter(c => c.spots_remaining > 0)
+            .sort((a, b) => b.enrolled_count - a.enrolled_count)
+            .slice(0, 3);
+
+          setFeaturedCourses(featured);
+        }
+      } catch (err) {
+        console.error('Error fetching featured courses:', err);
+      }
+
       setLoading(false);
     };
 
@@ -258,6 +360,87 @@ export default function StudentDashboardPage() {
             )
           })}
         </StaggerContainer>
+      )}
+
+      {/* 📚 Featured Group Classes */}
+      {!loading && featuredCourses.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="section-title">
+              <GraduationCap className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+              Featured Group Classes
+            </h2>
+            <Link
+              href="/student/courses"
+              className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium flex items-center gap-1 transition-colors"
+            >
+              Browse All <ArrowRight size={14} />
+            </Link>
+          </div>
+
+          <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" delay={0.15}>
+            {featuredCourses.map((course) => (
+              <StaggerItem key={course.id}>
+                <Link
+                  href="/student/courses"
+                  className="group card-stat block p-5 hover:border-primary-200 dark:hover:border-primary-800/50 hover:-translate-y-1 active:translate-y-0 transition-all duration-300"
+                >
+                  {/* Subject Tag */}
+                  {course.subject_name && (
+                    <span className="inline-flex px-2 py-0.5 mb-3 bg-primary-50 dark:bg-teal-900/25 text-primary-700 dark:text-primary-400 text-xs font-medium rounded-full border border-primary-100 dark:border-teal-700/30">
+                      {course.subject_name}
+                    </span>
+                  )}
+
+                  {/* Title */}
+                  <h3 className="font-semibold text-slate-900 dark:text-white mb-2 line-clamp-1 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                    {course.title}
+                  </h3>
+
+                  {/* Tutor */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <img
+                      src={course.tutor_avatar}
+                      alt={course.tutor_name}
+                      className="w-6 h-6 rounded-full ring-1 ring-white dark:ring-slate-700"
+                    />
+                    <span className="text-xs text-slate-600 dark:text-slate-400 truncate">
+                      {course.tutor_name}
+                    </span>
+                  </div>
+
+                  {/* Stats */}
+                  <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                    <span className="flex items-center gap-1">
+                      <Users size={12} className="text-blue-500" />
+                      {course.enrolled_count}/{course.max_students}
+                    </span>
+                    <span className={`font-medium px-1.5 py-0.5 rounded-full text-xs ${
+                      course.spots_remaining <= 5
+                        ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                        : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                    }`}>
+                      {course.spots_remaining} spots
+                    </span>
+                  </div>
+
+                  {/* Price */}
+                  <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700/50 flex items-center justify-between">
+                    <span className="text-lg font-bold text-slate-900 dark:text-white">
+                      R{Number(course.price).toFixed(0)}
+                    </span>
+                    {course.next_session_date && (
+                      <span className="flex items-center gap-1 text-xs text-slate-400">
+                        <Video size={11} />
+                        {new Date(course.next_session_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </span>
+                    )}
+                  </div>
+                </Link>
+              </StaggerItem>
+            ))}
+          </StaggerContainer>
+        </div>
       )}
 
       {/* 🏆 Achievement Mini-Widget */}

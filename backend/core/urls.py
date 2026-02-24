@@ -6,6 +6,7 @@ from rest_framework.routers import DefaultRouter
 from . import views
 from .ai.quick_tutor import quick_tutor_chat
 from .ai.tutor_assistant import tutor_command_chat
+from .course_views import list_courses, course_detail, enroll_in_course, join_by_code
 
 router = DefaultRouter()
 router.register(r'profiles', views.ProfileViewSet, basename='profile')
@@ -43,4 +44,10 @@ urlpatterns = [
     
     # Tutor AI Command Center (Spotlight Search)
     path('ai/tutor-command/', tutor_command_chat, name='tutor-command-chat'),
+    
+    # Virtual Classrooms / Group Courses
+    path('courses/', list_courses, name='course-list'),
+    path('courses/enroll/', enroll_in_course, name='course-enroll'),
+    path('courses/join-by-code/', join_by_code, name='course-join-by-code'),
+    path('courses/<uuid:course_id>/', course_detail, name='course-detail'),
 ]
