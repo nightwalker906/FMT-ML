@@ -100,7 +100,7 @@ except Exception as e:
 print("\n[4] ML RECOMMENDER TEST")
 print("-" * 80)
 try:
-    from core.recommender import get_recommendations
+    from api.ml.recommender import get_recommendations
     
     test_query = "Math Calculus Algebra"
     results = get_recommendations(query=test_query, top_n=5)

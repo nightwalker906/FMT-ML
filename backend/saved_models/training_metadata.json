@@ -1,0 +1,11 @@
+{
+  "num_tutors": 1191,
+  "vocabulary_size": 3095,
+  "matrix_shape": [
+    1191,
+    3095
+  ],
+  "avg_rating": 4.014861460957179,
+  "avg_hourly_rate": 80.29135180520571,
+  "timestamp": "2026-03-02T18:28:12.266973"
+}

@@ -9,7 +9,8 @@ import json
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'fmt_project.settings')
 django.setup()
 
-from core.recommender import TutorRecommender
+# from core.recommender import TutorRecommender  # DEPRECATED - use api.ml.recommender
+from api.ml.recommender import get_recommendations
 
 def test_enhanced_recommendations():
     """Test that recommendations now use availability and weighted fields."""

@@ -362,8 +362,6 @@ export default function StudentDashboardPage() {
         </StaggerContainer>
       )}
 
-      // ...existing code...
-
       {/* 🏆 Achievement Mini-Widget */}
       {!loading && <MiniAchievements achievements={achievements} />}
 

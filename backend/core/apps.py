@@ -10,19 +10,24 @@ class CoreConfig(AppConfig):
 
     def ready(self):
         """
-        Pre-warm the recommendation engine when the server starts.
-        This runs the expensive TF-IDF fitting once at boot so the
-        first user request is instant instead of waiting 2-5 seconds.
+        Initialize the ML recommendation engine on app startup.
+        The api.ml.recommender uses a Singleton pattern that automatically
+        warms up on first import, so no explicit warm-up needed here.
         """
         import threading
+        import logging
 
         def _warmup():
             try:
-                from core.recommender import warmup_recommender
-                warmup_recommender()
+                # Import the recommender singleton - this triggers initialization
+                from api.ml.recommender import _recommender
+                if _recommender.is_loaded:
+                    logger.info("[Startup] ✅ ML Recommender singleton initialized")
+                else:
+                    logger.warning(f"[Startup] ⚠️ ML Recommender not ready: {_recommender.error_message}")
             except Exception as e:
-                logger.warning(f"[Startup] Recommender warm-up skipped: {e}")
+                logger.warning(f"[Startup] ML Recommender initialization attempted: {e}")
 
-        # Run in a background thread so it doesn't block server startup
+        # Run in a background thread so startup isn't blocked
         thread = threading.Thread(target=_warmup, daemon=True)
         thread.start()

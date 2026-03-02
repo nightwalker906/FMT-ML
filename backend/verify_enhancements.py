@@ -10,7 +10,8 @@ import django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'fmt_project.settings')
 django.setup()
 
-from core.recommender import TutorRecommender
+# from core.recommender import TutorRecommender  # DEPRECATED - use api.ml.recommender
+from api.ml.recommender import get_recommendations
 import inspect
 
 def verify_enhancements():
