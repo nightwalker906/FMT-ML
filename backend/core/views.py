@@ -341,32 +341,29 @@ def get_smart_recommendations(request):
             # Fall back to top-rated tutors (optimized with prefetch)
             tutors = Tutor.objects.select_related(
                 'profile'
-            ).prefetch_related(
-                'subjects'
-            ).annotate(
-                avg_rating=Avg('ratings__rating')
             ).filter(
-                avg_rating__gte=4.0
-            ).order_by('-avg_rating')[:10]
+                average_rating__gte=4.0
+            ).order_by('-average_rating')[:10]
             
             recommendations = []
             
             for i, tutor in enumerate(tutors):
                 profile = tutor.profile
-                subjects = [s.name for s in tutor.subjects.all()]
+                # Get subjects from qualifications JSONField (which stores subject names)
+                subjects = tutor.qualifications if isinstance(tutor.qualifications, list) else []
                 
                 # Calculate match percentage based on rating and availability
-                match_percentage = min(99, int((profile.average_rating or 0) * 10))
+                match_percentage = min(99, int((tutor.average_rating or 0) * 10))
                 
                 recommendation = {
                     "id": str(profile.id),
                     "full_name": f"{profile.first_name} {profile.last_name}".strip(),
                     "subjects": subjects,
                     "match_percentage": match_percentage,
-                    "similarity_score": round(profile.average_rating / 5.0, 3) if profile.average_rating else 0,
-                    "explanation": f"{profile.first_name} is an excellent tutor with a {profile.average_rating or 0:.1f}/5 rating. Specializes in {', '.join(subjects[:2]) if subjects else 'multiple subjects'}.",
+                    "similarity_score": round(float(tutor.average_rating) / 5.0, 3) if tutor.average_rating else 0,
+                    "explanation": f"{profile.first_name} is an excellent tutor with a {tutor.average_rating or 0:.1f}/5 rating. Specializes in {', '.join(subjects[:2]) if subjects else 'multiple subjects'}.",
                     "is_online": getattr(profile, 'is_online', False),
-                    "average_rating": profile.average_rating or 0,
+                    "average_rating": float(tutor.average_rating or 0),
                     "hourly_rate": tutor.hourly_rate or 0,
                     "image": getattr(profile, 'avatar', None) or f"https://ui-avatars.com/api/?name={profile.first_name}+{profile.last_name}&background=0d9488&color=fff"
                 }

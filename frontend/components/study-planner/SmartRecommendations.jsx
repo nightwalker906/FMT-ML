@@ -76,43 +76,34 @@ const SmartRecommendations = () => {
     });
   };
 
-  // =”€=”€ Loading =†’ Skeleton =”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€
-  if (isLoading) {
-    return (
-      <div className="w-full py-2">
-        <div className="flex items-center gap-2 mb-4 px-1">
-          <Sparkles className="text-amber-500" size={22} />
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-            Top Picks for You
-          </h2>
-        </div>
+
+  // Always render the section header and container
+  return (
+    <div className="w-full py-2">
+      <div className="flex items-center gap-2 mb-4 px-1">
+        <Sparkles className="text-amber-500" size={22} />
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+          Top Picks for You
+        </h2>
+      </div>
+
+      {/* Content: loading, error, empty, or recommendations */}
+      {isLoading ? (
         <div className="flex gap-5 overflow-hidden pb-4">
           {[0, 1, 2, 3].map((i) => (
             <SkeletonCard key={i} />
           ))}
         </div>
-      </div>
-    );
-  }
-
-  // =”€=”€ Error =†’ silent fail =”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€
-  if (error) return null;
-
-  // =”€=”€ Normalise data =”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€
-  const recommendations =
-    data?.data ?? data?.recommendations ?? (Array.isArray(data) ? data : []);
-  const message = data?.message;
-
-  // =”€=”€ Empty state =”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€
-  if (recommendations.length === 0) {
-    return (
-      <div className="w-full py-2">
-        <div className="flex items-center gap-2 mb-4 px-1">
-          <Sparkles className="text-amber-500" size={22} />
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-            Top Picks for You
-          </h2>
+      ) : error ? (
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-10 px-6 text-center">
+          <p className="text-slate-700 dark:text-slate-200 text-base font-semibold mb-2">
+            Error loading recommendations
+          </p>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mb-4 max-w-sm mx-auto">
+            Please try again later.
+          </p>
         </div>
+      ) : (Array.isArray(data?.data ?? data?.recommendations ?? data) && (data?.data ?? data?.recommendations ?? data).length === 0) ? (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -122,9 +113,9 @@ const SmartRecommendations = () => {
           <p className="text-slate-700 dark:text-slate-200 text-base font-semibold mb-2">
             No Top Picks Yet
           </p>
-          {message && (
+          {data?.message && (
             <p className="text-slate-500 dark:text-slate-400 text-sm mb-4 max-w-sm mx-auto">
-              {message}
+              {data.message}
             </p>
           )}
           <p className="text-slate-400 dark:text-slate-500 text-sm mb-5">
@@ -152,9 +143,52 @@ const SmartRecommendations = () => {
             Adjust Learning Goals
           </a>
         </motion.div>
-      </div>
-    );
-  }
+      ) : (
+        // Recommendations carousel
+        (() => {
+          const recommendations =
+            data?.data ?? data?.recommendations ?? (Array.isArray(data) ? data : []);
+          const shouldAnimate = !hasAnimated.current;
+          if (shouldAnimate) hasAnimated.current = true;
+          return (
+            <>
+              <div className="relative">
+                <motion.div
+                  ref={scrollRef}
+                  className="flex gap-5 overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-hide"
+                  variants={containerVariants}
+                  initial={shouldAnimate ? 'hidden' : false}
+                  animate="visible"
+                >
+                  {recommendations.map((rec, index) => (
+                    <SmartCard
+                      key={rec.id || index}
+                      recommendation={rec}
+                      index={index}
+                      shouldAnimate={shouldAnimate}
+                    />
+                  ))}
+                </motion.div>
+                {/* Right fade gradient */}
+                <div className="absolute top-0 right-0 w-10 h-[calc(100%-16px)] bg-gradient-to-l from-slate-50 dark:from-slate-950 to-transparent pointer-events-none" />
+              </div>
+              {/* AI Insight footer */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.6 }}
+                className="mt-2 px-1"
+              >
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  💡 Powered by our explainable AI engine — analysing your learning patterns to find the perfect match.
+                </p>
+              </motion.div>
+            </>
+          );
+        })()
+      )}
+    </div>
+  );
 
   // =”€=”€ Only animate on first paint =”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€
   const shouldAnimate = !hasAnimated.current;
