@@ -255,6 +255,8 @@ def get_smart_recommendations(request):
     
     Returns smart AI-powered tutor recommendations based on:
     - Student's learning goals (from database)
+    - Student's location (if available)
+    - Preferred subjects
     - Popular/top-rated tutors
     - Content-Based Filtering with ML
     
@@ -278,99 +280,84 @@ def get_smart_recommendations(request):
     }
     """
     try:
-        from django.db.models import Q, Avg
-        from .recommender import get_recommendations
+        import hashlib
+        from api.ml.recommender import get_recommendations
         
-        # ── Response-level cache (60s) keyed by student_id ──────────────
+        # ── Response-level cache (60s) with smart cache busting ──────────────
         student_id = request.query_params.get('student_id')
-        cache_key = f"smart_recs_{student_id or 'anon'}"
+        goals_hash = request.query_params.get('goals', '')  # Hash from frontend reflecting current profile state
+        
+        # Build cache key that includes goals hash for automatic invalidation
+        # When frontend hash changes (due to learning goals update), this cache key changes
+        # This ensures old cached results are not returned for new profile states
+        cache_key = f"smart_recs_{student_id or 'anon'}_{goals_hash or 'no_hash'}"
         cached = cache.get(cache_key)
-        if cached is not None:
-            logger.info(f"[SmartRecs] Cache HIT for key={cache_key}")
+        
+        if cached is not None and goals_hash:
+            # Only use cache if a goals_hash was provided (indicates real profile state tracking)
+            logger.info(f"[SmartRecs] Cache HIT for key={cache_key} (faster response)")
             return Response(cached, status=status.HTTP_200_OK)
 
-        learning_goals_text = None
-        
+
+        # Use high-performance ML recommender
+        logger.info(f"[SmartRecs] Using TF-IDF recommender for student_id={student_id}")
+        # If no student_id, use a generic query to get diverse recommendations
         if student_id:
-            try:
-                student = Student.objects.select_related('profile').get(profile_id=student_id)
-                if student.learning_goals:
-                    # Combine learning goals into a single query string
-                    if isinstance(student.learning_goals, list):
-                        learning_goals_text = ' '.join(student.learning_goals)
-                    else:
-                        learning_goals_text = str(student.learning_goals)
-                logger.info(f"Found student learning goals: {learning_goals_text}")
-            except Student.DoesNotExist:
-                logger.warning(f"Student not found: {student_id}")
-                pass
-        
-        # If we have learning goals, use ML recommender; otherwise use top-rated
-        if learning_goals_text:
-            # Use ML-powered recommendation based on learning goals
-            logger.info(f"Using ML recommender with query: {learning_goals_text}")
-            results = get_recommendations(
-                query=learning_goals_text,
-                max_price=None,
-                top_n=10
-            )
-            
-            recommendations = []
-            for result in results:
-                # Extract explanation summary if it's an object
-                explanation = result.get('explanation', {})
-                if isinstance(explanation, dict):
-                    explanation_text = explanation.get('summary', 'Recommended based on your goals')
-                else:
-                    explanation_text = str(explanation)
-                
-                recommendation = {
-                    "id": str(result.get('id')),
-                    "full_name": result.get('full_name', 'Unknown'),
-                    "subjects": result.get('subjects', []),
-                    "match_percentage": int(result.get('match_percentage', 0)),
-                    "similarity_score": round(float(result.get('similarity_score', 0)), 3),
-                    "explanation": explanation_text,
-                    "is_online": result.get('is_online', False),
-                    "average_rating": float(result.get('average_rating', 0)),
-                    "hourly_rate": float(result.get('hourly_rate', 0)),
-                    "image": result.get('avatar') or f"https://ui-avatars.com/api/?name={result.get('full_name', 'Tutor')}&background=0d9488&color=fff"
-                }
-                recommendations.append(recommendation)
+            ml_results = get_recommendations(student_id=student_id, top_n=10)
         else:
-            # Fall back to top-rated tutors (optimized with prefetch)
+            ml_results = get_recommendations(custom_query="math science tutoring help learning", top_n=10)
+        
+        # Transform ML recommender output to API response format
+        recommendations = []
+        for i, result in enumerate(ml_results, 1):
+            # Get qualifications from database for subjects
+            try:
+                profile = Profile.objects.get(id=result.get('id'))
+                tutor = Tutor.objects.get(profile_id=result.get('id'))
+                subjects = tutor.qualifications if isinstance(tutor.qualifications, list) else []
+            except (Profile.DoesNotExist, Tutor.DoesNotExist):
+                subjects = []
+            
+            recommendation = {
+                "id": str(result.get('id')),
+                "full_name": result.get('full_name', 'Unknown'),
+                "subjects": subjects,
+                "match_percentage": round(result.get('match_percentage', 0), 1),
+                "similarity_score": round(result.get('similarity_score', 0), 3),
+                "explanation": "; ".join(result.get('match_reasons', ['Recommended match'])),
+                "is_online": True,  # Placeholder - update with real status if available
+                "average_rating": result.get('average_rating', 0),
+                "hourly_rate": result.get('hourly_rate', 0),
+                "image": result.get('avatar') or f"https://ui-avatars.com/api/?name={result.get('full_name', 'Tutor')}&background=0d9488&color=fff"
+            }
+            recommendations.append(recommendation)
+        
+        # If no recommendations from ML, fall back to top-rated tutors
+        if not recommendations:
+            logger.info("[SmartRecs] Falling back to top-rated tutors")
             tutors = Tutor.objects.select_related(
                 'profile'
-            ).prefetch_related(
-                'subjects'
-            ).annotate(
-                avg_rating=Avg('ratings__rating')
             ).filter(
-                avg_rating__gte=4.0
-            ).order_by('-avg_rating')[:10]
+                average_rating__gte=4.0
+            ).order_by('-average_rating')[:10]
             
-            recommendations = []
-            
-            for i, tutor in enumerate(tutors):
+            for tutor in tutors:
                 profile = tutor.profile
-                subjects = [s.name for s in tutor.subjects.all()]
-                
-                # Calculate match percentage based on rating and availability
-                match_percentage = min(99, int((profile.average_rating or 0) * 10))
+                subjects = tutor.qualifications if isinstance(tutor.qualifications, list) else []
+                match_percentage = min(99, int((tutor.average_rating or 0) * 10))
                 
                 recommendation = {
                     "id": str(profile.id),
                     "full_name": f"{profile.first_name} {profile.last_name}".strip(),
                     "subjects": subjects,
                     "match_percentage": match_percentage,
-                    "similarity_score": round(profile.average_rating / 5.0, 3) if profile.average_rating else 0,
-                    "explanation": f"{profile.first_name} is an excellent tutor with a {profile.average_rating or 0:.1f}/5 rating. Specializes in {', '.join(subjects[:2]) if subjects else 'multiple subjects'}.",
+                    "similarity_score": round(float(tutor.average_rating) / 5.0, 3) if tutor.average_rating else 0,
+                    "explanation": f"Top-rated tutor specializing in {', '.join(subjects[:2]) if subjects else 'multiple subjects'}",
                     "is_online": getattr(profile, 'is_online', False),
-                    "average_rating": profile.average_rating or 0,
+                    "average_rating": float(tutor.average_rating or 0),
                     "hourly_rate": tutor.hourly_rate or 0,
                     "image": getattr(profile, 'avatar', None) or f"https://ui-avatars.com/api/?name={profile.first_name}+{profile.last_name}&background=0d9488&color=fff"
                 }
-                
                 recommendations.append(recommendation)
         
         # If no recommendations available, return empty list with helpful message
@@ -394,10 +381,10 @@ def get_smart_recommendations(request):
         return Response(response_data, status=status.HTTP_200_OK)
         
     except Exception as e:
-        logger.error(f"Smart recommendations error: {str(e)}")
+        logger.exception(f"Smart recommendations error: {str(e)}")
         return Response({
             "status": "success",
-            "data": [],  # Return empty list on error to prevent frontend crash
+            "data": [],
             "message": "Unable to load recommendations. Try adjusting your learning goals or searching for specific subjects!"
         }, status=status.HTTP_200_OK)
 
@@ -492,7 +479,7 @@ def recommend_tutors(request):
     """
     try:
         from django.db.models import Q, Avg
-        from .recommender import get_recommendations
+        from api.ml.recommender import get_recommendations
         
         data = request.data
         query = data.get('query', '').strip()

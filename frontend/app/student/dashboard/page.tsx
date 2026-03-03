@@ -64,6 +64,9 @@ export default function StudentDashboardPage() {
   const [upcomingSessions, setUpcomingSessions] = useState<UpcomingSession[]>([]);
   const [recentTutors, setRecentTutors] = useState<RecentTutor[]>([]);
   const [featuredCourses, setFeaturedCourses] = useState<FeaturedCourse[]>([]);
+  const [learningGoals, setLearningGoals] = useState<string[]>([]);
+  const [preferredSubjects, setPreferredSubjects] = useState<string[]>([]);
+  const [gradeLevel, setGradeLevel] = useState<string>('');
   const [stats, setStats] = useState({
     totalSessions: 0,
     totalHours: 0,
@@ -258,10 +261,95 @@ export default function StudentDashboardPage() {
         console.error('Error fetching featured courses:', err);
       }
 
+      // Fetch learning goals and profile data
+      try {
+        const { data: studentData } = await supabase
+          .from('students')
+          .select('learning_goals, preferred_subjects, grade_level')
+          .eq('profile_id', user.id)
+          .single();
+
+        if (studentData?.learning_goals) {
+          setLearningGoals(Array.isArray(studentData.learning_goals) ? studentData.learning_goals : []);
+        }
+        if (studentData?.preferred_subjects) {
+          setPreferredSubjects(Array.isArray(studentData.preferred_subjects) ? studentData.preferred_subjects : []);
+        }
+        if (studentData?.grade_level) {
+          setGradeLevel(studentData.grade_level);
+        }
+      } catch (err) {
+        console.error('Error fetching learning goals:', err);
+      }
+
       setLoading(false);
     };
 
     fetchData();
+
+    // ──────────────────────────────────────────────────────────────────────
+    // REAL-TIME SUBSCRIPTIONS
+    // Listen for changes to student learning goals, preferences, and profile
+    // ──────────────────────────────────────────────────────────────────────
+
+    // Subscribe to student profile changes (learning goals, preferences)
+    const studentSubscription = supabase
+      .channel(`student-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',  // Only listen for UPDATE events (when goals are saved)
+          schema: 'public',
+          table: 'students',
+          filter: `profile_id=eq.${user.id}`,
+        },
+        (payload: any) => {
+          console.log('[Dashboard] 🔔 Real-time: Student profile updated', payload);
+          const newData = payload.new as Record<string, any>;
+          
+          // Update learning goals if they changed
+          if (newData?.learning_goals) {
+            const newGoals = Array.isArray(newData.learning_goals) ? newData.learning_goals : [];
+            console.log('[Dashboard] ✅ Learning goals changed to:', newGoals);
+            setLearningGoals(newGoals);
+          }
+          
+          if (newData?.preferred_subjects) {
+            setPreferredSubjects(Array.isArray(newData.preferred_subjects) ? newData.preferred_subjects : []);
+          }
+          if (newData?.grade_level) {
+            setGradeLevel(newData.grade_level);
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log(`[Dashboard] Subscription status for students table: ${status}`);
+      });
+
+    // Subscribe to profile changes (avatar, name, etc)
+    const profileSubscription = supabase
+      .channel(`profile-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('[Dashboard] Real-time update: profile changed', payload);
+          // Refresh entire page to reflect profile changes
+          window.location.reload();
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscriptions on unmount
+    return () => {
+      studentSubscription.unsubscribe();
+      profileSubscription.unsubscribe();
+    };
   }, [user, supabase]);
 
   // Achievement system
@@ -289,8 +377,30 @@ export default function StudentDashboardPage() {
 
   return (
     <PageTransition className="space-y-8">
-      {/* Smart Recommendations Carousel */}
-      <SmartRecommendations />
+      {/* Smart Recommendations Carousel
+          ─────────────────────────────────────────────────────────────
+          Recommendations automatically refetch when learning goals change.
+          
+          Flow:
+          1. User updates learning goals in complete-profile page
+          2. Changes saved to database
+          3. User redirected back to dashboard
+          4. Dashboard fetches fresh learning goals from Supabase
+          5. learningGoals state is updated
+          6. New goals passed to SmartRecommendations component
+          7. goalsHash computed from goals (useMemo dependency)
+          8. URL changes with new goalsHash parameter
+          9. SmartRecommendations useEffect detects goalsHash change
+          10. mutate() called to refetch from API
+          11. Backend validates hash and cache-busts if needed
+          12. Fresh recommendations returned matching new learning goals
+          ─────────────────────────────────────────────────────────────
+      */}
+      <SmartRecommendations 
+        learningGoals={learningGoals}
+        preferredSubjects={preferredSubjects}
+        gradeLevel={gradeLevel}
+      />
 
       {/* Quick Actions */}
       <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -360,87 +470,6 @@ export default function StudentDashboardPage() {
             )
           })}
         </StaggerContainer>
-      )}
-
-      {/* 📚 Featured Group Classes */}
-      {!loading && featuredCourses.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="section-title">
-              <GraduationCap className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-              Featured Group Classes
-            </h2>
-            <Link
-              href="/student/courses"
-              className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium flex items-center gap-1 transition-colors"
-            >
-              Browse All <ArrowRight size={14} />
-            </Link>
-          </div>
-
-          <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" delay={0.15}>
-            {featuredCourses.map((course) => (
-              <StaggerItem key={course.id}>
-                <Link
-                  href="/student/courses"
-                  className="group card-stat block p-5 hover:border-primary-200 dark:hover:border-primary-800/50 hover:-translate-y-1 active:translate-y-0 transition-all duration-300"
-                >
-                  {/* Subject Tag */}
-                  {course.subject_name && (
-                    <span className="inline-flex px-2 py-0.5 mb-3 bg-primary-50 dark:bg-teal-900/25 text-primary-700 dark:text-primary-400 text-xs font-medium rounded-full border border-primary-100 dark:border-teal-700/30">
-                      {course.subject_name}
-                    </span>
-                  )}
-
-                  {/* Title */}
-                  <h3 className="font-semibold text-slate-900 dark:text-white mb-2 line-clamp-1 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
-                    {course.title}
-                  </h3>
-
-                  {/* Tutor */}
-                  <div className="flex items-center gap-2 mb-3">
-                    <img
-                      src={course.tutor_avatar}
-                      alt={course.tutor_name}
-                      className="w-6 h-6 rounded-full ring-1 ring-white dark:ring-slate-700"
-                    />
-                    <span className="text-xs text-slate-600 dark:text-slate-400 truncate">
-                      {course.tutor_name}
-                    </span>
-                  </div>
-
-                  {/* Stats */}
-                  <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                    <span className="flex items-center gap-1">
-                      <Users size={12} className="text-blue-500" />
-                      {course.enrolled_count}/{course.max_students}
-                    </span>
-                    <span className={`font-medium px-1.5 py-0.5 rounded-full text-xs ${
-                      course.spots_remaining <= 5
-                        ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                        : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                    }`}>
-                      {course.spots_remaining} spots
-                    </span>
-                  </div>
-
-                  {/* Price */}
-                  <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700/50 flex items-center justify-between">
-                    <span className="text-lg font-bold text-slate-900 dark:text-white">
-                      R{Number(course.price).toFixed(0)}
-                    </span>
-                    {course.next_session_date && (
-                      <span className="flex items-center gap-1 text-xs text-slate-400">
-                        <Video size={11} />
-                        {new Date(course.next_session_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      </span>
-                    )}
-                  </div>
-                </Link>
-              </StaggerItem>
-            ))}
-          </StaggerContainer>
-        </div>
       )}
 
       {/* 🏆 Achievement Mini-Widget */}

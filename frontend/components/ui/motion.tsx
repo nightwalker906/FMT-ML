@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  REUSABLE ANIMATION VARIANTS — Netflix/Stripe Quality
-// ═══════════════════════════════════════════════════════════════════════════
+// ═════════════════════════════════
 
 export const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 20 },

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import useSWR from 'swr';
 import { useAuth } from '@/context/auth-context';
@@ -8,8 +8,33 @@ import { motion } from 'framer-motion';
 import { Sparkles, Star, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
 import { API_BASE } from '@/lib/api-config';
 
+// Type definitions
+interface SmartRecommendationsProps {
+  learningGoals?: string[];
+  preferredSubjects?: string[];
+  gradeLevel?: string;
+}
+
+interface Recommendation {
+  id: string;
+  full_name: string;
+  image?: string;
+  is_online?: boolean;
+  subjects?: string[];
+  explanation?: string | { summary: string };
+  average_rating?: number;
+  hourly_rate: number;
+  match_percentage: number;
+}
+
+interface SmartCardProps {
+  recommendation: Recommendation;
+  index: number;
+  shouldAnimate: boolean;
+}
+
 // -- SWR Config --
-const fetcher = (url) => fetch(url).then((res) => res.json());
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 const SWR_OPTIONS = {
   revalidateOnFocus: false,
@@ -21,7 +46,7 @@ const SWR_OPTIONS = {
 };
 
 // -- Match badge styling --
-const getMatchBadgeStyle = (percentage) => {
+const getMatchBadgeStyle = (percentage: number) => {
   if (percentage >= 90) {
     return {
       bg: 'bg-gradient-to-r from-emerald-400 to-green-500',
@@ -47,27 +72,75 @@ const containerVariants = {
 
 const cardVariants = {
   hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    transition: { duration: 0.4 } 
+  },
 };
 
-// =•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•
+// =•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•
 // -- MAIN COMPONENT --
-// =•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•
+// =•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•
 
-const SmartRecommendations = () => {
+const SmartRecommendations: React.FC<SmartRecommendationsProps> = ({
+  learningGoals = [],
+  preferredSubjects = [],
+  gradeLevel = '',
+}) => {
   const { user } = useAuth();
-  const scrollRef = useRef(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const hasAnimated = useRef(false);
 
+  // Create a comprehensive hash of all student profile factors
+  // ⚠️ MUST match backend hash computation in core/views.py get_smart_recommendations()
+  const profileHash = React.useMemo(() => {
+    if (!user?.id) return '';
+    try {
+      // Compute hash same way as backend: sorted JSON with learning_goals structure
+      const profileData = JSON.stringify(
+        {
+          learning_goals: (learningGoals || []).sort(),
+          preferred_subjects: (preferredSubjects || []).sort(),
+          grade_level: gradeLevel || '',
+        },
+        null,
+        0
+      );
+      // Use same MD5 approach as backend, but slice to 8 chars
+      let hash = 0;
+      for (let i = 0; i < profileData.length; i++) {
+        const char = profileData.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32bit integer
+      }
+      return Math.abs(hash).toString(16).slice(0, 8);
+    } catch {
+      return '';
+    }
+  }, [learningGoals, preferredSubjects, gradeLevel, user?.id]);
+
   // Build URL with student_id if user is authenticated
+  // Include profile hash to trigger cache invalidation when any profile factor changes
+  // When profileHash changes, the URL changes, which tells SWR to refetch
   const url = user?.id
-    ? `${API_BASE}/recommendations/?student_id=${user.id}`
+    ? `${API_BASE}/recommendations/?student_id=${user.id}${profileHash ? `&goals=${profileHash}` : ''}`
     : `${API_BASE}/recommendations/`;
 
-  const { data, error, isLoading } = useSWR(url, fetcher, SWR_OPTIONS);
+  const { data, error, isLoading, mutate } = useSWR(url, fetcher, SWR_OPTIONS);
 
-  // =”€=”€ Scroll controls =”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€
-  const scroll = (direction) => {
+  // Refetch recommendations whenever profile factors change
+  // profileHash changes → URL changes → SWR detects new URL and refetches
+  useEffect(() => {
+    // Always refetch when profileHash changes, regardless of whether goals are empty
+    // This ensures recommendations update immediately when learning goals are saved
+    if (profileHash) {
+      mutate();
+    }
+  }, [profileHash, mutate]);
+
+  // Scroll controls
+  const scroll = (direction: 'left' | 'right') => {
     if (!scrollRef.current) return;
     const amount = 340;
     scrollRef.current.scrollBy({
@@ -76,43 +149,34 @@ const SmartRecommendations = () => {
     });
   };
 
-  // =”€=”€ Loading =†’ Skeleton =”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€
-  if (isLoading) {
-    return (
-      <div className="w-full py-2">
-        <div className="flex items-center gap-2 mb-4 px-1">
-          <Sparkles className="text-amber-500" size={22} />
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-            Top Picks for You
-          </h2>
-        </div>
+  // Always render the section header and container
+  return (
+    <div className="w-full py-2">
+      <div className="flex items-center gap-2 mb-4 px-1">
+        <Sparkles className="text-amber-500" size={22} />
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+          Top Picks for You
+        </h2>
+      </div>
+
+      {/* Content: loading, error, empty, or recommendations */}
+      {isLoading ? (
         <div className="flex gap-5 overflow-hidden pb-4">
           {[0, 1, 2, 3].map((i) => (
             <SkeletonCard key={i} />
           ))}
         </div>
-      </div>
-    );
-  }
-
-  // =”€=”€ Error =†’ silent fail =”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€
-  if (error) return null;
-
-  // =”€=”€ Normalise data =”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€
-  const recommendations =
-    data?.data ?? data?.recommendations ?? (Array.isArray(data) ? data : []);
-  const message = data?.message;
-
-  // =”€=”€ Empty state =”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€
-  if (recommendations.length === 0) {
-    return (
-      <div className="w-full py-2">
-        <div className="flex items-center gap-2 mb-4 px-1">
-          <Sparkles className="text-amber-500" size={22} />
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-            Top Picks for You
-          </h2>
+      ) : error ? (
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-10 px-6 text-center">
+          <p className="text-slate-700 dark:text-slate-200 text-base font-semibold mb-2">
+            Error loading recommendations
+          </p>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mb-4 max-w-sm mx-auto">
+            Please try again later.
+          </p>
         </div>
+      ) : (Array.isArray(data?.data ?? data?.recommendations ?? data) &&
+        (data?.data ?? data?.recommendations ?? data).length === 0) ? (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -122,9 +186,9 @@ const SmartRecommendations = () => {
           <p className="text-slate-700 dark:text-slate-200 text-base font-semibold mb-2">
             No Top Picks Yet
           </p>
-          {message && (
+          {data?.message && (
             <p className="text-slate-500 dark:text-slate-400 text-sm mb-4 max-w-sm mx-auto">
-              {message}
+              {data.message}
             </p>
           )}
           <p className="text-slate-400 dark:text-slate-500 text-sm mb-5">
@@ -152,88 +216,62 @@ const SmartRecommendations = () => {
             Adjust Learning Goals
           </a>
         </motion.div>
-      </div>
-    );
-  }
-
-  // =”€=”€ Only animate on first paint =”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€
-  const shouldAnimate = !hasAnimated.current;
-  if (shouldAnimate) hasAnimated.current = true;
-
-  // =”€=”€ Render carousel =”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€=”€
-  return (
-    <div className="w-full py-2">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4 px-1">
-        <div className="flex items-center gap-2">
-          <Sparkles className="text-amber-500" size={22} />
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-            Top Picks for You
-          </h2>
-        </div>
-
-        {/* Scroll arrows (desktop) */}
-        <div className="hidden sm:flex items-center gap-1">
-          <button
-            onClick={() => scroll('left')}
-            className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-            aria-label="Scroll left"
-          >
-            <ChevronLeft className="w-5 h-5 text-slate-500 dark:text-slate-400" />
-          </button>
-          <button
-            onClick={() => scroll('right')}
-            className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-            aria-label="Scroll right"
-          >
-            <ChevronRight className="w-5 h-5 text-slate-500 dark:text-slate-400" />
-          </button>
-        </div>
-      </div>
-
-      {/* Carousel */}
-      <div className="relative">
-        <motion.div
-          ref={scrollRef}
-          className="flex gap-5 overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-hide"
-          variants={containerVariants}
-          initial={shouldAnimate ? 'hidden' : false}
-          animate="visible"
-        >
-          {recommendations.map((rec, index) => (
-            <SmartCard
-              key={rec.id || index}
-              recommendation={rec}
-              index={index}
-              shouldAnimate={shouldAnimate}
-            />
-          ))}
-        </motion.div>
-
-        {/* Right fade gradient */}
-        <div className="absolute top-0 right-0 w-10 h-[calc(100%-16px)] bg-gradient-to-l from-slate-50 dark:from-slate-950 to-transparent pointer-events-none" />
-      </div>
-
-      {/* AI Insight footer */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.6 }}
-        className="mt-2 px-1"
-      >
-        <p className="text-xs text-slate-500 dark:text-slate-400">
-          ðŸ’¡ Powered by our explainable AI engine =€” analysing your learning patterns to find the perfect match.
-        </p>
-      </motion.div>
+      ) : (
+        // Recommendations carousel
+        (() => {
+          const recommendations = (data?.data ?? data?.recommendations ?? (Array.isArray(data) ? data : [])) as Recommendation[];
+          const shouldAnimate = !hasAnimated.current;
+          if (shouldAnimate) hasAnimated.current = true;
+          return (
+            <>
+              <div className="relative">
+                <motion.div
+                  ref={scrollRef}
+                  className="flex gap-5 overflow-x-auto snap-x snap-mandatory pb-4 scrollbar-hide"
+                  variants={containerVariants}
+                  initial={shouldAnimate ? 'hidden' : false}
+                  animate="visible"
+                >
+                  {recommendations.map((rec, index) => (
+                    <SmartCard
+                      key={rec.id || index}
+                      recommendation={rec}
+                      index={index}
+                      shouldAnimate={shouldAnimate}
+                    />
+                  ))}
+                </motion.div>
+                {/* Right fade gradient */}
+                <div className="absolute top-0 right-0 w-10 h-[calc(100%-16px)] bg-gradient-to-l from-slate-50 dark:from-slate-950 to-transparent pointer-events-none" />
+              </div>
+              {/* AI Insight footer */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.6 }}
+                className="mt-2 px-1"
+              >
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  💡 Powered by our explainable AI engine — analysing your learning patterns to find the perfect match.
+                </p>
+              </motion.div>
+            </>
+          );
+        })()
+      )}
     </div>
   );
 };
 
-// =•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•
+// =•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•
 // -- SMART CARD --
-// =•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•
+// =•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•
 
-const SmartCard = React.memo(function SmartCard({ recommendation, index, shouldAnimate }) {
+const SmartCard = React.memo(function SmartCard({
+  recommendation,
+  index,
+  shouldAnimate,
+}: SmartCardProps) {
   const badgeStyle = getMatchBadgeStyle(recommendation.match_percentage);
 
   const explanation =
@@ -297,7 +335,7 @@ const SmartCard = React.memo(function SmartCard({ recommendation, index, shouldA
                   {subject}
                 </span>
               ))}
-              {recommendation.subjects?.length > 2 && (
+              {recommendation.subjects && recommendation.subjects.length > 2 && (
                 <span className="text-[11px] bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded-md font-medium">
                   +{recommendation.subjects.length - 2}
                 </span>
@@ -345,9 +383,9 @@ const SmartCard = React.memo(function SmartCard({ recommendation, index, shouldA
   );
 });
 
-// =•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•
+// =•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•
 // -- SKELETON CARD --
-// =•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•
+// =•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•=•
 
 function SkeletonCard() {
   return (
