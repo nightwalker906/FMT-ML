@@ -345,7 +345,7 @@ export default function StudentDashboardPage() {
       )
       .subscribe();
 
-    // Cleanup subscriptions on unmount
+    // Cleanup subscriptions on unmount.
     return () => {
       studentSubscription.unsubscribe();
       profileSubscription.unsubscribe();
