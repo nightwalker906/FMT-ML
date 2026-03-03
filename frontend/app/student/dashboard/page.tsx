@@ -64,6 +64,9 @@ export default function StudentDashboardPage() {
   const [upcomingSessions, setUpcomingSessions] = useState<UpcomingSession[]>([]);
   const [recentTutors, setRecentTutors] = useState<RecentTutor[]>([]);
   const [featuredCourses, setFeaturedCourses] = useState<FeaturedCourse[]>([]);
+  const [learningGoals, setLearningGoals] = useState<string[]>([]);
+  const [preferredSubjects, setPreferredSubjects] = useState<string[]>([]);
+  const [gradeLevel, setGradeLevel] = useState<string>('');
   const [stats, setStats] = useState({
     totalSessions: 0,
     totalHours: 0,
@@ -258,10 +261,95 @@ export default function StudentDashboardPage() {
         console.error('Error fetching featured courses:', err);
       }
 
+      // Fetch learning goals and profile data
+      try {
+        const { data: studentData } = await supabase
+          .from('students')
+          .select('learning_goals, preferred_subjects, grade_level')
+          .eq('profile_id', user.id)
+          .single();
+
+        if (studentData?.learning_goals) {
+          setLearningGoals(Array.isArray(studentData.learning_goals) ? studentData.learning_goals : []);
+        }
+        if (studentData?.preferred_subjects) {
+          setPreferredSubjects(Array.isArray(studentData.preferred_subjects) ? studentData.preferred_subjects : []);
+        }
+        if (studentData?.grade_level) {
+          setGradeLevel(studentData.grade_level);
+        }
+      } catch (err) {
+        console.error('Error fetching learning goals:', err);
+      }
+
       setLoading(false);
     };
 
     fetchData();
+
+    // ──────────────────────────────────────────────────────────────────────
+    // REAL-TIME SUBSCRIPTIONS
+    // Listen for changes to student learning goals, preferences, and profile
+    // ──────────────────────────────────────────────────────────────────────
+
+    // Subscribe to student profile changes (learning goals, preferences)
+    const studentSubscription = supabase
+      .channel(`student-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',  // Only listen for UPDATE events (when goals are saved)
+          schema: 'public',
+          table: 'students',
+          filter: `profile_id=eq.${user.id}`,
+        },
+        (payload: any) => {
+          console.log('[Dashboard] 🔔 Real-time: Student profile updated', payload);
+          const newData = payload.new as Record<string, any>;
+          
+          // Update learning goals if they changed
+          if (newData?.learning_goals) {
+            const newGoals = Array.isArray(newData.learning_goals) ? newData.learning_goals : [];
+            console.log('[Dashboard] ✅ Learning goals changed to:', newGoals);
+            setLearningGoals(newGoals);
+          }
+          
+          if (newData?.preferred_subjects) {
+            setPreferredSubjects(Array.isArray(newData.preferred_subjects) ? newData.preferred_subjects : []);
+          }
+          if (newData?.grade_level) {
+            setGradeLevel(newData.grade_level);
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log(`[Dashboard] Subscription status for students table: ${status}`);
+      });
+
+    // Subscribe to profile changes (avatar, name, etc)
+    const profileSubscription = supabase
+      .channel(`profile-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('[Dashboard] Real-time update: profile changed', payload);
+          // Refresh entire page to reflect profile changes
+          window.location.reload();
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscriptions on unmount
+    return () => {
+      studentSubscription.unsubscribe();
+      profileSubscription.unsubscribe();
+    };
   }, [user, supabase]);
 
   // Achievement system
@@ -289,8 +377,30 @@ export default function StudentDashboardPage() {
 
   return (
     <PageTransition className="space-y-8">
-      {/* Smart Recommendations Carousel */}
-      <SmartRecommendations />
+      {/* Smart Recommendations Carousel
+          ─────────────────────────────────────────────────────────────
+          Recommendations automatically refetch when learning goals change.
+          
+          Flow:
+          1. User updates learning goals in complete-profile page
+          2. Changes saved to database
+          3. User redirected back to dashboard
+          4. Dashboard fetches fresh learning goals from Supabase
+          5. learningGoals state is updated
+          6. New goals passed to SmartRecommendations component
+          7. goalsHash computed from goals (useMemo dependency)
+          8. URL changes with new goalsHash parameter
+          9. SmartRecommendations useEffect detects goalsHash change
+          10. mutate() called to refetch from API
+          11. Backend validates hash and cache-busts if needed
+          12. Fresh recommendations returned matching new learning goals
+          ─────────────────────────────────────────────────────────────
+      */}
+      <SmartRecommendations 
+        learningGoals={learningGoals}
+        preferredSubjects={preferredSubjects}
+        gradeLevel={gradeLevel}
+      />
 
       {/* Quick Actions */}
       <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

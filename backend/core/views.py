@@ -255,6 +255,8 @@ def get_smart_recommendations(request):
     
     Returns smart AI-powered tutor recommendations based on:
     - Student's learning goals (from database)
+    - Student's location (if available)
+    - Preferred subjects
     - Popular/top-rated tutors
     - Content-Based Filtering with ML
     
@@ -278,15 +280,24 @@ def get_smart_recommendations(request):
     }
     """
     try:
+        import hashlib
         from api.ml.recommender import get_recommendations
         
-        # ── Response-level cache (60s) keyed by student_id ──────────────
+        # ── Response-level cache (60s) with smart cache busting ──────────────
         student_id = request.query_params.get('student_id')
-        cache_key = f"smart_recs_{student_id or 'anon'}"
+        goals_hash = request.query_params.get('goals', '')  # Hash from frontend reflecting current profile state
+        
+        # Build cache key that includes goals hash for automatic invalidation
+        # When frontend hash changes (due to learning goals update), this cache key changes
+        # This ensures old cached results are not returned for new profile states
+        cache_key = f"smart_recs_{student_id or 'anon'}_{goals_hash or 'no_hash'}"
         cached = cache.get(cache_key)
-        if cached is not None:
-            logger.info(f"[SmartRecs] Cache HIT for key={cache_key}")
+        
+        if cached is not None and goals_hash:
+            # Only use cache if a goals_hash was provided (indicates real profile state tracking)
+            logger.info(f"[SmartRecs] Cache HIT for key={cache_key} (faster response)")
             return Response(cached, status=status.HTTP_200_OK)
+
 
         # Use high-performance ML recommender
         logger.info(f"[SmartRecs] Using TF-IDF recommender for student_id={student_id}")

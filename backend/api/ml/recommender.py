@@ -22,14 +22,20 @@ Performance Characteristics:
 
 Hybrid Scoring Formula:
   ┌─────────────────────────────────────────────────────────────┐
-  │ FINAL_SCORE = (SIMILARITY × 0.50) +                        │
-  │               (RATING_SCORE × 0.30) +                      │
-  │               (PRICE_FIT_SCORE × 0.20)                     │
+  │ FINAL_SCORE = (SIMILARITY × 0.30) +                        │
+  │               (RATING_SCORE × 0.40) +                      │
+  │               (PRICE_FIT_SCORE × 0.30)                     │
   │                                                              │
   │ Where:                                                       │
   │   SIMILARITY         = Cosine similarity (0-1)              │
   │   RATING_SCORE      = (avg_rating / 5.0) × 100            │
   │   PRICE_FIT_SCORE   = Max(0, 1 - (rate / 100)) × 100      │
+  │                                                              │
+  │ Notes:                                                       │
+  │   - Similarity weight reduced (30%) because TF-IDF          │
+  │     naturally produces sparse vectors with low max values   │
+  │   - Rating weight increased (40%) as most discriminating    │
+  │   - Price weight increased (30%) for affordability factor   │
   └─────────────────────────────────────────────────────────────┘
 
 Author: FMT ML Engineering Team
@@ -84,9 +90,9 @@ MATRIX_PATH = MODELS_DIR / 'tfidf_matrix.pkl'
 TUTOR_IDS_PATH = MODELS_DIR / 'tutor_ids.pkl'
 
 # Hybrid weighting parameters
-SIMILARITY_WEIGHT = 0.50      # Text similarity (TF-IDF cosine)
-RATING_WEIGHT = 0.30          # Average rating (0-5 stars)
-PRICE_WEIGHT = 0.20           # Hourly rate fit (lower is better)
+SIMILARITY_WEIGHT = 0.30      # Text similarity (TF-IDF cosine) - reduced because naturally sparse
+RATING_WEIGHT = 0.40          # Average rating (0-5 stars) - increased, most discriminating
+PRICE_WEIGHT = 0.30           # Hourly rate fit (lower is better) - increased
 
 # ═════════════════════════════════════════════════════════════════════════════
 # SINGLETON LOADER - Load artifacts once at module import
@@ -169,6 +175,8 @@ class RecommenderSingleton:
                     'avatar': profile.avatar,
                     'hourly_rate': float(tutor.hourly_rate) if tutor.hourly_rate else 0.0,
                     'average_rating': float(tutor.average_rating) if tutor.average_rating else 0.0,
+                    'bio_text': tutor.bio_text or '',
+                    'qualifications': tutor.qualifications if isinstance(tutor.qualifications, list) else [],
                 }
             
             logger.info(f"   ✅ Loaded metadata for {len(self.tutor_data)} tutors")
@@ -194,22 +202,22 @@ _recommender = RecommenderSingleton.get_instance()
 # ═════════════════════════════════════════════════════════════════════════════
 
 
-def fetch_student_preferences(student_id: str) -> Tuple[str, List[str]]:
+def fetch_student_learning_goals(student_id: str) -> str:
     """
-    Fetch a student's learning goals and preferred subjects.
+    Fetch a student's learning goals as a text query.
     
     Args:
         student_id: UUID of the student
         
     Returns:
-        Tuple of (learning_goals_text, preferred_subjects_list)
+        Learning goals as a single text string
     """
     try:
         student = Student.objects.filter(profile_id=student_id).first()
         
         if not student:
             logger.warning(f"Student not found: {student_id}")
-            return "", []
+            return ""
         
         # Parse learning_goals
         learning_goals = student.learning_goals or []
@@ -219,21 +227,13 @@ def fetch_student_preferences(student_id: str) -> Tuple[str, List[str]]:
             except:
                 learning_goals = []
         
-        learning_goals_text = ' '.join([str(g).lower() for g in learning_goals])
-        
-        # Parse preferred_subjects
-        preferred_subjects = student.preferred_subjects or []
-        if isinstance(preferred_subjects, str):
-            try:
-                preferred_subjects = json.loads(preferred_subjects)
-            except:
-                preferred_subjects = []
-        
-        return learning_goals_text, preferred_subjects
+        # Convert goals to a single text string
+        learning_goals_text = ' '.join([str(g).lower() for g in learning_goals]) if learning_goals else ""
+        return learning_goals_text
     
     except Exception as e:
-        logger.error(f"Error fetching student preferences: {e}")
-        return "", []
+        logger.error(f"Error fetching student learning goals: {e}")
+        return ""
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -318,6 +318,87 @@ def calculate_price_fit_scores() -> np.ndarray:
     return np.array(price_scores)
 
 
+def calculate_learning_goal_match(
+    learning_goals: str,
+    tutor_qualifications: List[str]
+) -> float:
+    """
+    Calculate how well tutor's qualifications match the student's learning goals.
+    
+    Args:
+        learning_goals: Student's learning goals as text (e.g., "computer science tutor")
+        tutor_qualifications: List of subjects tutor teaches
+        
+    Returns:
+        Match score 0-1 (1.0 = perfect match, 0 = no match)
+    """
+    if not learning_goals or not tutor_qualifications:
+        return 0.0
+    
+    # Normalize to lowercase for comparison
+    goals_lower = learning_goals.lower()
+    quals_lower = [q.lower().strip() for q in tutor_qualifications]
+    
+    # Check for direct keyword matches in goals
+    matches = 0
+    for qual in quals_lower:
+        # Check if qualification appears in learning goals
+        if qual in goals_lower or goals_lower in qual:
+            matches += 1
+    
+    if not matches:
+        return 0.0
+    
+    # Score based on number of matches
+    match_score = min(matches / max(len(quals_lower), 1), 1.0)
+    return float(np.clip(match_score, 0, 1))
+
+
+def calculate_enhanced_hybrid_scores(
+    similarity_scores: np.ndarray,
+    rating_scores: np.ndarray,
+    price_fit_scores: np.ndarray,
+    learning_goals: str
+) -> np.ndarray:
+    """
+    Calculate hybrid scores with qualification matching boost.
+    
+    Args:
+        similarity_scores: TF-IDF cosine similarity (0-1)
+        rating_scores: Rating scores (0-100)
+        price_fit_scores: Price fit scores (0-100)
+        learning_goals: Student's learning goals text
+        
+    Returns:
+        Enhanced hybrid scores (0-100)
+    """
+    # Calculate qualification match boost for each tutor
+    qual_boosts = []
+    for tutor_id in _recommender.tutor_ids:
+        tutor_info = _recommender.tutor_data.get(tutor_id, {})
+        match_score = calculate_learning_goal_match(
+            learning_goals,
+            tutor_info.get('qualifications', [])
+        )
+        qual_boosts.append(match_score * 100)  # Scale to 0-100
+    
+    qual_boosts = np.array(qual_boosts)
+    
+    # Normalize similarity to 0-100
+    similarity_normalized = similarity_scores * 100.0
+    
+    # Enhanced weighting with qualification matching as a strong factor
+    hybrid_scores = (
+        (similarity_normalized * SIMILARITY_WEIGHT) +
+        (rating_scores * RATING_WEIGHT) +
+        (price_fit_scores * PRICE_WEIGHT) +
+        (qual_boosts * 0.25)  # 25% bonus for matching qualifications
+    )
+    
+    # Clip to 0-100
+    return np.clip(hybrid_scores, 0, 100)
+
+
 def calculate_hybrid_scores(
     similarity_scores: np.ndarray,
     rating_scores: np.ndarray,
@@ -327,9 +408,9 @@ def calculate_hybrid_scores(
     Combine scores into final hybrid recommendation score.
     
     Formula:
-      final_score = (similarity × 0.50) +
-                    (rating × 0.30) +
-                    (price_fit × 0.20)
+      final_score = (similarity × 0.30) +
+                    (rating × 0.40) +
+                    (price_fit × 0.30)
     
     Args:
         similarity_scores: Cosine similarity scores (0-1)
@@ -389,12 +470,7 @@ def get_recommendations(
     # Determine query
     if student_id:
         logger.info(f"[Recommender] Generating recommendations for student: {student_id}")
-        learning_goals_text, preferred_subjects = fetch_student_preferences(student_id)
-        
-        if not learning_goals_text:
-            query = " ".join(preferred_subjects) if preferred_subjects else ""
-        else:
-            query = learning_goals_text
+        query = fetch_student_learning_goals(student_id)
     elif custom_query:
         query = custom_query
     else:
@@ -411,11 +487,12 @@ def get_recommendations(
         rating_scores = calculate_rating_scores()
         price_fit_scores = calculate_price_fit_scores()
         
-        # Combine into hybrid scores
-        hybrid_scores = calculate_hybrid_scores(
+        # Combine into enhanced hybrid scores with qualification matching
+        hybrid_scores = calculate_enhanced_hybrid_scores(
             similarity_scores,
             rating_scores,
-            price_fit_scores
+            price_fit_scores,
+            query  # Pass learning goals for qualification matching
         )
         
         # Get top N
@@ -430,14 +507,22 @@ def get_recommendations(
             if not tutor_info:
                 continue
             
-            # Build explanations
+            # Build explanations - use bio text as primary explanation
+            bio_summary = tutor_info.get('bio_text', '')[:200].strip()
             match_reasons = []
-            if similarity_scores[idx] > 0.5:
-                match_reasons.append(f"Expertise matches your interests")
+            
+            if bio_summary:
+                match_reasons.append(f"Bio: {bio_summary}")
+            
+            # Add qualifications if available
+            qualifications = tutor_info.get('qualifications', [])
+            if qualifications:
+                match_reasons.append(f"Expertise: {', '.join(qualifications[:3])}")
+            
             if rating_scores[idx] > 80:
-                match_reasons.append(f"Highly rated by students ({tutor_info['average_rating']:.1f}/5.0)")
+                match_reasons.append(f"Rating: {tutor_info['average_rating']:.1f}/5.0")
             if price_fit_scores[idx] > 50:
-                match_reasons.append(f"Competitively priced (${tutor_info['hourly_rate']:.0f}/hr)")
+                match_reasons.append(f"Price: ${tutor_info['hourly_rate']:.0f}/hr")
             
             recommendation = {
                 'rank': rank,
