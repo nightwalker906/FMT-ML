@@ -246,6 +246,7 @@ class RatingViewSet(viewsets.ModelViewSet):
 )
 @api_view(['GET'])
 @permission_classes([AllowAny])
+@throttle_classes([])
 def get_smart_recommendations(request):
     """
     Smart Recommendations Endpoint for Student Dashboard
@@ -295,7 +296,7 @@ def get_smart_recommendations(request):
         
         if cached is not None and goals_hash:
             # Only use cache if a goals_hash was provided (indicates real profile state tracking)
-            logger.info(f"[SmartRecs] Cache HIT for key={cache_key} (faster response)")
+            logger.debug(f"[SmartRecs] Cache HIT for key={cache_key} (faster response)")
             return Response(cached, status=status.HTTP_200_OK)
 
 

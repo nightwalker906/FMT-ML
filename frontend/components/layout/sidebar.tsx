@@ -25,6 +25,7 @@ import {
   TrendingUp,
   Sparkles,
   FolderOpen,
+  Video,
 } from 'lucide-react';
 
 export interface SidebarLink {
@@ -50,6 +51,7 @@ export const studentLinks: SidebarLink[] = [
   { label: 'Find a Tutor', href: '/student/search', icon: <Search size={20} /> },
   { label: 'Group Classes', href: '/student/courses', icon: <GraduationCap size={20} /> },
   { label: 'My Courses', href: '/student/my-courses', icon: <FolderOpen size={20} /> },
+  { label: 'Live Classroom', href: '/student/live-classroom', icon: <Video size={20} /> },
   { label: 'Study Planner', href: '/student/study-planner', icon: <BookOpen size={20} /> },
   { label: 'Quick Tutor AI', href: '/student/quick-tutor', icon: <Sparkles size={20} /> },
   { label: 'My Schedule', href: '/student/schedule', icon: <Calendar size={20} /> },
@@ -65,6 +67,7 @@ export const tutorLinks: SidebarLink[] = [
   { label: 'Requests', href: '/tutor/requests', icon: <Inbox size={20} /> },
   { label: 'My Students', href: '/tutor/students', icon: <Users size={20} /> },
   { label: 'My Courses', href: '/tutor/courses', icon: <GraduationCap size={20} /> },
+  { label: 'Live Classroom', href: '/tutor/live-classroom', icon: <Video size={20} /> },
   { label: 'Messages', href: '/tutor/messages', icon: <MessageSquare size={20} /> },
   { label: 'Earnings', href: '/tutor/earnings', icon: <DollarSign size={20} /> },
   { label: 'Smart Pricing', href: '/tutor/smart-pricing', icon: <DollarSign size={20} /> },

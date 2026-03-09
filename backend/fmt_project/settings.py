@@ -137,6 +137,17 @@ REST_FRAMEWORK = {
     }
 }
 
+# Developer-friendly throttle overrides for local work.
+# Keeps production limits intact (DEBUG=False).
+if DEBUG:
+    REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'].update({
+        'anon': '10000/day',
+        'user': '100000/day',
+        'generative_ai': '1000/day',
+        'ml_prediction': '20000/day',
+        'sentiment': '20000/day',
+    })
+
 # CORS Configuration
 CORS_ALLOWED_ORIGINS = os.getenv(
     'CORS_ALLOWED_ORIGINS',
