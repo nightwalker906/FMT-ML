@@ -117,7 +117,7 @@ export function StatsOverview({ stats }: StatsOverviewProps) {
               <p className="text-3xl font-bold text-slate-900 dark:text-white mt-1">
                 {card.value}
               </p>
-              <p className={`text-xs mt-1 ${card.subColor}`}>{card.sub}</p>
+              <div className={`text-xs mt-1 ${card.subColor}`}>{card.sub}</div>
             </div>
             <div className={`h-12 w-12 rounded-2xl ${card.iconBg} flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-300`}>
               {card.icon}

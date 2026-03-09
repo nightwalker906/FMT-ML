@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/auth-context';
 import { createClient } from '@/utils/supabase/client';
@@ -16,7 +16,6 @@ import { Bell, Menu, Loader2 } from 'lucide-react';
 export default function TutorLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const { user, signOut, isLoading } = useAuth();
   const supabase = createClient();
 
@@ -142,12 +141,15 @@ export default function TutorLayout({ children }: { children: React.ReactNode })
 
   // Open pricing modal if requested via URL param
   useEffect(() => {
-    if (searchParams?.get('openPricing') === '1') {
+    if (typeof window === 'undefined') return;
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('openPricing') === '1') {
       setShowPricingModal(true);
       // Clean up URL by removing the query param
       router.replace(pathname.split('?')[0]);
     }
-  }, [searchParams, pathname, router]);
+  }, [pathname, router]);
 
   const handleSignOut = async () => {
     await goOffline();

@@ -12,12 +12,14 @@ Author: FMT Development Team
 =============================================================================
 """
 import logging
+import secrets
 
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
-from django.db.models import Count, Q, Prefetch
+from django.db import transaction
+from django.db.models import Q, Prefetch
 
 from .models import Course, Enrollment, CourseSession, CourseResource, Profile
 from .course_serializers import (
@@ -28,6 +30,12 @@ from .course_serializers import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _generate_room_name(session_id):
+    """Build a short, human-readable room name for Jitsi."""
+    random_suffix = secrets.token_urlsafe(8).replace('-', '').replace('_', '')[:10]
+    return f"fmt-{str(session_id)[:8]}-{random_suffix}"
 
 
 # ─── List Active Courses ──────────────────────────────────────────────────────
@@ -149,6 +157,60 @@ def course_detail(request, course_id):
         'status': 'success',
         'course': serializer.data,
     })
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([AllowAny])
+@throttle_classes([])
+def join_live_session(request, session_id):
+    """
+    Join a live course session.
+
+    Behavior:
+    - Fetches the course_session by ID.
+    - If room_name is null, creates a unique random room name and saves it.
+    - Returns the room_name to the frontend for JitsiMeeting.
+    """
+    try:
+        with transaction.atomic():
+            course_session = CourseSession.objects.select_for_update().get(id=session_id)
+
+            if not course_session.room_name:
+                generated = None
+                for _ in range(10):
+                    candidate = _generate_room_name(course_session.id)
+                    if not CourseSession.objects.filter(room_name=candidate).exists():
+                        generated = candidate
+                        break
+
+                if not generated:
+                    return Response(
+                        {'status': 'error', 'error': 'Could not generate a unique room name.'},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    )
+
+                course_session.room_name = generated
+                course_session.save(update_fields=['room_name'])
+
+            room_name = course_session.room_name
+
+        return Response(
+            {
+                'status': 'success',
+                'session_id': str(course_session.id),
+                'course_id': str(course_session.course_id),
+                'room_name': room_name,
+                'meeting_url': course_session.meeting_url,
+                'session_status': course_session.status,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    except CourseSession.DoesNotExist:
+        return Response(
+            {'status': 'error', 'error': 'Course session not found.'},
+            status=status.HTTP_404_NOT_FOUND,
+        )
 
 
 # ─── Enroll in a Course ───────────────────────────────────────────────────────

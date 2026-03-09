@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useMemo, useEffect } from 'react';
+import React, { useRef, useMemo } from 'react';
 import Link from 'next/link';
 import useSWR from 'swr';
 import { useAuth } from '@/context/auth-context';
@@ -94,14 +94,14 @@ const SmartRecommendations: React.FC<SmartRecommendationsProps> = ({
 
   // Create a comprehensive hash of all student profile factors
   // ⚠️ MUST match backend hash computation in core/views.py get_smart_recommendations()
-  const profileHash = React.useMemo(() => {
+  const profileHash = useMemo(() => {
     if (!user?.id) return '';
     try {
       // Compute hash same way as backend: sorted JSON with learning_goals structure
       const profileData = JSON.stringify(
         {
-          learning_goals: (learningGoals || []).sort(),
-          preferred_subjects: (preferredSubjects || []).sort(),
+          learning_goals: [...(learningGoals || [])].sort(),
+          preferred_subjects: [...(preferredSubjects || [])].sort(),
           grade_level: gradeLevel || '',
         },
         null,
@@ -125,19 +125,9 @@ const SmartRecommendations: React.FC<SmartRecommendationsProps> = ({
   // When profileHash changes, the URL changes, which tells SWR to refetch
   const url = user?.id
     ? `${API_BASE}/recommendations/?student_id=${user.id}${profileHash ? `&goals=${profileHash}` : ''}`
-    : `${API_BASE}/recommendations/`;
+    : null;
 
-  const { data, error, isLoading, mutate } = useSWR(url, fetcher, SWR_OPTIONS);
-
-  // Refetch recommendations whenever profile factors change
-  // profileHash changes → URL changes → SWR detects new URL and refetches
-  useEffect(() => {
-    // Always refetch when profileHash changes, regardless of whether goals are empty
-    // This ensures recommendations update immediately when learning goals are saved
-    if (profileHash) {
-      mutate();
-    }
-  }, [profileHash, mutate]);
+  const { data, error, isLoading } = useSWR(url, fetcher, SWR_OPTIONS);
 
   // Scroll controls
   const scroll = (direction: 'left' | 'right') => {

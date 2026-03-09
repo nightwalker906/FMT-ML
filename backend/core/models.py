@@ -286,6 +286,8 @@ class CourseSession(models.Model):
     scheduled_start = models.DateTimeField()
     scheduled_end = models.DateTimeField()
     meeting_url = models.TextField(blank=True, null=True)
+    room_name = models.TextField(unique=True, blank=True, null=True)
+    transcript = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='scheduled')
     created_at = models.DateTimeField(auto_now_add=True)
 

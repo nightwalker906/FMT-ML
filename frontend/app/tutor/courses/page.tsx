@@ -134,6 +134,7 @@ export default function TutorCoursesPage() {
   const [sessionEndTime, setSessionEndTime] = useState('')
   const [sessionMeetingUrl, setSessionMeetingUrl] = useState('')
   const [addingSession, setAddingSession] = useState(false)
+  const [sessionError, setSessionError] = useState<string | null>(null)
 
   // Toasts / action states
   const [togglingCourse, setTogglingCourse] = useState<string | null>(null)
@@ -374,48 +375,64 @@ export default function TutorCoursesPage() {
   }
 
   // ── Add Session ──
+  function resetSessionModal() {
+    setShowSessionModal(null)
+    setSessionTitle('')
+    setSessionDate('')
+    setSessionStartTime('')
+    setSessionEndTime('')
+    setSessionMeetingUrl('')
+    setSessionError(null)
+  }
+
   async function handleAddSession(e: React.FormEvent) {
     e.preventDefault()
     if (!showSessionModal) return
 
+    setSessionError(null)
+
     if (!sessionTitle.trim() || !sessionDate || !sessionStartTime || !sessionEndTime) {
+      setSessionError('Please complete title, date, start time, and end time.')
       return
     }
 
-    const scheduledStart = new Date(`${sessionDate}T${sessionStartTime}`)
-    const scheduledEnd = new Date(`${sessionDate}T${sessionEndTime}`)
+    const scheduledStart = new Date(`${sessionDate}T${sessionStartTime}:00`)
+    const scheduledEnd = new Date(`${sessionDate}T${sessionEndTime}:00`)
+
+    if (Number.isNaN(scheduledStart.getTime()) || Number.isNaN(scheduledEnd.getTime())) {
+      setSessionError('Invalid date/time selected.')
+      return
+    }
 
     if (scheduledEnd <= scheduledStart) {
+      setSessionError('End time must be after start time.')
       return
     }
 
     setAddingSession(true)
     try {
-      const { error } = await supabase
-        .from('course_sessions')
-        .insert({
+      const res = await fetch('/api/live/sessions/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           course_id: showSessionModal,
           title: sessionTitle.trim(),
           scheduled_start: scheduledStart.toISOString(),
           scheduled_end: scheduledEnd.toISOString(),
           meeting_url: sessionMeetingUrl.trim() || null,
-          status: 'scheduled',
-        })
+        }),
+      })
 
-      if (error) throw error
+      const payload = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(payload?.error || 'Failed to schedule session.')
+      }
 
-      // Update local state
       if (userId) await loadCourses(userId)
-
-      // Reset modal
-      setShowSessionModal(null)
-      setSessionTitle('')
-      setSessionDate('')
-      setSessionStartTime('')
-      setSessionEndTime('')
-      setSessionMeetingUrl('')
-    } catch (err) {
+      resetSessionModal()
+    } catch (err: any) {
       console.error('Add session error:', err)
+      setSessionError(err?.message || 'Failed to schedule session.')
     } finally {
       setAddingSession(false)
     }
@@ -1049,7 +1066,15 @@ export default function TutorCoursesPage() {
                                 Scheduled Sessions
                               </h4>
                               <button
-                                onClick={() => setShowSessionModal(course.id)}
+                                onClick={() => {
+                                  setSessionError(null)
+                                  setSessionTitle('')
+                                  setSessionDate('')
+                                  setSessionStartTime('')
+                                  setSessionEndTime('')
+                                  setSessionMeetingUrl('')
+                                  setShowSessionModal(course.id)
+                                }}
                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-teal-900/20 hover:bg-primary-100 dark:hover:bg-teal-900/40 rounded-lg transition-colors"
                               >
                                 <Plus size={14} />
@@ -1294,7 +1319,7 @@ export default function TutorCoursesPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-            onClick={() => setShowSessionModal(null)}
+            onClick={resetSessionModal}
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
@@ -1310,7 +1335,7 @@ export default function TutorCoursesPage() {
                   Schedule a Live Session
                 </h3>
                 <button
-                  onClick={() => setShowSessionModal(null)}
+                  onClick={resetSessionModal}
                   className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
                 >
                   <X size={18} className="text-slate-400" />
@@ -1319,6 +1344,13 @@ export default function TutorCoursesPage() {
 
               {/* Modal Body */}
               <form onSubmit={handleAddSession} className="p-6 space-y-4">
+                {sessionError && (
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40">
+                    <AlertCircle size={16} className="text-red-500 flex-shrink-0" />
+                    <p className="text-sm text-red-700 dark:text-red-400">{sessionError}</p>
+                  </div>
+                )}
+
                 {/* Session Title */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
@@ -1388,7 +1420,7 @@ export default function TutorCoursesPage() {
                       type="url"
                       value={sessionMeetingUrl}
                       onChange={(e) => setSessionMeetingUrl(e.target.value)}
-                      placeholder="https://zoom.us/j/..."
+                      placeholder="Leave blank to auto-create the FMT live room link"
                       className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700/50 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
                     />
                   </div>
@@ -1398,7 +1430,7 @@ export default function TutorCoursesPage() {
                 <div className="flex justify-end gap-3 pt-2">
                   <button
                     type="button"
-                    onClick={() => setShowSessionModal(null)}
+                    onClick={resetSessionModal}
                     className="px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
                   >
                     Cancel
