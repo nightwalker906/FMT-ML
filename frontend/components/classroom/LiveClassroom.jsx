@@ -44,6 +44,7 @@ export default function LiveClassroom({
   const recordingStartedAtRef = useRef(0);
   const recordingTimerRef = useRef(null);
   const redirectAfterRecordingRef = useRef(false);
+  const endSessionAfterRecordingRef = useRef(false);
   const stopFallbackTimerRef = useRef(null);
   const finalizeInProgressRef = useRef(false);
   const captureMetaRef = useRef(null);
@@ -120,6 +121,18 @@ export default function LiveClassroom({
     }
   }, [sessionId]);
 
+  const endSession = useCallback(async () => {
+    if (!sessionId || !isTutor) return;
+    try {
+      await fetch(`/api/live/sessions/${sessionId}/end`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch {
+      // Best-effort: do not block leaving the classroom.
+    }
+  }, [isTutor, sessionId]);
+
   const finalizeAndUploadRecording = useCallback(async () => {
     if (finalizeInProgressRef.current) return;
     finalizeInProgressRef.current = true;
@@ -150,7 +163,12 @@ export default function LiveClassroom({
       );
       finalizeInProgressRef.current = false;
       if (redirectAfterRecordingRef.current) {
+        const shouldEndSession = endSessionAfterRecordingRef.current;
+        endSessionAfterRecordingRef.current = false;
         redirectAfterRecordingRef.current = false;
+        if (shouldEndSession) {
+          await endSession();
+        }
         router.push(redirectPath);
       }
       return;
@@ -199,11 +217,16 @@ export default function LiveClassroom({
       setUploadingRecording(false);
       setRecordingSeconds(0);
       if (redirectAfterRecordingRef.current) {
+        const shouldEndSession = endSessionAfterRecordingRef.current;
+        endSessionAfterRecordingRef.current = false;
         redirectAfterRecordingRef.current = false;
+        if (shouldEndSession) {
+          await endSession();
+        }
         router.push(redirectPath);
       }
     }
-  }, [cleanupMediaStream, clearRecordingTimer, clearStopFallbackTimer, loadRecordings, redirectPath, router, sessionId, waitForRecordedData]);
+  }, [cleanupMediaStream, clearRecordingTimer, clearStopFallbackTimer, endSession, loadRecordings, redirectPath, router, sessionId, waitForRecordedData]);
 
   const stopRecording = useCallback(() => {
     const recorder = mediaRecorderRef.current;
@@ -373,20 +396,27 @@ export default function LiveClassroom({
     };
   }, [cleanupMediaStream, clearRecordingTimer, clearStopFallbackTimer]);
 
-  const handleCallEnded = useCallback(() => {
+  const handleEndLesson = useCallback(async () => {
     if (isRecording) {
+      endSessionAfterRecordingRef.current = true;
       redirectAfterRecordingRef.current = true;
       stopRecording();
       return;
     }
 
     if (uploadingRecording) {
+      endSessionAfterRecordingRef.current = true;
       redirectAfterRecordingRef.current = true;
       return;
     }
 
+    await endSession();
     router.push(redirectPath);
-  }, [isRecording, redirectPath, router, stopRecording, uploadingRecording]);
+  }, [endSession, isRecording, redirectPath, router, stopRecording, uploadingRecording]);
+
+  const handleCallEnded = useCallback(() => {
+    handleEndLesson();
+  }, [handleEndLesson]);
 
   useEffect(() => {
     const fetchOrCreateRoom = async () => {
@@ -492,12 +522,19 @@ export default function LiveClassroom({
           <div className="flex flex-wrap items-center gap-2">
             {isTutor && (
               <>
+                <button
+                  type="button"
+                  onClick={handleEndLesson}
+                  className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  End Lesson
+                </button>
                 {!isRecording ? (
                   <button
                     type="button"
                     onClick={startRecording}
                     disabled={uploadingRecording}
-                    className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Start Recording
                   </button>
