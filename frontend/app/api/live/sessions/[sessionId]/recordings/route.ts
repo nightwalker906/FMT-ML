@@ -331,6 +331,38 @@ export async function POST(request: NextRequest, context: RouteContext) {
       recordingResource = insertedResource;
     }
 
+    // Notify enrolled students about the new lesson recording.
+    try {
+      const { data: enrollments } = await storageClient
+        .from('enrollments')
+        .select('student_id')
+        .eq('course_id', session.course_id)
+        .in('status', ['enrolled', 'active']);
+
+      if (enrollments && enrollments.length > 0) {
+        const notifications = enrollments.map((row: any) => ({
+          user_id: row.student_id,
+          type: 'lesson_new',
+          title: 'New lesson available',
+          message: `"${session.title}" is ready to watch.`,
+          is_read: false,
+          action_url: '/student/live-classroom',
+          metadata: {
+            session_id: session.id,
+            course_id: session.course_id,
+            recording_id: `${session.id}-${timestampPrefix}-${resolvedName}`,
+            recording_path: objectPath,
+            recording_name: recording?.name || resolvedName,
+            status: 'new',
+          },
+        }));
+
+        await storageClient.from('notifications').insert(notifications);
+      }
+    } catch {
+      // Notifications are best-effort; do not block uploads.
+    }
+
     return NextResponse.json(
       {
         status: 'success',

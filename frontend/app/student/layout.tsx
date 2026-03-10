@@ -112,8 +112,62 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
       )
       .subscribe();
 
+    const notificationsSubscription = supabase
+      .channel(`notifications-badge:${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          const record = payload.new as { is_read?: boolean } | null;
+          if (record && record.is_read === false) {
+            setNotificationCount(prev => prev + 1);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          const prevRecord = payload.old as { is_read?: boolean } | null;
+          const nextRecord = payload.new as { is_read?: boolean } | null;
+          if (!prevRecord || !nextRecord) return;
+          if (prevRecord.is_read === false && nextRecord.is_read === true) {
+            setNotificationCount(prev => Math.max(0, prev - 1));
+          } else if (prevRecord.is_read === true && nextRecord.is_read === false) {
+            setNotificationCount(prev => prev + 1);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          const record = payload.old as { is_read?: boolean } | null;
+          if (record && record.is_read === false) {
+            setNotificationCount(prev => Math.max(0, prev - 1));
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       messagesSubscription.unsubscribe();
+      notificationsSubscription.unsubscribe();
     };
   }, [user, supabase]);
 
