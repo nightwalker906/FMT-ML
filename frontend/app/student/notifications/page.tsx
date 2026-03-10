@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Bell, Check, CheckCheck, Trash2, Loader2, Calendar, MessageSquare, Star, AlertCircle, Info, X } from 'lucide-react'
+import { Bell, Check, CheckCheck, Trash2, Loader2, Calendar, MessageSquare, Star, AlertCircle, Info, X, PlayCircle } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 import { cn } from '@/lib/utils'
 
@@ -23,6 +23,8 @@ const notificationIcons: Record<string, React.ReactNode> = {
   booking_cancelled: <AlertCircle className="h-5 w-5 text-orange-500" />,
   message: <MessageSquare className="h-5 w-5 text-teal-500" />,
   review: <Star className="h-5 w-5 text-yellow-500" />,
+  lesson_new: <PlayCircle className="h-5 w-5 text-emerald-500" />,
+  lesson_in_progress: <AlertCircle className="h-5 w-5 text-blue-500" />,
   system: <Info className="h-5 w-5 text-slate-500" />,
 }
 
@@ -33,6 +35,8 @@ const notificationColors: Record<string, string> = {
   booking_cancelled: 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800',
   message: 'bg-teal-50 dark:bg-teal-900/20 border-teal-200 dark:border-teal-800',
   review: 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800',
+  lesson_new: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800',
+  lesson_in_progress: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800',
   system: 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700',
 }
 

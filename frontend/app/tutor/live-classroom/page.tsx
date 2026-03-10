@@ -2,7 +2,8 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { createAdminClient, createClient } from '@/utils/supabase/server';
-import { Video, PlayCircle, CircleStop, Calendar, BookOpen } from 'lucide-react';
+import { Video, CircleStop, Calendar, BookOpen } from 'lucide-react';
+import { StartInstantSessionButton, StartLiveClassLink } from '@/components/classroom/StartLiveButtons';
 
 type TutorCourse = {
   id: string;
@@ -253,13 +254,7 @@ export default async function TutorLiveClassroomPage() {
             />
           </div>
           <div className="md:col-span-2">
-            <button
-              type="submit"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium"
-            >
-              <PlayCircle size={16} />
-              Start Live Now
-            </button>
+            <StartInstantSessionButton />
           </div>
         </form>
       </section>
@@ -336,13 +331,9 @@ export default async function TutorLiveClassroomPage() {
                       {session.status}
                     </span>
                     {session.status === 'scheduled' && (
-                      <Link
+                      <StartLiveClassLink
                         href={`/live-class/${session.id}?role=tutor&redirect=/tutor/live-classroom`}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium"
-                      >
-                        <PlayCircle size={16} />
-                        Start Live Class
-                      </Link>
+                      />
                     )}
                   </div>
                 </div>

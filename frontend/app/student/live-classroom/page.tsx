@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createAdminClient, createClient } from '@/utils/supabase/server';
-import { Video, Calendar, Users, PlayCircle } from 'lucide-react';
+import { Video, Calendar, Users } from 'lucide-react';
+import LessonRecordingsPanel from '@/components/classroom/LessonRecordingsPanel';
 
 type Course = {
   id: string;
@@ -34,6 +35,8 @@ type LessonRecording = {
   file_url: string;
   recorded_at: string | null;
   size_bytes: number | null;
+  duration_seconds?: number | null;
+  mime_type?: string | null;
 };
 
 function formatDateTime(dateStr: string) {
@@ -54,6 +57,16 @@ function formatFileSize(sizeBytes: number | null) {
     return `${(mb / 1024).toFixed(1)} GB`;
   }
   return `${mb.toFixed(1)} MB`;
+}
+
+function extractDurationSeconds(meta: any) {
+  if (!meta) return null;
+  const raw = meta.duration ?? meta.duration_seconds ?? meta.durationSeconds;
+  const value = typeof raw === 'string' ? parseFloat(raw) : raw;
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+    return Math.floor(value);
+  }
+  return null;
 }
 
 export default async function StudentLiveClassroomPage() {
@@ -192,6 +205,8 @@ export default async function StudentLiveClassroomPage() {
             file_url: fileUrl,
             recorded_at: file.created_at || file.updated_at || null,
             size_bytes: typeof file.metadata?.size === 'number' ? file.metadata.size : null,
+            duration_seconds: extractDurationSeconds(file.metadata),
+            mime_type: file.metadata?.mimetype || file.metadata?.contentType || null,
           } as LessonRecording;
         })
       );
@@ -208,6 +223,12 @@ export default async function StudentLiveClassroomPage() {
       return bTime - aTime;
     })
     .slice(0, 30);
+
+  const displayRecordings = lessonRecordings.map((recording) => ({
+    ...recording,
+    recorded_label: recording.recorded_at ? formatDateTime(recording.recorded_at) : 'Recorded recently',
+    size_label: recording.size_bytes ? formatFileSize(recording.size_bytes) : '',
+  }));
 
   return (
     <div className="space-y-6">
@@ -308,36 +329,10 @@ export default async function StudentLiveClassroomPage() {
             No lesson recordings yet. Your tutor can record classes and save them to the lessons library.
           </div>
         ) : (
-          <div className="space-y-2">
-            {lessonRecordings.map((recording) => (
-              <div
-                key={recording.id}
-                className="rounded-xl border border-slate-200/60 dark:border-slate-700/40 bg-white dark:bg-slate-800/80 p-4"
-              >
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                  <div>
-                    <p className="font-semibold text-slate-900 dark:text-white">{recording.session_title}</p>
-                    <p className="text-sm text-slate-600 dark:text-slate-300">
-                      {recording.course_title} - {recording.tutor_name}
-                    </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      Recorded {recording.recorded_at ? formatDateTime(recording.recorded_at) : 'recently'}
-                      {recording.size_bytes ? ` | ${formatFileSize(recording.size_bytes)}` : ''}
-                    </p>
-                  </div>
-                  <a
-                    href={recording.file_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium"
-                  >
-                    <PlayCircle size={16} />
-                    Watch Lesson
-                  </a>
-                </div>
-              </div>
-            ))}
-          </div>
+          <LessonRecordingsPanel
+            recordings={displayRecordings}
+            userId={user.id}
+          />
         )}
       </section>
     </div>
