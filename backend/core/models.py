@@ -314,6 +314,8 @@ class CourseResource(models.Model):
     )
     title = models.CharField(max_length=255)
     file_url = models.TextField()
+    resource_type = models.CharField(max_length=50, default='material')
+    due_date = models.DateTimeField(null=True, blank=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -323,3 +325,59 @@ class CourseResource(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.course.title})"
+
+
+class Quiz(models.Model):
+    """
+    AI-generated quiz linked to a course session.
+    Maps to the 'quizzes' table in PostgreSQL.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    course_session = models.ForeignKey(
+        CourseSession,
+        on_delete=models.CASCADE,
+        db_column='course_session_id',
+        related_name='quizzes',
+    )
+    title = models.CharField(max_length=255)
+    is_published = models.BooleanField(default=False)
+    resource = models.ForeignKey(
+        CourseResource,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        db_column='resource_id',
+        related_name='quiz',
+    )
+
+    class Meta:
+        db_table = 'quizzes'
+        managed = False
+
+    def __str__(self):
+        return f"Quiz: {self.title} ({self.course_session_id})"
+
+
+class QuizQuestion(models.Model):
+    """
+    Question belonging to a quiz.
+    Maps to the 'quiz_questions' table in PostgreSQL.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    quiz = models.ForeignKey(
+        Quiz,
+        on_delete=models.CASCADE,
+        db_column='quiz_id',
+        related_name='questions',
+    )
+    question_text = models.TextField()
+    options = models.JSONField()
+    correct_index = models.IntegerField()
+    explanation = models.TextField()
+
+    class Meta:
+        db_table = 'quiz_questions'
+        managed = False
+
+    def __str__(self):
+        return f"QuizQuestion: {self.question_text[:40]}"

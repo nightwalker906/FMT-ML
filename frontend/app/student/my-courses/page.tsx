@@ -56,7 +56,7 @@ type CourseResource = {
   title: string
   file_url: string
   uploaded_at: string
-  resource_type: 'material' | 'assignment'
+  resource_type: 'material' | 'assignment' | 'quiz' | 'recording'
   due_date: string | null
 }
 
@@ -458,9 +458,9 @@ export default function StudentMyCoursesPage() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
           { label: 'Enrolled Classes', value: courses.length, icon: BookOpen, color: 'text-primary-600 dark:text-primary-400', bg: 'bg-primary-100 dark:bg-teal-900/30' },
-          { label: 'Assignments', value: courses.reduce((s, c) => s + c.resources.filter(r => r.resource_type === 'assignment').length, 0), icon: ClipboardCheck, color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-100 dark:bg-indigo-900/30' },
+          { label: 'Assignments', value: courses.reduce((s, c) => s + c.resources.filter(r => r.resource_type === 'assignment' || r.resource_type === 'quiz').length, 0), icon: ClipboardCheck, color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-100 dark:bg-indigo-900/30' },
           { label: 'Upcoming Sessions', value: courses.reduce((s, c) => s + c.sessions.filter(ses => new Date(ses.scheduled_start) > new Date() && ses.status === 'scheduled').length, 0), icon: Video, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-100 dark:bg-purple-900/30' },
-          { label: 'Materials', value: courses.reduce((s, c) => s + c.resources.filter(r => r.resource_type !== 'assignment').length, 0), icon: FileText, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-100 dark:bg-amber-900/30' },
+          { label: 'Materials', value: courses.reduce((s, c) => s + c.resources.filter(r => r.resource_type === 'material' || r.resource_type === 'recording').length, 0), icon: FileText, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-100 dark:bg-amber-900/30' },
         ].map((stat) => (
           <div key={stat.label} className="bg-white dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/40 p-4">
             <div className="flex items-center gap-3">
@@ -668,24 +668,40 @@ export default function StudentMyCoursesPage() {
                               <div className="space-y-2">
                                 {course.resources.map((resource) => {
                                   const isAssignment = resource.resource_type === 'assignment'
+                                  const isQuiz = resource.resource_type === 'quiz'
+                                  const isRecording = resource.resource_type === 'recording'
+                                  const isTask = isAssignment || isQuiz
                                   const isPastDue = resource.due_date && new Date(resource.due_date) < new Date()
-                                  const submission = mySubmissions[resource.id]
+                                  const submission = isAssignment ? mySubmissions[resource.id] : undefined
                                   const daysLeft = resource.due_date
                                     ? Math.ceil((new Date(resource.due_date).getTime() - Date.now()) / 86400000)
                                     : null
+                                  const badgeLabel = isQuiz
+                                    ? 'Quiz'
+                                    : isAssignment
+                                      ? 'Assignment'
+                                      : isRecording
+                                        ? 'Recording'
+                                        : 'Material'
+                                  const quizHref = resource.file_url || '#'
+                                  const quizExternal = quizHref.startsWith('http')
 
                                   return (
                                     <div
                                       key={resource.id}
                                       className={`rounded-xl border transition-colors overflow-hidden ${
-                                        isAssignment
+                                        isTask
                                           ? 'bg-indigo-50/50 dark:bg-indigo-900/10 border-indigo-200/60 dark:border-indigo-700/30'
-                                          : 'bg-slate-50 dark:bg-slate-700/30 border-slate-100 dark:border-slate-600/30 hover:bg-amber-50 dark:hover:bg-amber-900/10'
+                                          : isRecording
+                                            ? 'bg-purple-50/50 dark:bg-purple-900/10 border-purple-200/60 dark:border-purple-700/30'
+                                            : 'bg-slate-50 dark:bg-slate-700/30 border-slate-100 dark:border-slate-600/30 hover:bg-amber-50 dark:hover:bg-amber-900/10'
                                       }`}
                                     >
                                       <div className="flex items-center gap-3 p-3">
-                                        {isAssignment ? (
+                                        {isTask ? (
                                           <ClipboardCheck size={16} className="text-indigo-500 flex-shrink-0" />
+                                        ) : isRecording ? (
+                                          <Video size={16} className="text-purple-500 flex-shrink-0" />
                                         ) : (
                                           <span className="text-lg flex-shrink-0">{getFileIcon(resource.file_url)}</span>
                                         )}
@@ -696,11 +712,13 @@ export default function StudentMyCoursesPage() {
                                               {resource.title}
                                             </p>
                                             <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide flex-shrink-0 ${
-                                              isAssignment
+                                              isTask
                                                 ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400'
-                                                : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400'
+                                                : isRecording
+                                                  ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400'
+                                                  : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400'
                                             }`}>
-                                              {isAssignment ? 'Assignment' : 'Material'}
+                                              {badgeLabel}
                                             </span>
                                           </div>
                                           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
@@ -752,15 +770,35 @@ export default function StudentMyCoursesPage() {
                                             </button>
                                           )}
 
-                                          <a
-                                            href={resource.file_url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="p-1.5 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
-                                            title="Download"
-                                          >
-                                            <Download size={14} className="text-blue-500" />
-                                          </a>
+                                          {isQuiz ? (
+                                            quizExternal ? (
+                                              <a
+                                                href={quizHref}
+                                                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm"
+                                              >
+                                                <ClipboardCheck size={12} />
+                                                Take Quiz
+                                              </a>
+                                            ) : (
+                                              <Link
+                                                href={quizHref}
+                                                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm"
+                                              >
+                                                <ClipboardCheck size={12} />
+                                                Take Quiz
+                                              </Link>
+                                            )
+                                          ) : (
+                                            <a
+                                              href={resource.file_url}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="p-1.5 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                                              title="Download"
+                                            >
+                                              <Download size={14} className="text-blue-500" />
+                                            </a>
+                                          )}
                                         </div>
                                       </div>
 

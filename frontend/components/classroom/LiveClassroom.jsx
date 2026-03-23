@@ -37,6 +37,7 @@ export default function LiveClassroom({
   const [recordingStatus, setRecordingStatus] = useState('');
   const [recordingError, setRecordingError] = useState('');
   const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [reconnecting, setReconnecting] = useState(false);
 
   const mediaRecorderRef = useRef(null);
   const mediaStreamRef = useRef(null);
@@ -45,6 +46,7 @@ export default function LiveClassroom({
   const recordingTimerRef = useRef(null);
   const redirectAfterRecordingRef = useRef(false);
   const endSessionAfterRecordingRef = useRef(false);
+  const endLessonRequestedRef = useRef(false);
   const stopFallbackTimerRef = useRef(null);
   const finalizeInProgressRef = useRef(false);
   const captureMetaRef = useRef(null);
@@ -397,6 +399,7 @@ export default function LiveClassroom({
   }, [cleanupMediaStream, clearRecordingTimer, clearStopFallbackTimer]);
 
   const handleEndLesson = useCallback(async () => {
+    endLessonRequestedRef.current = true;
     if (isRecording) {
       endSessionAfterRecordingRef.current = true;
       redirectAfterRecordingRef.current = true;
@@ -414,77 +417,84 @@ export default function LiveClassroom({
     router.push(redirectPath);
   }, [endSession, isRecording, redirectPath, router, stopRecording, uploadingRecording]);
 
+  const fetchOrCreateRoom = useCallback(async (isReconnect = false) => {
+    if (!sessionId) {
+      setError('Missing session ID.');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setReconnecting(isReconnect);
+      setError('');
+
+      const endpoints = [
+        `/api/live/sessions/${sessionId}/join`,
+        `${API_BASE}/courses/sessions/${sessionId}/join/`,
+      ];
+
+      let joined = false;
+      let lastError = 'Failed to join live session.';
+
+      for (const endpoint of endpoints) {
+        try {
+          const res = await fetch(endpoint, {
+            method: 'GET',
+            cache: 'no-store',
+            credentials: 'include',
+          });
+
+          const contentType = res.headers.get('content-type') || '';
+          const payload = contentType.includes('application/json')
+            ? await res.json()
+            : null;
+
+          if (res.ok && payload?.room_name) {
+            setRoomName(payload.room_name);
+            joined = true;
+            break;
+          }
+
+          lastError =
+            payload?.error ||
+            payload?.detail ||
+            payload?.message ||
+            lastError;
+        } catch (endpointErr) {
+          lastError =
+            endpointErr instanceof Error ? endpointErr.message : lastError;
+        }
+      }
+
+      if (!joined) {
+        throw new Error(lastError);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to join session.');
+    } finally {
+      setLoading(false);
+      setReconnecting(false);
+    }
+  }, [sessionId]);
+
   const handleCallEnded = useCallback(() => {
-    handleEndLesson();
-  }, [handleEndLesson]);
+    if (endLessonRequestedRef.current) {
+      return;
+    }
+    fetchOrCreateRoom(true);
+  }, [fetchOrCreateRoom]);
 
   useEffect(() => {
-    const fetchOrCreateRoom = async () => {
-      if (!sessionId) {
-        setError('Missing session ID.');
-        setLoading(false);
-        return;
-      }
+    fetchOrCreateRoom(false);
+  }, [fetchOrCreateRoom]);
 
-      try {
-        setLoading(true);
-        setError('');
-
-        const endpoints = [
-          `/api/live/sessions/${sessionId}/join`,
-          `${API_BASE}/courses/sessions/${sessionId}/join/`,
-        ];
-
-        let joined = false;
-        let lastError = 'Failed to join live session.';
-
-        for (const endpoint of endpoints) {
-          try {
-            const res = await fetch(endpoint, {
-              method: 'GET',
-              cache: 'no-store',
-              credentials: 'include',
-            });
-
-            const contentType = res.headers.get('content-type') || '';
-            const payload = contentType.includes('application/json')
-              ? await res.json()
-              : null;
-
-            if (res.ok && payload?.room_name) {
-              setRoomName(payload.room_name);
-              joined = true;
-              break;
-            }
-
-            lastError =
-              payload?.error ||
-              payload?.detail ||
-              payload?.message ||
-              lastError;
-          } catch (endpointErr) {
-            lastError =
-              endpointErr instanceof Error ? endpointErr.message : lastError;
-          }
-        }
-
-        if (!joined) {
-          throw new Error(lastError);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unable to join session.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchOrCreateRoom();
-  }, [sessionId]);
+  const loadingMessage = reconnecting ? 'Reconnecting to live classroom...' : 'Joining live classroom...';
 
   if (loading) {
     return (
       <div className="h-screen w-full bg-slate-950 text-white flex items-center justify-center">
-        <p className="text-sm md:text-base">Joining live classroom...</p>
+        <p className="text-sm md:text-base">{loadingMessage}</p>
       </div>
     );
   }

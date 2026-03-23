@@ -20,7 +20,6 @@ import {
   ChevronLeft,
   ChevronRight,
   GraduationCap,
-  Bell,
   BookOpen,
   TrendingUp,
   Sparkles,
@@ -57,7 +56,6 @@ export const studentLinks: SidebarLink[] = [
   { label: 'My Schedule', href: '/student/schedule', icon: <Calendar size={20} /> },
   { label: 'My Learning', href: '/student/progress', icon: <TrendingUp size={20} /> },
   { label: 'Messages', href: '/student/messages', icon: <MessageSquare size={20} /> },
-  { label: 'Notifications', href: '/student/notifications', icon: <Bell size={20} /> },
   { label: 'Settings', href: '/student/settings', icon: <Settings size={20} /> },
 ];
 
@@ -71,7 +69,6 @@ export const tutorLinks: SidebarLink[] = [
   { label: 'Messages', href: '/tutor/messages', icon: <MessageSquare size={20} /> },
   { label: 'Earnings', href: '/tutor/earnings', icon: <DollarSign size={20} /> },
   { label: 'Smart Pricing', href: '/tutor/smart-pricing', icon: <DollarSign size={20} /> },
-  { label: 'Notifications', href: '/tutor/notifications', icon: <Bell size={20} /> },
   { label: 'Settings', href: '/tutor/settings', icon: <Settings size={20} /> },
 ];
 
@@ -271,52 +268,9 @@ export function Sidebar({ links, userType, onSignOut, onLinkClick, userName, use
       </nav>
 
       {/* Bottom Section */}
-      <div className={cn('border-t', theme.border)}>
-        {/* User Profile Mini */}
-        {(userName || userInitials) && (
-          <Link
-            href={isStudent ? '/student/settings' : '/tutor/settings'}
-            className={cn(
-              'flex items-center p-4',
-              'transition-all duration-200',
-              theme.hover,
-              isCollapsed ? 'justify-center' : 'gap-3'
-            )}
-          >
-            {userAvatar ? (
-              <img 
-                src={userAvatar} 
-                alt={userName || 'User'} 
-                className="w-9 h-9 rounded-full object-cover ring-2 ring-primary-500/30 flex-shrink-0"
-              />
-            ) : (
-              <div className={cn(
-                'w-9 h-9 rounded-full flex-shrink-0',
-                'flex items-center justify-center',
-                'text-sm font-semibold text-white',
-                'bg-gradient-to-br from-primary-500 to-primary-600',
-                'ring-2 ring-primary-500/30'
-              )}>
-                {userInitials || 'U'}
-              </div>
-            )}
-            <div className={cn(
-              'flex-1 min-w-0 overflow-hidden',
-              'transition-all duration-300',
-              isCollapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'
-            )}>
-              <p className={cn('text-sm font-medium truncate', theme.textBrand)}>
-                {userName || 'User'}
-              </p>
-              <p className={cn('text-xs truncate', theme.textMuted)}>
-                {isStudent ? 'Student' : 'Tutor'}
-              </p>
-            </div>
-          </Link>
-        )}
-
+      <div className={cn('border-t p-3', theme.border)}>
         {/* Sign Out Button */}
-        <div className="p-3">
+        <div>
           <button
             onClick={onSignOut}
             className={cn(
@@ -438,45 +392,6 @@ export function MobileSidebar({
             <X size={20} />
           </button>
         </div>
-
-        {/* User Profile */}
-        {(userName || userInitials) && (
-          <Link
-            href={isStudent ? '/student/settings' : '/tutor/settings'}
-            onClick={onClose}
-            className={cn(
-              'flex items-center gap-3 mx-4 mt-4 p-3 rounded-xl',
-              'transition-colors',
-              theme.hover
-            )}
-          >
-            {userAvatar ? (
-              <img 
-                src={userAvatar} 
-                alt={userName || 'User'} 
-                className="w-11 h-11 rounded-full object-cover ring-2 ring-primary-500/30"
-              />
-            ) : (
-              <div className={cn(
-                'w-11 h-11 rounded-full',
-                'flex items-center justify-center',
-                'text-sm font-semibold text-white',
-                'bg-gradient-to-br from-primary-500 to-primary-600',
-                'ring-2 ring-primary-500/30'
-              )}>
-                {userInitials || 'U'}
-              </div>
-            )}
-            <div className="flex-1 min-w-0">
-              <p className={cn('text-sm font-semibold truncate', theme.textBrand)}>
-                {userName || 'User'}
-              </p>
-              <p className={cn('text-xs truncate', theme.textMuted)}>
-                {isStudent ? 'Student Account' : 'Tutor Account'}
-              </p>
-            </div>
-          </Link>
-        )}
 
         {/* Navigation Label */}
         <div className="px-6 pt-6 pb-2">

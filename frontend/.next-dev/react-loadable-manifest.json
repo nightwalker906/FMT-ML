@@ -1,0 +1,14 @@
+{
+  "app\\tutor\\layout.tsx -> @/components/ai/PricePredictorModal": {
+    "id": "app\\tutor\\layout.tsx -> @/components/ai/PricePredictorModal",
+    "files": [
+      "static/chunks/_app-pages-browser_components_ai_PricePredictorModal_jsx.js"
+    ]
+  },
+  "app\\tutor\\layout.tsx -> @/components/ai/TutorCommandCenter": {
+    "id": "app\\tutor\\layout.tsx -> @/components/ai/TutorCommandCenter",
+    "files": [
+      "static/chunks/_app-pages-browser_components_ai_TutorCommandCenter_jsx.js"
+    ]
+  }
+}

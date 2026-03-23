@@ -52,7 +52,7 @@ class CourseSessionSerializer(serializers.ModelSerializer):
 class CourseResourceSerializer(serializers.ModelSerializer):
     class Meta:
         model = CourseResource
-        fields = ['id', 'title', 'file_url', 'uploaded_at']
+        fields = ['id', 'title', 'file_url', 'resource_type', 'due_date', 'uploaded_at']
         read_only_fields = fields
 
 
