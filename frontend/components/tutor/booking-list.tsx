@@ -101,11 +101,11 @@ export function BookingList({ bookings: initialBookings }: BookingListProps) {
               exit={{ opacity: 0, x: -100, transition: { duration: 0.3 } }}
               transition={{ delay: index * 0.05, duration: 0.4 }}
               layout
-              className={`card p-4 group transition-all ${
+              className={`card group p-4 transition-all sm:p-5 ${
                 isProcessing ? 'opacity-60 scale-[0.99]' : ''
               }`}
             >
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col gap-4 md:flex-row md:items-center">
                 {/* Student Avatar & Name */}
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   <div className="relative flex-shrink-0">
@@ -126,7 +126,7 @@ export function BookingList({ bookings: initialBookings }: BookingListProps) {
                 </div>
 
                 {/* Subject & Schedule */}
-                <div className="hidden sm:flex flex-col items-start gap-1 flex-1">
+                <div className="hidden flex-1 flex-col items-start gap-1 md:flex">
                   <div className="flex items-center gap-1.5 text-sm">
                     <BookOpen size={14} className="text-primary-600 dark:text-primary-400" />
                     <span className="font-medium text-slate-700 dark:text-slate-300">
@@ -146,46 +146,46 @@ export function BookingList({ bookings: initialBookings }: BookingListProps) {
                 </div>
 
                 {/* Time Badge */}
-                <div className="hidden md:block">
+                <div className="hidden lg:block">
                   <span className="badge-primary">
                     {getRelativeTime(booking.scheduledAt)}
                   </span>
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="grid w-full grid-cols-2 gap-2 md:flex md:w-auto md:flex-shrink-0">
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => handleRespond(booking.id, 'accept')}
                     disabled={isProcessing}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 disabled:from-emerald-400 disabled:to-emerald-400 text-white text-sm font-medium rounded-xl transition-all shadow-sm hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:from-emerald-600 hover:to-emerald-700 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:from-emerald-400 disabled:to-emerald-400 dark:focus-visible:ring-offset-slate-900 md:w-auto"
                   >
                     <Check size={16} />
-                    <span className="hidden sm:inline">Accept</span>
+                    <span>Accept</span>
                   </motion.button>
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => handleRespond(booking.id, 'reject')}
                     disabled={isProcessing}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 border-2 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 text-sm font-medium rounded-xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border-2 border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition-all hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:opacity-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20 dark:focus-visible:ring-offset-slate-900 md:w-auto"
                   >
                     <X size={16} />
-                    <span className="hidden sm:inline">Decline</span>
+                    <span>Decline</span>
                   </motion.button>
                 </div>
               </div>
 
               {/* Mobile subject info */}
-              <div className="sm:hidden mt-3 pt-3 border-t border-slate-100 dark:border-slate-700/50">
+              <div className="mt-3 border-t border-slate-100 pt-3 dark:border-slate-700/50 md:hidden">
                 <div className="flex items-center gap-1.5 text-sm mb-1">
                   <BookOpen size={14} className="text-primary-600 dark:text-primary-400" />
                   <span className="font-medium text-slate-700 dark:text-slate-300">
                     {booking.subject}
                   </span>
                 </div>
-                <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
                   <span className="flex items-center gap-1">
                     <Calendar size={12} />
                     {formatDate(booking.scheduledAt)}
@@ -194,6 +194,7 @@ export function BookingList({ bookings: initialBookings }: BookingListProps) {
                     <Clock size={12} />
                     {formatTime(booking.scheduledAt)}
                   </span>
+                  <span className="badge-primary">{getRelativeTime(booking.scheduledAt)}</span>
                 </div>
               </div>
 

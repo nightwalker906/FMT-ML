@@ -359,7 +359,7 @@ export function MobileSidebar({
       {/* Drawer */}
       <aside
         className={cn(
-          'fixed left-0 top-0 h-screen w-72 z-50 lg:hidden',
+          'fixed left-0 top-0 z-50 h-screen w-[min(20rem,88vw)] lg:hidden',
           'transition-transform duration-300 ease-out',
           'flex flex-col',
           theme.bg,
@@ -367,7 +367,7 @@ export function MobileSidebar({
         )}
       >
         {/* Header */}
-        <div className={cn('flex items-center justify-between h-16 px-5 border-b', theme.border)}>
+        <div className={cn('flex h-16 items-center justify-between border-b px-4 sm:px-5', theme.border)}>
           <div className="flex items-center gap-3">
             <div className={cn(
               'flex items-center justify-center',
@@ -384,7 +384,7 @@ export function MobileSidebar({
           <button
             onClick={onClose}
             className={cn(
-              'p-2 rounded-xl transition-colors',
+              'flex h-10 w-10 items-center justify-center rounded-xl transition-colors',
               theme.text,
               theme.hover
             )}
@@ -394,14 +394,14 @@ export function MobileSidebar({
         </div>
 
         {/* Navigation Label */}
-        <div className="px-6 pt-6 pb-2">
+        <div className="px-5 pt-6 pb-2 sm:px-6">
           <span className={cn('text-xs font-semibold uppercase tracking-wider', theme.textMuted)}>
             Menu
           </span>
         </div>
 
         {/* Navigation Links */}
-        <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
+        <nav className="flex-1 space-y-1.5 overflow-y-auto px-3 pb-4">
           {links.map((link) => {
             const isActive = pathname === link.href || pathname.startsWith(link.href + '/');
             return (
@@ -410,7 +410,7 @@ export function MobileSidebar({
                 href={link.href}
                 onClick={(e) => { onClose(); if (typeof onLinkClick === 'function') { e.preventDefault(); onLinkClick(link); } }}
                 className={cn(
-                  'relative flex items-center gap-3 px-4 py-3 rounded-xl',
+                  'relative flex min-h-[52px] items-center justify-between gap-3 rounded-xl px-3 py-3 sm:px-4',
                   'transition-all duration-200',
                   isActive ? theme.active : cn(theme.text, theme.hover)
                 )}
@@ -423,8 +423,15 @@ export function MobileSidebar({
                   isActive ? 'opacity-100' : 'opacity-0'
                 )} />
                 
-                <span className={cn(isActive && 'text-primary-600')}>{link.icon}</span>
-                <span className={cn('font-medium', isActive && 'font-semibold')}>
+                <span
+                  className={cn(
+                    'flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl',
+                    isActive && 'bg-primary-100 text-primary-600 dark:bg-primary-600/20'
+                  )}
+                >
+                  {link.icon}
+                </span>
+                <span className={cn('min-w-0 flex-1 text-sm font-medium sm:text-[15px]', isActive && 'font-semibold')}>
                   {link.label}
                 </span>
                 
@@ -439,11 +446,11 @@ export function MobileSidebar({
         </nav>
 
         {/* Sign Out */}
-        <div className={cn('p-4 border-t', theme.border)}>
+        <div className={cn('border-t p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]', theme.border)}>
           <button
             onClick={onSignOut}
             className={cn(
-              'flex items-center gap-3 px-4 py-3 rounded-xl w-full',
+              'flex min-h-[52px] w-full items-center gap-3 rounded-xl px-4 py-3',
               'text-red-500 transition-all duration-200',
               'hover:bg-red-50 dark:hover:bg-red-500/10'
             )}

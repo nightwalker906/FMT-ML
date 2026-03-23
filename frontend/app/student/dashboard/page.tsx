@@ -403,7 +403,7 @@ export default function StudentDashboardPage() {
   };
 
   return (
-    <PageTransition className="space-y-8">
+    <PageTransition className="space-y-6 sm:space-y-8">
       {/* Smart Recommendations Carousel
           ─────────────────────────────────────────────────────────────
           Recommendations automatically refetch when learning goals change.
@@ -430,7 +430,7 @@ export default function StudentDashboardPage() {
       />
 
       {/* Quick Actions */}
-      <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <StaggerContainer className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
         {[
           { href: '/student/search', icon: Search, title: 'Find a Tutor', desc: 'Browse available tutors', color: 'teal' },
           { href: '/student/schedule', icon: Calendar, title: 'My Schedule', desc: 'View your sessions', color: 'blue' },
@@ -447,16 +447,16 @@ export default function StudentDashboardPage() {
             <StaggerItem key={action.href}>
               <Link
                 href={action.href}
-                className="group card-stat flex items-center gap-4 p-5 hover:border-primary-200 dark:hover:border-primary-800/50 hover:-translate-y-1 active:translate-y-0 transition-all duration-300"
+                className="group card-stat flex items-start gap-3 p-4 transition-all duration-300 hover:-translate-y-1 hover:border-primary-200 active:translate-y-0 sm:items-center sm:gap-4 sm:p-5 dark:hover:border-primary-800/50"
               >
-                <div className={`p-3 rounded-xl transition-all duration-300 group-hover:scale-110 ${colorStyles[action.color]}`}>
+                <div className={`rounded-xl p-2.5 transition-all duration-300 group-hover:scale-110 sm:p-3 ${colorStyles[action.color]}`}>
                   <action.icon className="w-5 h-5" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <h3 className="font-semibold text-slate-900 dark:text-white">{action.title}</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">{action.desc}</p>
+                  <p className="text-sm leading-snug text-slate-500 dark:text-slate-400">{action.desc}</p>
                 </div>
-                <ArrowRight className="w-4 h-4 text-slate-400 ml-auto opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200" />
+                <ArrowRight className="ml-auto hidden h-4 w-4 text-slate-400 transition-all duration-200 group-hover:translate-x-1 group-hover:opacity-100 sm:block sm:opacity-0" />
               </Link>
             </StaggerItem>
           )
@@ -467,7 +467,7 @@ export default function StudentDashboardPage() {
       {loading ? (
         <SkeletonStatsGrid count={3} />
       ) : (
-        <StaggerContainer className="grid grid-cols-1 sm:grid-cols-3 gap-4" delay={0.2}>
+        <StaggerContainer className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4" delay={0.2}>
           {[
             { icon: BookOpen, value: stats.totalSessions, label: 'Total Sessions', color: 'primary' },
             { icon: Clock, value: stats.totalHours, label: 'Hours Learned', color: 'blue' },
@@ -503,10 +503,10 @@ export default function StudentDashboardPage() {
       {!loading && <MiniAchievements achievements={achievements} />}
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 xl:gap-8">
         {/* Upcoming Sessions */}
         <div className="lg:col-span-2">
-          <div className="flex items-center justify-between mb-4">
+          <div className="mb-4 flex items-center justify-between gap-3">
             <h2 className="section-title">
               <Calendar className="w-5 h-5 text-primary-600 dark:text-primary-400" />
               Upcoming Sessions
@@ -547,7 +547,7 @@ export default function StudentDashboardPage() {
               {upcomingSessions.map((session) => (
                 <StaggerItem key={session.id}>
                   <div className="card-stat p-4 hover:border-primary-200/50 dark:hover:border-primary-800/50 transition-all duration-300">
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-start gap-3 sm:items-center sm:gap-4">
                       <div className="relative">
                         <img
                           src={session.tutorAvatar}
@@ -556,7 +556,7 @@ export default function StudentDashboardPage() {
                         />
                         <OnlineDot isOnline={session.isOnline} size="sm" />
                       </div>
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 space-y-1">
                         <h3 className="font-semibold text-slate-900 dark:text-white truncate">
                           {session.tutorName}
                         </h3>
@@ -574,10 +574,13 @@ export default function StudentDashboardPage() {
                         </Link>
                       </div>
                       {/* Mobile date */}
-                      <div className="sm:hidden">
+                      <div className="flex flex-shrink-0 flex-col items-end gap-2 text-right sm:hidden">
+                        <p className="max-w-[110px] text-xs font-medium leading-tight text-slate-500 dark:text-slate-400">
+                          {formatDate(session.scheduledAt)}
+                        </p>
                         <Link
                           href="/student/schedule"
-                          className="p-2 rounded-xl bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400"
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400"
                         >
                           <ArrowRight size={16} />
                         </Link>

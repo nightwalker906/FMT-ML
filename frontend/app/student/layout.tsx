@@ -209,7 +209,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen overflow-x-hidden bg-slate-50 dark:bg-slate-950">
       {/* Desktop Sidebar */}
       <Sidebar 
         links={linksWithBadges} 
@@ -233,14 +233,14 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
       />
 
       {/* Main Content Area */}
-      <div className="lg:pl-64">
+      <div className="min-w-0 lg:pl-64">
         {/* Header — Glass effect */}
         <header className="sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/60 dark:border-slate-800/60">
-          <div className="flex items-center justify-between px-4 lg:px-8 h-16">
+          <div className="flex h-16 items-center justify-between gap-3 px-4 sm:px-5 lg:px-8">
             {/* Mobile Menu Button */}
             <button
               onClick={() => setIsMobileMenuOpen(true)}
-              className="lg:hidden p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 active:scale-95 transition-all"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-600 transition-all hover:bg-slate-100 active:scale-95 dark:text-slate-300 dark:hover:bg-slate-800 lg:hidden"
             >
               <Menu size={22} />
             </button>
@@ -253,18 +253,21 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
             </div>
 
             {/* Mobile Logo */}
-            <div className="lg:hidden flex items-center gap-2">
+            <div className="flex min-w-0 items-center gap-2 lg:hidden">
               <span className="text-xl">🎓</span>
               <span className="font-bold text-slate-900 dark:text-white">FMT</span>
             </div>
 
             {/* Right Side Actions */}
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
               {/* Theme Toggle */}
               <ThemeToggle />
 
               {/* Notification Bell */}
-              <Link href="/student/notifications" className="relative p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-all active:scale-95">
+              <Link
+                href="/student/notifications"
+                className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-600 transition-all hover:bg-slate-100 active:scale-95 dark:text-slate-300 dark:hover:bg-slate-800"
+              >
                 <Bell size={20} />
                 {notificationCount > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center text-[10px] font-bold text-white bg-red-500 rounded-full px-1 ring-2 ring-white dark:ring-slate-900">
@@ -274,19 +277,19 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
               </Link>
 
               {/* User Avatar - Clickable to Settings */}
-              <Link href="/student/settings" className="flex items-center gap-3 cursor-pointer group">
+              <Link href="/student/settings" className="group flex min-w-0 items-center gap-2 sm:gap-3">
                 {avatarUrl ? (
                   <img
                     src={avatarUrl}
                     alt={displayName}
-                    className="w-9 h-9 rounded-full object-cover ring-2 ring-primary-200/50 dark:ring-primary-700/30 group-hover:ring-primary-300 dark:group-hover:ring-primary-600 transition-all"
+                    className="h-10 w-10 shrink-0 rounded-full object-cover ring-2 ring-primary-200/50 transition-all group-hover:ring-primary-300 dark:ring-primary-700/30 dark:group-hover:ring-primary-600"
                   />
                 ) : (
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white font-semibold text-sm ring-2 ring-primary-200/50 dark:ring-primary-700/30 group-hover:ring-primary-300 dark:group-hover:ring-primary-600 transition-all">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-sm font-semibold text-white ring-2 ring-primary-200/50 transition-all group-hover:ring-primary-300 dark:ring-primary-700/30 dark:group-hover:ring-primary-600">
                     {initials || 'ST'}
                   </div>
                 )}
-                <div className="hidden md:block">
+                <div className="hidden min-w-0 md:block">
                   <p className="text-sm font-semibold text-slate-900 dark:text-white group-hover:text-primary-700 dark:group-hover:text-primary-400 transition-colors">{displayName}</p>
                   <p className="text-xs text-slate-500 dark:text-slate-400">Student</p>
                 </div>
@@ -296,7 +299,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         </header>
 
         {/* Page Content */}
-        <main className="p-4 lg:p-8">
+        <main className="overflow-x-hidden p-4 md:p-6 lg:p-8">
           {children}
         </main>
       </div>
