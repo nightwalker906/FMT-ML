@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createAdminClient, createClient } from '@/utils/supabase/server';
 import { Video, CircleStop, Calendar, BookOpen } from 'lucide-react';
 import { StartInstantSessionButton, StartLiveClassLink } from '@/components/classroom/StartLiveButtons';
+import AutoQuizGenerator from '@/components/classroom/AutoQuizGenerator';
 
 type TutorCourse = {
   id: string;
@@ -333,6 +334,13 @@ export default async function TutorLiveClassroomPage() {
                     {session.status === 'scheduled' && (
                       <StartLiveClassLink
                         href={`/live-class/${session.id}?role=tutor&redirect=/tutor/live-classroom`}
+                      />
+                    )}
+                    {session.status === 'completed' && (
+                      <AutoQuizGenerator
+                        sessionId={session.id}
+                        courseId={session.course_id}
+                        sessionTitle={session.title}
                       />
                     )}
                   </div>

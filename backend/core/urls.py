@@ -24,7 +24,6 @@ router.register(r'ratings', views.RatingViewSet, basename='rating')
 
 urlpatterns = [
     path('', include(router.urls)),
-    
     # ML-Powered Recommendation Endpoints
     path('recommendations/', views.get_smart_recommendations, name='smart-recommendations'),
     path('recommend/', views.recommend_tutors, name='recommend-tutors'),
@@ -50,6 +49,10 @@ urlpatterns = [
     
     # Tutor AI Command Center (Spotlight Search)
     path('ai/tutor-command/', tutor_command_chat, name='tutor-command-chat'),
+
+    # AI Auto-Quiz Generator (Phase 2)
+    path('ai/quiz/generate/<uuid:session_id>/', views.generate_draft_quiz, name='generate-draft-quiz'),
+    path('ai/quiz/publish/<uuid:quiz_id>/', views.publish_ai_quiz, name='publish-ai-quiz'),
     
     # Virtual Classrooms / Group Courses
     path('courses/', list_courses, name='course-list'),

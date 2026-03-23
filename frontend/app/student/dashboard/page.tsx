@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/context/auth-context';
 import { createClient } from '@/utils/supabase/client';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import SmartRecommendations from '@/components/study-planner/SmartRecommendations';
 import { MiniAchievements } from '@/components/achievements/AchievementsShowcase';
 import { useAchievements } from '@/hooks/useAchievements';
@@ -59,7 +60,9 @@ interface FeaturedCourse {
 
 export default function StudentDashboardPage() {
   const { user } = useAuth();
-  const supabase = createClient();
+  const router = useRouter();
+  const supabase = useMemo(() => createClient(), []);
+  const profileSnapshotRef = useRef<{ first_name: string; last_name: string; avatar: string } | null>(null);
 
   const [upcomingSessions, setUpcomingSessions] = useState<UpcomingSession[]>([]);
   const [recentTutors, setRecentTutors] = useState<RecentTutor[]>([]);
@@ -77,7 +80,8 @@ export default function StudentDashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user?.id) return;
+    const userId = user.id;
 
     const fetchData = async () => {
       setLoading(true);
@@ -86,7 +90,7 @@ export default function StudentDashboardPage() {
       const { data: sessions } = await supabase
         .from('bookings')
         .select('id, scheduled_at, subject, tutor_id')
-        .eq('student_id', user.id)
+        .eq('student_id', userId)
         .eq('status', 'accepted')
         .gte('scheduled_at', new Date().toISOString())
         .order('scheduled_at', { ascending: true })
@@ -126,13 +130,13 @@ export default function StudentDashboardPage() {
       const { count: totalSessions } = await supabase
         .from('bookings')
         .select('*', { count: 'exact', head: true })
-        .eq('student_id', user.id)
+        .eq('student_id', userId)
         .eq('status', 'completed');
 
       const { data: uniqueTutors } = await supabase
         .from('bookings')
         .select('tutor_id')
-        .eq('student_id', user.id);
+        .eq('student_id', userId);
 
       const activeTutorCount = new Set(uniqueTutors?.map((t) => t.tutor_id)).size;
 
@@ -140,7 +144,7 @@ export default function StudentDashboardPage() {
       const { data: completedBookings } = await supabase
         .from('bookings')
         .select('scheduled_at, subject')
-        .eq('student_id', user.id)
+        .eq('student_id', userId)
         .eq('status', 'completed')
         .order('scheduled_at', { ascending: false });
 
@@ -266,7 +270,7 @@ export default function StudentDashboardPage() {
         const { data: studentData } = await supabase
           .from('students')
           .select('learning_goals, preferred_subjects, grade_level')
-          .eq('profile_id', user.id)
+          .eq('profile_id', userId)
           .single();
 
         if (studentData?.learning_goals) {
@@ -294,14 +298,14 @@ export default function StudentDashboardPage() {
 
     // Subscribe to student profile changes (learning goals, preferences)
     const studentSubscription = supabase
-      .channel(`student-${user.id}`)
+      .channel(`student-${userId}`)
       .on(
         'postgres_changes',
         {
           event: 'UPDATE',  // Only listen for UPDATE events (when goals are saved)
           schema: 'public',
           table: 'students',
-          filter: `profile_id=eq.${user.id}`,
+          filter: `profile_id=eq.${userId}`,
         },
         (payload: any) => {
           console.log('[Dashboard] 🔔 Real-time: Student profile updated', payload);
@@ -328,19 +332,42 @@ export default function StudentDashboardPage() {
 
     // Subscribe to profile changes (avatar, name, etc)
     const profileSubscription = supabase
-      .channel(`profile-${user.id}`)
+      .channel(`profile-${userId}`)
       .on(
         'postgres_changes',
         {
           event: 'UPDATE',
           schema: 'public',
           table: 'profiles',
-          filter: `id=eq.${user.id}`,
+          filter: `id=eq.${userId}`,
         },
         (payload) => {
-          console.log('[Dashboard] Real-time update: profile changed', payload);
-          // Refresh entire page to reflect profile changes
-          window.location.reload();
+          const newProfile = payload.new as Record<string, any> | null;
+          if (!newProfile) return;
+
+          const prev = profileSnapshotRef.current;
+          const snapshot = {
+            first_name: Object.prototype.hasOwnProperty.call(newProfile, 'first_name')
+              ? newProfile.first_name || ''
+              : prev?.first_name || '',
+            last_name: Object.prototype.hasOwnProperty.call(newProfile, 'last_name')
+              ? newProfile.last_name || ''
+              : prev?.last_name || '',
+            avatar: Object.prototype.hasOwnProperty.call(newProfile, 'avatar')
+              ? newProfile.avatar || ''
+              : prev?.avatar || '',
+          };
+          profileSnapshotRef.current = snapshot;
+
+          if (
+            prev &&
+            (prev.first_name !== snapshot.first_name ||
+              prev.last_name !== snapshot.last_name ||
+              prev.avatar !== snapshot.avatar)
+          ) {
+            console.log('[Dashboard] Real-time update: profile changed (refreshing view)', payload);
+            router.refresh();
+          }
         }
       )
       .subscribe();
@@ -350,7 +377,7 @@ export default function StudentDashboardPage() {
       studentSubscription.unsubscribe();
       profileSubscription.unsubscribe();
     };
-  }, [user, supabase]);
+  }, [user?.id, supabase, router]);
 
   // Achievement system
   const achievementStats = loading

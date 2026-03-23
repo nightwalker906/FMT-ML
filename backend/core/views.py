@@ -30,10 +30,24 @@ from rest_framework.throttling import (
     UserRateThrottle, 
     ScopedRateThrottle
 )
+from django.db import transaction
 from django.db.models import Q, Avg, Prefetch
+from django.utils.dateparse import parse_datetime
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-from .models import Profile, Student, Tutor, Subject, Session, Rating
+from .models import (
+    Profile,
+    Student,
+    Tutor,
+    Subject,
+    Session,
+    Rating,
+    CourseSession,
+    CourseResource,
+    Quiz,
+    QuizQuestion,
+)
+from .services.quiz_generator import generate_quiz_from_transcript
 from .serializers import (
     ProfileSerializer, StudentSerializer, TutorSerializer,
     SubjectSerializer, SessionSerializer, RatingSerializer
@@ -1542,5 +1556,132 @@ def estimate_study_time_view(request):
             'status': 'error',
             'message': str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# =============================================================================
+# AI AUTO-QUIZ GENERATOR (PHASE 2)
+# =============================================================================
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@throttle_classes([GenerativeAIThrottle])
+def generate_draft_quiz(request, session_id):
+    """
+    Generate an AI draft quiz from a session transcript.
+
+    Returns the quiz ID and generated questions for tutor review.
+    """
+    try:
+        quiz_id = generate_quiz_from_transcript(session_id)
+        quiz = Quiz.objects.get(id=quiz_id)
+        questions = list(
+            QuizQuestion.objects.filter(quiz_id=quiz_id).values(
+                'id', 'question_text', 'options', 'correct_index', 'explanation'
+            )
+        )
+
+        return Response(
+            {
+                'status': 'success',
+                'quiz_id': str(quiz.id),
+                'title': quiz.title,
+                'is_published': quiz.is_published,
+                'questions': questions,
+            },
+            status=status.HTTP_200_OK,
+        )
+    except CourseSession.DoesNotExist:
+        return Response(
+            {'status': 'error', 'error': 'Course session not found.'},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    except ValueError as exc:
+        return Response(
+            {'status': 'error', 'error': str(exc)},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    except Exception as exc:
+        logger.exception("AI quiz generation failed.")
+        return Response(
+            {'status': 'error', 'error': 'Failed to generate quiz draft.'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def publish_ai_quiz(request, quiz_id):
+    """
+    Publish a draft AI quiz as a CourseResource (assignment).
+    """
+    due_date_raw = (request.data.get('due_date') or '').strip()
+    course_id = (request.data.get('course_id') or '').strip()
+
+    if not due_date_raw or not course_id:
+        return Response(
+            {'status': 'error', 'error': 'course_id and due_date are required.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    due_date = parse_datetime(due_date_raw)
+    if due_date is None:
+        try:
+            from datetime import datetime
+            due_date = datetime.fromisoformat(due_date_raw)
+        except ValueError:
+            return Response(
+                {'status': 'error', 'error': 'Invalid due_date format.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+    try:
+        with transaction.atomic():
+            quiz = Quiz.objects.select_for_update().get(id=quiz_id)
+
+            if quiz.is_published:
+                return Response(
+                    {'status': 'error', 'error': 'Quiz is already published.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if str(quiz.course_session.course_id) != str(course_id):
+                return Response(
+                    {'status': 'error', 'error': 'course_id does not match quiz session.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            resource = CourseResource.objects.create(
+                course_id=course_id,
+                title=quiz.title,
+                file_url=f"/take-quiz/{quiz_id}",
+                resource_type='quiz',
+                due_date=due_date,
+            )
+
+            quiz.is_published = True
+            quiz.resource = resource
+            quiz.save(update_fields=['is_published', 'resource'])
+
+        return Response(
+            {
+                'status': 'success',
+                'quiz_id': str(quiz.id),
+                'resource_id': str(resource.id),
+                'resource_url': resource.file_url,
+                'due_date': resource.due_date,
+            },
+            status=status.HTTP_200_OK,
+        )
+    except Quiz.DoesNotExist:
+        return Response(
+            {'status': 'error', 'error': 'Quiz not found.'},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    except Exception as exc:
+        logger.exception("Publishing AI quiz failed.")
+        return Response(
+            {'status': 'error', 'error': 'Failed to publish quiz.'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 
 

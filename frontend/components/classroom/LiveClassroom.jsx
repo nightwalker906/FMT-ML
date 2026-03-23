@@ -37,6 +37,7 @@ export default function LiveClassroom({
   const [recordingStatus, setRecordingStatus] = useState('');
   const [recordingError, setRecordingError] = useState('');
   const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [reconnecting, setReconnecting] = useState(false);
 
   const mediaRecorderRef = useRef(null);
   const mediaStreamRef = useRef(null);
@@ -44,6 +45,8 @@ export default function LiveClassroom({
   const recordingStartedAtRef = useRef(0);
   const recordingTimerRef = useRef(null);
   const redirectAfterRecordingRef = useRef(false);
+  const endSessionAfterRecordingRef = useRef(false);
+  const endLessonRequestedRef = useRef(false);
   const stopFallbackTimerRef = useRef(null);
   const finalizeInProgressRef = useRef(false);
   const captureMetaRef = useRef(null);
@@ -120,6 +123,18 @@ export default function LiveClassroom({
     }
   }, [sessionId]);
 
+  const endSession = useCallback(async () => {
+    if (!sessionId || !isTutor) return;
+    try {
+      await fetch(`/api/live/sessions/${sessionId}/end`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch {
+      // Best-effort: do not block leaving the classroom.
+    }
+  }, [isTutor, sessionId]);
+
   const finalizeAndUploadRecording = useCallback(async () => {
     if (finalizeInProgressRef.current) return;
     finalizeInProgressRef.current = true;
@@ -150,7 +165,12 @@ export default function LiveClassroom({
       );
       finalizeInProgressRef.current = false;
       if (redirectAfterRecordingRef.current) {
+        const shouldEndSession = endSessionAfterRecordingRef.current;
+        endSessionAfterRecordingRef.current = false;
         redirectAfterRecordingRef.current = false;
+        if (shouldEndSession) {
+          await endSession();
+        }
         router.push(redirectPath);
       }
       return;
@@ -199,11 +219,16 @@ export default function LiveClassroom({
       setUploadingRecording(false);
       setRecordingSeconds(0);
       if (redirectAfterRecordingRef.current) {
+        const shouldEndSession = endSessionAfterRecordingRef.current;
+        endSessionAfterRecordingRef.current = false;
         redirectAfterRecordingRef.current = false;
+        if (shouldEndSession) {
+          await endSession();
+        }
         router.push(redirectPath);
       }
     }
-  }, [cleanupMediaStream, clearRecordingTimer, clearStopFallbackTimer, loadRecordings, redirectPath, router, sessionId, waitForRecordedData]);
+  }, [cleanupMediaStream, clearRecordingTimer, clearStopFallbackTimer, endSession, loadRecordings, redirectPath, router, sessionId, waitForRecordedData]);
 
   const stopRecording = useCallback(() => {
     const recorder = mediaRecorderRef.current;
@@ -373,88 +398,103 @@ export default function LiveClassroom({
     };
   }, [cleanupMediaStream, clearRecordingTimer, clearStopFallbackTimer]);
 
-  const handleCallEnded = useCallback(() => {
+  const handleEndLesson = useCallback(async () => {
+    endLessonRequestedRef.current = true;
     if (isRecording) {
+      endSessionAfterRecordingRef.current = true;
       redirectAfterRecordingRef.current = true;
       stopRecording();
       return;
     }
 
     if (uploadingRecording) {
+      endSessionAfterRecordingRef.current = true;
       redirectAfterRecordingRef.current = true;
       return;
     }
 
+    await endSession();
     router.push(redirectPath);
-  }, [isRecording, redirectPath, router, stopRecording, uploadingRecording]);
+  }, [endSession, isRecording, redirectPath, router, stopRecording, uploadingRecording]);
+
+  const fetchOrCreateRoom = useCallback(async (isReconnect = false) => {
+    if (!sessionId) {
+      setError('Missing session ID.');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setReconnecting(isReconnect);
+      setError('');
+
+      const endpoints = [
+        `/api/live/sessions/${sessionId}/join`,
+        `${API_BASE}/courses/sessions/${sessionId}/join/`,
+      ];
+
+      let joined = false;
+      let lastError = 'Failed to join live session.';
+
+      for (const endpoint of endpoints) {
+        try {
+          const res = await fetch(endpoint, {
+            method: 'GET',
+            cache: 'no-store',
+            credentials: 'include',
+          });
+
+          const contentType = res.headers.get('content-type') || '';
+          const payload = contentType.includes('application/json')
+            ? await res.json()
+            : null;
+
+          if (res.ok && payload?.room_name) {
+            setRoomName(payload.room_name);
+            joined = true;
+            break;
+          }
+
+          lastError =
+            payload?.error ||
+            payload?.detail ||
+            payload?.message ||
+            lastError;
+        } catch (endpointErr) {
+          lastError =
+            endpointErr instanceof Error ? endpointErr.message : lastError;
+        }
+      }
+
+      if (!joined) {
+        throw new Error(lastError);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to join session.');
+    } finally {
+      setLoading(false);
+      setReconnecting(false);
+    }
+  }, [sessionId]);
+
+  const handleCallEnded = useCallback(() => {
+    if (endLessonRequestedRef.current) {
+      return;
+    }
+    fetchOrCreateRoom(true);
+  }, [fetchOrCreateRoom]);
 
   useEffect(() => {
-    const fetchOrCreateRoom = async () => {
-      if (!sessionId) {
-        setError('Missing session ID.');
-        setLoading(false);
-        return;
-      }
+    fetchOrCreateRoom(false);
+  }, [fetchOrCreateRoom]);
 
-      try {
-        setLoading(true);
-        setError('');
-
-        const endpoints = [
-          `/api/live/sessions/${sessionId}/join`,
-          `${API_BASE}/courses/sessions/${sessionId}/join/`,
-        ];
-
-        let joined = false;
-        let lastError = 'Failed to join live session.';
-
-        for (const endpoint of endpoints) {
-          try {
-            const res = await fetch(endpoint, {
-              method: 'GET',
-              cache: 'no-store',
-              credentials: 'include',
-            });
-
-            const contentType = res.headers.get('content-type') || '';
-            const payload = contentType.includes('application/json')
-              ? await res.json()
-              : null;
-
-            if (res.ok && payload?.room_name) {
-              setRoomName(payload.room_name);
-              joined = true;
-              break;
-            }
-
-            lastError =
-              payload?.error ||
-              payload?.detail ||
-              payload?.message ||
-              lastError;
-          } catch (endpointErr) {
-            lastError =
-              endpointErr instanceof Error ? endpointErr.message : lastError;
-          }
-        }
-
-        if (!joined) {
-          throw new Error(lastError);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unable to join session.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchOrCreateRoom();
-  }, [sessionId]);
+  const loadingMessage = reconnecting ? 'Reconnecting to live classroom...' : 'Joining live classroom...';
 
   if (loading) {
     return (
       <div className="h-screen w-full bg-slate-950 text-white flex items-center justify-center">
-        <p className="text-sm md:text-base">Joining live classroom...</p>
+        <p className="text-sm md:text-base">{loadingMessage}</p>
       </div>
     );
   }
@@ -492,12 +532,19 @@ export default function LiveClassroom({
           <div className="flex flex-wrap items-center gap-2">
             {isTutor && (
               <>
+                <button
+                  type="button"
+                  onClick={handleEndLesson}
+                  className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  End Lesson
+                </button>
                 {!isRecording ? (
                   <button
                     type="button"
                     onClick={startRecording}
                     disabled={uploadingRecording}
-                    className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Start Recording
                   </button>

@@ -11,7 +11,7 @@
     "build:fast": "next build",
     "start": "next start",
     "lint": "next lint",
-    "clean": "node -e \"require('fs').rmSync('.next', { recursive: true, force: true })\""
+    "clean": "node -e \"['.next','.next-dev'].forEach((dir) => require('fs').rmSync(dir, { recursive: true, force: true }))\""
   },
   "dependencies": {
     "@excalidraw/excalidraw": "^0.18.0",

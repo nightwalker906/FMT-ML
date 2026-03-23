@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Loader2,
@@ -33,6 +34,7 @@ import {
   MessageSquare,
 } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
+import { API_BASE } from '@/lib/api-config'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -65,7 +67,7 @@ type CourseResource = {
   title: string
   file_url: string
   uploaded_at: string
-  resource_type: 'material' | 'assignment'
+  resource_type: 'material' | 'assignment' | 'quiz' | 'recording'
   due_date: string | null
 }
 
@@ -106,6 +108,8 @@ type Tab = 'courses' | 'create'
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function TutorCoursesPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
 
   // Core state
@@ -159,10 +163,31 @@ export default function TutorCoursesPage() {
   const [gradeValue, setGradeValue] = useState('')
   const [feedbackValue, setFeedbackValue] = useState('')
 
+  // AI quiz publish modal (opened after approving draft quiz)
+  const [showQuizPublishModal, setShowQuizPublishModal] = useState(false)
+  const [quizPublishId, setQuizPublishId] = useState<string | null>(null)
+  const [quizPublishCourseId, setQuizPublishCourseId] = useState<string | null>(null)
+  const [quizPublishTitle, setQuizPublishTitle] = useState('AI Quiz')
+  const [quizDueDate, setQuizDueDate] = useState('')
+  const [quizPublishError, setQuizPublishError] = useState<string | null>(null)
+  const [quizPublishing, setQuizPublishing] = useState(false)
+
   // ── Load data on mount ──
   useEffect(() => {
     loadData()
   }, [])
+
+  useEffect(() => {
+    const quizId = searchParams.get('quizId')
+    const courseId = searchParams.get('courseId')
+    const quizTitle = searchParams.get('quizTitle')
+    if (quizId && courseId) {
+      setQuizPublishId(quizId)
+      setQuizPublishCourseId(courseId)
+      setQuizPublishTitle(quizTitle || 'AI Quiz')
+      setShowQuizPublishModal(true)
+    }
+  }, [searchParams])
 
   async function loadData() {
     try {
@@ -572,6 +597,52 @@ export default function TutorCoursesPage() {
       console.error('Delete resource error:', err)
     } finally {
       setDeletingResource(null)
+    }
+  }
+
+  // ── Publish AI Quiz as Assignment ──
+  function resetQuizPublishModal() {
+    setShowQuizPublishModal(false)
+    setQuizPublishError(null)
+    setQuizDueDate('')
+    setQuizPublishId(null)
+    setQuizPublishCourseId(null)
+    router.replace('/tutor/courses')
+  }
+
+  async function handlePublishQuizAssignment() {
+    if (!quizPublishId || !quizPublishCourseId) {
+      setQuizPublishError('Missing quiz details. Please regenerate the quiz.')
+      return
+    }
+    if (!quizDueDate) {
+      setQuizPublishError('Please select a due date.')
+      return
+    }
+
+    setQuizPublishing(true)
+    setQuizPublishError(null)
+    try {
+      const isoDueDate = new Date(quizDueDate).toISOString()
+      const res = await fetch(`${API_BASE}/ai/quiz/publish/${quizPublishId}/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          course_id: quizPublishCourseId,
+          due_date: isoDueDate,
+        }),
+      })
+      const payload = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(payload?.error || 'Failed to publish quiz.')
+      }
+
+      if (userId) await loadCourses(userId)
+      resetQuizPublishModal()
+    } catch (err: any) {
+      setQuizPublishError(err?.message || 'Failed to publish quiz.')
+    } finally {
+      setQuizPublishing(false)
     }
   }
 
@@ -1207,19 +1278,33 @@ export default function TutorCoursesPage() {
                               <div className="space-y-2">
                                 {course.resources.map((resource) => {
                                   const isAssignment = resource.resource_type === 'assignment'
+                                  const isQuiz = resource.resource_type === 'quiz'
+                                  const isRecording = resource.resource_type === 'recording'
+                                  const isTask = isAssignment || isQuiz
                                   const isPastDue = resource.due_date && new Date(resource.due_date) < new Date()
+                                  const badgeLabel = isQuiz
+                                    ? 'Quiz'
+                                    : isAssignment
+                                      ? 'Assignment'
+                                      : isRecording
+                                        ? 'Recording'
+                                        : 'Material'
 
                                   return (
                                     <div
                                       key={resource.id}
                                       className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
-                                        isAssignment
+                                        isTask
                                           ? 'bg-indigo-50/50 dark:bg-indigo-900/10 border-indigo-200/60 dark:border-indigo-700/30 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'
-                                          : 'bg-slate-50 dark:bg-slate-700/30 border-slate-100 dark:border-slate-600/30 hover:bg-slate-100 dark:hover:bg-slate-700/50'
+                                          : isRecording
+                                            ? 'bg-purple-50/50 dark:bg-purple-900/10 border-purple-200/60 dark:border-purple-700/30 hover:bg-purple-50 dark:hover:bg-purple-900/20'
+                                            : 'bg-slate-50 dark:bg-slate-700/30 border-slate-100 dark:border-slate-600/30 hover:bg-slate-100 dark:hover:bg-slate-700/50'
                                       }`}
                                     >
-                                      {isAssignment ? (
+                                      {isTask ? (
                                         <ClipboardCheck size={16} className="text-indigo-500 flex-shrink-0" />
+                                      ) : isRecording ? (
+                                        <Video size={16} className="text-purple-500 flex-shrink-0" />
                                       ) : (
                                         <FileText size={16} className="text-amber-500 flex-shrink-0" />
                                       )}
@@ -1228,11 +1313,13 @@ export default function TutorCoursesPage() {
                                         <div className="flex items-center gap-2">
                                           <span className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">{resource.title}</span>
                                           <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide ${
-                                            isAssignment
+                                            isTask
                                               ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400'
-                                              : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400'
+                                              : isRecording
+                                                ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400'
+                                                : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400'
                                           }`}>
-                                            {isAssignment ? 'Assignment' : 'Material'}
+                                            {badgeLabel}
                                           </span>
                                         </div>
                                         <div className="flex items-center gap-2 mt-0.5">
@@ -1309,9 +1396,96 @@ export default function TutorCoursesPage() {
         </div>
       )}
 
-      {/* ══════════════════════════════════════════════════════════════════════
-          MODAL: ADD SESSION
-      ══════════════════════════════════════════════════════════════════════ */}
+      {/* MODAL: PUBLISH AI QUIZ */}
+
+      <AnimatePresence>
+        {showQuizPublishModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            onClick={resetQuizPublishModal}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-lg bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200/60 dark:border-slate-700/40 overflow-hidden"
+            >
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/60 dark:border-slate-700/40">
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                  <ClipboardCheck size={20} className="text-indigo-500" />
+                  Publish AI Quiz
+                </h3>
+                <button
+                  onClick={resetQuizPublishModal}
+                  className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
+                >
+                  <X size={18} className="text-slate-400" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4">
+                {quizPublishError && (
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40">
+                    <AlertCircle size={16} className="text-red-500 flex-shrink-0" />
+                    <p className="text-sm text-red-700 dark:text-red-400">{quizPublishError}</p>
+                  </div>
+                )}
+
+                <div className="rounded-lg border border-slate-200/60 dark:border-slate-700/40 bg-slate-50 dark:bg-slate-700/30 p-3">
+                  <p className="text-sm font-medium text-slate-900 dark:text-white">{quizPublishTitle}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">AI quiz draft ready to publish.</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                    Due Date <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <CalendarClock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="datetime-local"
+                      value={quizDueDate}
+                      onChange={(e) => setQuizDueDate(e.target.value)}
+                      className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700/50 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    />
+                  </div>
+                  <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+                    Students will see this deadline in their assignments list.
+                  </p>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={resetQuizPublishModal}
+                    className="px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handlePublishQuizAssignment}
+                    disabled={quizPublishing}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 text-white rounded-xl font-medium shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600"
+                  >
+                    {quizPublishing ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <ClipboardCheck size={16} />
+                    )}
+                    {quizPublishing ? 'Publishing...' : 'Publish Assignment'}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {/* MODAL: ADD SESSION */}
       <AnimatePresence>
         {showSessionModal && (
           <motion.div
