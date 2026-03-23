@@ -531,7 +531,7 @@ export default function StudentCourseBrowserPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 pb-12 animate-fade-in">
+    <div className="mx-auto max-w-6xl space-y-5 pb-12 animate-fade-in sm:space-y-6">
       {/* ── Toast Notifications ── */}
       <AnimatePresence>
         {enrollSuccess && (
@@ -539,7 +539,7 @@ export default function StudentCourseBrowserPage() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="fixed top-4 right-4 z-50 flex items-center gap-3 px-5 py-3 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800/40 rounded-xl shadow-lg"
+            className="fixed left-4 right-4 top-4 z-50 flex max-w-md items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3 shadow-lg dark:border-green-800/40 dark:bg-green-900/30 sm:left-auto sm:right-4 sm:px-5"
           >
             <div className="p-1 bg-green-500 rounded-full">
               <Check size={14} className="text-white" />
@@ -552,7 +552,7 @@ export default function StudentCourseBrowserPage() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="fixed top-4 right-4 z-50 flex items-center gap-3 px-5 py-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800/40 rounded-xl shadow-lg"
+            className="fixed left-4 right-4 top-4 z-50 flex max-w-md items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 shadow-lg dark:border-red-800/40 dark:bg-red-900/30 sm:left-auto sm:right-4 sm:px-5"
           >
             <AlertCircle size={16} className="text-red-500" />
             <p className="text-sm font-medium text-red-700 dark:text-red-400">{enrollError}</p>
@@ -562,8 +562,8 @@ export default function StudentCourseBrowserPage() {
 
       {/* ── Header ── */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-          <GraduationCap className="h-7 w-7 text-primary-600 dark:text-primary-400" />
+        <h1 className="flex items-center gap-2 text-xl font-bold text-slate-900 dark:text-white sm:text-2xl">
+          <GraduationCap className="h-6 w-6 text-primary-600 dark:text-primary-400 sm:h-7 sm:w-7" />
           Group Classes
         </h1>
         <p className="text-slate-600 dark:text-slate-400 mt-1">
@@ -572,21 +572,21 @@ export default function StudentCourseBrowserPage() {
       </div>
 
       {/* ── Quick Stats ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
         {[
           { label: 'Available Classes', value: courses.length, icon: BookOpen, color: 'text-primary-600 dark:text-primary-400', bg: 'bg-primary-100 dark:bg-teal-900/30' },
           { label: 'Total Students', value: courses.reduce((s, c) => s + c.enrolled_count, 0), icon: Users, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-100 dark:bg-blue-900/30' },
           { label: 'Upcoming Sessions', value: courses.filter(c => c.next_session).length, icon: Video, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-100 dark:bg-purple-900/30' },
           { label: 'My Enrollments', value: enrolledCourseIds.size, icon: Check, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-100 dark:bg-emerald-900/30' },
         ].map((stat) => (
-          <div key={stat.label} className="bg-white dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/40 p-4">
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-xl ${stat.bg}`}>
+          <div key={stat.label} className="rounded-xl border border-slate-200/60 bg-white p-3 dark:border-slate-700/40 dark:bg-slate-800/80 sm:p-4">
+            <div className="flex items-start gap-2.5 sm:items-center sm:gap-3">
+              <div className={`rounded-xl p-2 ${stat.bg}`}>
                 <stat.icon size={18} className={stat.color} />
               </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900 dark:text-white">{stat.value}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">{stat.label}</p>
+              <div className="min-w-0">
+                <p className="text-xl font-bold text-slate-900 dark:text-white sm:text-2xl">{stat.value}</p>
+                <p className="text-xs leading-snug text-slate-500 dark:text-slate-400">{stat.label}</p>
               </div>
             </div>
           </div>
@@ -594,7 +594,7 @@ export default function StudentCourseBrowserPage() {
       </div>
 
       {/* ── Join by Class Code ── */}
-      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl border border-indigo-200/60 dark:border-indigo-700/30 p-5">
+      <div className="rounded-xl border border-indigo-200/60 bg-gradient-to-r from-indigo-50 to-purple-50 p-4 dark:border-indigo-700/30 dark:from-indigo-900/20 dark:to-purple-900/20 sm:p-5">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <div className="flex items-center gap-3 flex-shrink-0">
             <div className="p-2.5 bg-indigo-100 dark:bg-indigo-800/40 rounded-xl">
@@ -605,7 +605,7 @@ export default function StudentCourseBrowserPage() {
               <p className="text-xs text-indigo-600 dark:text-indigo-400">Enter the code from your tutor to join directly</p>
             </div>
           </div>
-          <div className="flex-1 flex gap-2 w-full sm:w-auto">
+          <div className="flex w-full flex-1 flex-col gap-2 sm:w-auto sm:flex-row">
             <input
               type="text"
               value={joinCode}
@@ -613,12 +613,12 @@ export default function StudentCourseBrowserPage() {
               onKeyDown={(e) => e.key === 'Enter' && handleJoinByCode()}
               placeholder="e.g. AB3X7K"
               maxLength={8}
-              className="flex-1 sm:max-w-[200px] px-4 py-2.5 rounded-xl border border-indigo-200 dark:border-indigo-600/50 bg-white dark:bg-slate-800/80 text-slate-900 dark:text-white placeholder-indigo-300 dark:placeholder-indigo-500 font-mono text-center text-lg tracking-widest uppercase focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none transition-all"
+              className="flex-1 px-4 py-2.5 rounded-xl border border-indigo-200 bg-white font-mono text-center text-lg tracking-widest text-slate-900 uppercase transition-all placeholder-indigo-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:border-indigo-600/50 dark:bg-slate-800/80 dark:text-white dark:placeholder-indigo-500 sm:max-w-[220px]"
             />
             <button
               onClick={handleJoinByCode}
               disabled={joiningByCode || !joinCode.trim()}
-              className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex items-center gap-2"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
             >
               {joiningByCode ? (
                 <Loader2 size={16} className="animate-spin" />
@@ -657,7 +657,7 @@ export default function StudentCourseBrowserPage() {
       </div>
 
       {/* ── Search & Filter Bar ── */}
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row">
         {/* Search */}
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 dark:text-slate-500" />
@@ -674,7 +674,7 @@ export default function StudentCourseBrowserPage() {
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-          className="px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:outline-none transition-all text-sm"
+          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-300 sm:w-auto"
         >
           <option value="newest">Newest First</option>
           <option value="price_low">Price: Low → High</option>
@@ -685,7 +685,7 @@ export default function StudentCourseBrowserPage() {
         {/* Filters toggle */}
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className={`flex items-center gap-2 px-4 py-3 border rounded-xl text-sm font-medium transition-colors ${
+          className={`flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition-colors sm:w-auto ${
             showFilters || activeFilters.length > 0
               ? 'bg-primary-50 dark:bg-teal-900/20 border-primary-200 dark:border-teal-700/40 text-primary-700 dark:text-primary-400'
               : 'bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'
@@ -711,7 +711,7 @@ export default function StudentCourseBrowserPage() {
             className="overflow-hidden"
           >
             <div className="bg-white dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/40 p-5">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {/* Subject */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Subject</label>
@@ -829,7 +829,7 @@ export default function StudentCourseBrowserPage() {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 sm:gap-6">
           {filteredCourses.map((course, index) => {
             const isEnrolled = enrolledCourseIds.has(course.id)
             const isFull = course.spots_remaining <= 0
@@ -843,7 +843,7 @@ export default function StudentCourseBrowserPage() {
                 className="bg-white dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/40 overflow-hidden hover:shadow-lg hover:border-primary-200/60 dark:hover:border-primary-700/40 transition-all duration-300 flex flex-col group"
               >
                 {/* ── Card Header: Subject Tag + Seats ── */}
-                <div className="px-5 pt-5 pb-0 flex items-center justify-between">
+                <div className="flex items-start justify-between gap-2 px-4 pb-0 pt-4 sm:px-5 sm:pt-5">
                   {course.subject_name ? (
                     <span className="px-2.5 py-0.5 bg-primary-50 dark:bg-teal-900/25 text-primary-700 dark:text-primary-400 text-xs font-medium rounded-full border border-primary-100 dark:border-teal-700/30">
                       {course.subject_name}
@@ -863,17 +863,17 @@ export default function StudentCourseBrowserPage() {
                 </div>
 
                 {/* ── Card Body ── */}
-                <div className="p-5 flex-1 flex flex-col">
+                <div className="flex flex-1 flex-col p-4 sm:p-5">
                   {/* Title */}
                   <h3
-                    className="text-lg font-semibold text-slate-900 dark:text-white line-clamp-2 mb-3 cursor-pointer hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                    className="mb-3 line-clamp-2 cursor-pointer text-base font-semibold text-slate-900 transition-colors hover:text-primary-600 dark:text-white dark:hover:text-primary-400 sm:text-lg"
                     onClick={() => setSelectedCourse(course)}
                   >
                     {course.title}
                   </h3>
 
                   {/* Tutor Row */}
-                  <Link href={`/student/tutors/${course.tutor.id}`} className="flex items-center gap-3 mb-4 group/tutor">
+                  <Link href={`/student/tutors/${course.tutor.id}`} className="group/tutor mb-4 flex items-start gap-3">
                     <div className="relative flex-shrink-0">
                       <img
                         src={getAvatarUrl(course.tutor)}
@@ -887,7 +887,7 @@ export default function StudentCourseBrowserPage() {
                         {course.tutor.first_name} {course.tutor.last_name}
                         <ArrowRight size={12} className="inline ml-1 opacity-0 group-hover/tutor:opacity-100 transition-opacity" />
                       </p>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         {course.tutor.average_rating && (
                           <span className="flex items-center gap-0.5 text-xs text-slate-500 dark:text-slate-400">
                             <Star size={12} className="fill-yellow-400 text-yellow-400" />
@@ -948,9 +948,9 @@ export default function StudentCourseBrowserPage() {
                 </div>
 
                 {/* ── Card Footer ── */}
-                <div className="px-5 py-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-700/50 flex items-center justify-between gap-3">
+                <div className="flex flex-col items-stretch gap-3 border-t border-slate-100 bg-slate-50 px-4 py-4 dark:border-slate-700/50 dark:bg-slate-800/50 sm:flex-row sm:items-center sm:justify-between sm:px-5">
                   {/* Price */}
-                  <div>
+                  <div className="sm:flex-shrink-0">
                     <span className="text-xl font-bold text-slate-900 dark:text-white">
                       R{Number(course.price).toFixed(0)}
                     </span>
@@ -958,15 +958,15 @@ export default function StudentCourseBrowserPage() {
                   </div>
 
                   {/* Buttons */}
-                  <div className="flex gap-2">
+                  <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto">
                     <button
                       onClick={() => setSelectedCourse(course)}
-                      className="px-3 py-2 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                      className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700 sm:w-auto"
                     >
                       Details
                     </button>
                     {isEnrolled ? (
-                      <span className="inline-flex items-center gap-1.5 px-4 py-2 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-sm font-medium rounded-xl border border-green-200 dark:border-green-800/40">
+                      <span className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-green-200 bg-green-50 px-4 py-2 text-sm font-medium text-green-700 dark:border-green-800/40 dark:bg-green-900/20 dark:text-green-400 sm:w-auto">
                         <Check size={14} />
                         Enrolled
                       </span>
@@ -974,7 +974,7 @@ export default function StudentCourseBrowserPage() {
                       <button
                         onClick={() => handleEnroll(course.id)}
                         disabled={isFull || enrollingCourse === course.id}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white text-sm font-medium rounded-xl hover:from-primary-600 hover:to-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                        className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:from-primary-600 hover:to-primary-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                       >
                         {enrollingCourse === course.id ? (
                           <Loader2 size={14} className="animate-spin" />
@@ -1009,10 +1009,10 @@ export default function StudentCourseBrowserPage() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200/60 dark:border-slate-700/40"
+              className="w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-2xl border border-slate-200/60 bg-white shadow-xl dark:border-slate-700/40 dark:bg-slate-800 sm:max-h-[90vh]"
             >
               {/* Modal Header */}
-              <div className="sticky top-0 z-10 bg-white dark:bg-slate-800 px-6 py-4 border-b border-slate-200/60 dark:border-slate-700/40 flex items-start justify-between gap-4">
+              <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-200/60 bg-white px-4 py-4 dark:border-slate-700/40 dark:bg-slate-800 sm:px-6">
                 <div className="min-w-0">
                   <h2 className="text-xl font-bold text-slate-900 dark:text-white">
                     {selectedCourse.title}
@@ -1033,11 +1033,11 @@ export default function StudentCourseBrowserPage() {
               </div>
 
               {/* Modal Body */}
-              <div className="p-6 space-y-6">
+              <div className="space-y-6 p-4 sm:p-6">
                 {/* Tutor Section */}
                 <Link
                   href={`/student/tutors/${selectedCourse.tutor.id}`}
-                  className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-700/30 border border-slate-100 dark:border-slate-600/30 hover:border-primary-200 dark:hover:border-primary-700/40 hover:bg-primary-50/50 dark:hover:bg-teal-900/10 transition-all group/tutor"
+                  className="group/tutor flex flex-col items-start gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4 transition-all hover:border-primary-200 hover:bg-primary-50/50 dark:border-slate-600/30 dark:bg-slate-700/30 dark:hover:border-primary-700/40 dark:hover:bg-teal-900/10 sm:flex-row sm:items-center"
                 >
                   <div className="relative flex-shrink-0">
                     <img
@@ -1047,12 +1047,12 @@ export default function StudentCourseBrowserPage() {
                     />
                     <OnlineDot isOnline={selectedCourse.tutor.is_online} size="md" />
                   </div>
-                  <div className="flex-1">
+                  <div className="w-full flex-1">
                     <p className="font-semibold text-slate-900 dark:text-white group-hover/tutor:text-primary-600 dark:group-hover/tutor:text-primary-400 transition-colors">
                       {selectedCourse.tutor.first_name} {selectedCourse.tutor.last_name}
                       <ArrowRight size={14} className="inline ml-1.5 opacity-0 group-hover/tutor:opacity-100 transition-opacity" />
                     </p>
-                    <div className="flex items-center gap-3 mt-1">
+                    <div className="mt-1 flex flex-wrap items-center gap-2 sm:gap-3">
                       <OnlineStatusText isOnline={selectedCourse.tutor.is_online} />
                       {selectedCourse.tutor.average_rating && (
                         <span className="flex items-center gap-0.5 text-sm text-slate-500 dark:text-slate-400">
@@ -1066,7 +1066,7 @@ export default function StudentCourseBrowserPage() {
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-primary-600 dark:text-primary-400 mt-1 opacity-0 group-hover/tutor:opacity-100 transition-opacity">
+                    <p className="mt-1 text-xs text-primary-600 opacity-100 transition-opacity dark:text-primary-400 sm:opacity-0 sm:group-hover/tutor:opacity-100">
                       View full profile & more classes →
                     </p>
                   </div>
@@ -1110,7 +1110,7 @@ export default function StudentCourseBrowserPage() {
                     <p className="text-sm font-medium text-purple-800 dark:text-purple-200">
                       {selectedCourse.next_session.title}
                     </p>
-                    <p className="text-sm text-purple-600 dark:text-purple-400 mt-1">
+                    <p className="mt-1 text-sm leading-relaxed text-purple-600 dark:text-purple-400">
                       {formatDate(selectedCourse.next_session.scheduled_start)} · {formatTime(selectedCourse.next_session.scheduled_start)} – {formatTime(selectedCourse.next_session.scheduled_end)}
                     </p>
                   </div>
@@ -1118,7 +1118,7 @@ export default function StudentCourseBrowserPage() {
 
                 {/* Capacity Bar */}
                 <div>
-                  <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1.5">
+                  <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
                     <span>Enrollment Progress</span>
                     <span>{selectedCourse.enrolled_count} of {selectedCourse.max_students} students</span>
                   </div>
@@ -1138,8 +1138,8 @@ export default function StudentCourseBrowserPage() {
               </div>
 
               {/* Modal Footer */}
-              <div className="sticky bottom-0 bg-white dark:bg-slate-800 px-6 py-4 border-t border-slate-200/60 dark:border-slate-700/40 flex items-center justify-between gap-4">
-                <div>
+              <div className="sticky bottom-0 flex flex-col items-stretch gap-3 border-t border-slate-200/60 bg-white px-4 py-4 dark:border-slate-700/40 dark:bg-slate-800 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                <div className="text-center sm:text-left">
                   <span className="text-2xl font-bold text-slate-900 dark:text-white">
                     R{Number(selectedCourse.price).toFixed(0)}
                   </span>
@@ -1147,7 +1147,7 @@ export default function StudentCourseBrowserPage() {
                 </div>
 
                 {enrolledCourseIds.has(selectedCourse.id) ? (
-                  <span className="inline-flex items-center gap-2 px-6 py-3 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 font-medium rounded-xl border border-green-200 dark:border-green-800/40">
+                  <span className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-green-200 bg-green-50 px-6 py-3 font-medium text-green-700 dark:border-green-800/40 dark:bg-green-900/20 dark:text-green-400 sm:w-auto">
                     <Check size={18} />
                     Already Enrolled
                   </span>
@@ -1155,7 +1155,7 @@ export default function StudentCourseBrowserPage() {
                   <button
                     onClick={() => handleEnroll(selectedCourse.id)}
                     disabled={selectedCourse.spots_remaining <= 0 || enrollingCourse === selectedCourse.id}
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-medium rounded-xl hover:from-primary-600 hover:to-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-3 font-medium text-white shadow-md transition-colors hover:from-primary-600 hover:to-primary-700 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                   >
                     {enrollingCourse === selectedCourse.id ? (
                       <Loader2 size={18} className="animate-spin" />

@@ -95,7 +95,7 @@ export function UpcomingSchedule({ sessions }: UpcomingScheduleProps) {
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <h4 className="font-medium text-slate-900 dark:text-white truncate">
                     {session.studentName}
                   </h4>
@@ -113,7 +113,7 @@ export function UpcomingSchedule({ sessions }: UpcomingScheduleProps) {
                 <p className="text-sm text-primary-600 dark:text-primary-400 font-medium">
                   {session.subject}
                 </p>
-                <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 dark:text-slate-400">
+                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
                   <span className="flex items-center gap-1">
                     <Calendar size={12} />
                     {formatDate(session.scheduledAt)}

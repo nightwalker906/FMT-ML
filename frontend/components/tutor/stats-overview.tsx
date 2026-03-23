@@ -98,7 +98,7 @@ export function StatsOverview({ stats }: StatsOverviewProps) {
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
       {cards.map((card, i) => (
         <motion.div
           key={card.label}
@@ -109,17 +109,17 @@ export function StatsOverview({ stats }: StatsOverviewProps) {
           whileHover={{ y: -4, transition: { duration: 0.2 } }}
           className="card-stat group"
         >
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex items-start justify-between gap-3 sm:gap-4">
+            <div className="min-w-0">
               <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
                 {card.label}
               </p>
-              <p className="text-3xl font-bold text-slate-900 dark:text-white mt-1">
+              <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-white sm:text-3xl">
                 {card.value}
               </p>
-              <div className={`text-xs mt-1 ${card.subColor}`}>{card.sub}</div>
+              <div className={`mt-1 flex flex-wrap items-center gap-1 text-xs ${card.subColor}`}>{card.sub}</div>
             </div>
-            <div className={`h-12 w-12 rounded-2xl ${card.iconBg} flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-300`}>
+            <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl shadow-sm transition-transform duration-300 group-hover:scale-110 sm:h-12 sm:w-12 ${card.iconBg}`}>
               {card.icon}
             </div>
           </div>
@@ -135,8 +135,8 @@ export function StatsOverview({ stats }: StatsOverviewProps) {
         whileHover={{ y: -4, transition: { duration: 0.2 } }}
         className="card-stat group"
       >
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex items-start justify-between gap-3 sm:gap-4">
+          <div className="min-w-0">
             <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
               Availability
             </p>
@@ -151,7 +151,7 @@ export function StatsOverview({ stats }: StatsOverviewProps) {
               {isAvailable ? 'Accepting new students' : 'Not visible to students'}
             </p>
           </div>
-          <div className="flex flex-col items-center gap-2.5">
+          <div className="flex flex-shrink-0 flex-col items-center gap-2.5">
             <div className={`h-10 w-10 rounded-2xl flex items-center justify-center transition-all duration-300 shadow-sm group-hover:scale-110 ${
               isAvailable
                 ? 'bg-gradient-to-br from-emerald-100 to-emerald-200 dark:from-emerald-900/40 dark:to-emerald-800/30'

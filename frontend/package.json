@@ -3,15 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "dev:clean": "npm run clean && next dev",
+    "dev": "npm run clean:dev && next dev",
+    "dev:clean": "npm run clean:dev && next dev",
     "dev:fast": "next dev",
-    "build": "next build",
-    "build:clean": "npm run clean && next build",
+    "build": "npm run clean:build && next build",
+    "build:clean": "npm run clean:build && next build",
     "build:fast": "next build",
     "start": "next start",
     "lint": "next lint",
-    "clean": "node -e \"['.next','.next-dev'].forEach((dir) => require('fs').rmSync(dir, { recursive: true, force: true }))\""
+    "clean": "node -e \"['.next','.next-build','.next-dev'].forEach((dir) => require('fs').rmSync(dir, { recursive: true, force: true }))\"",
+    "clean:dev": "node -e \"require('fs').rmSync('.next', { recursive: true, force: true })\"",
+    "clean:build": "node -e \"['.next-build','.next-dev'].forEach((dir) => require('fs').rmSync(dir, { recursive: true, force: true }))\""
   },
   "dependencies": {
     "@excalidraw/excalidraw": "^0.18.0",

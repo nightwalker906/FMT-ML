@@ -765,12 +765,12 @@ export default function TutorCoursesPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-12 animate-fade-in">
+    <div className="mx-auto max-w-5xl space-y-5 pb-12 animate-fade-in sm:space-y-6">
       {/* ── Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <GraduationCap className="h-7 w-7 text-primary-600 dark:text-primary-400" />
+          <h1 className="flex items-center gap-2 text-xl font-bold text-slate-900 dark:text-white sm:text-2xl">
+            <GraduationCap className="h-6 w-6 text-primary-600 dark:text-primary-400 sm:h-7 sm:w-7" />
             Virtual Classrooms
           </h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">
@@ -779,7 +779,7 @@ export default function TutorCoursesPage() {
         </div>
         <button
           onClick={() => setActiveTab('create')}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-primary-600 to-emerald-600 hover:from-primary-700 hover:to-emerald-700 text-white rounded-xl font-medium shadow-md hover:shadow-lg transition-all text-sm"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-emerald-600 px-4 py-2.5 text-sm font-medium text-white shadow-md transition-all hover:from-primary-700 hover:to-emerald-700 hover:shadow-lg sm:w-auto"
         >
           <Plus size={18} />
           Create New Class
@@ -787,21 +787,21 @@ export default function TutorCoursesPage() {
       </div>
 
       {/* ── Stats Row ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 sm:gap-4">
         {[
           { label: 'Total Courses', value: totalCourses, icon: BookOpen, color: 'text-primary-600 dark:text-primary-400', bg: 'bg-primary-100 dark:bg-teal-900/30' },
           { label: 'Active', value: activeCourses, icon: Check, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-100 dark:bg-emerald-900/30' },
           { label: 'Total Students', value: totalStudents, icon: Users, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-100 dark:bg-blue-900/30' },
           { label: 'Sessions', value: totalSessions, icon: Video, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-100 dark:bg-purple-900/30' },
         ].map((stat) => (
-          <div key={stat.label} className="bg-white dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/40 p-4">
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-xl ${stat.bg}`}>
+          <div key={stat.label} className="rounded-xl border border-slate-200/60 bg-white p-3 dark:border-slate-700/40 dark:bg-slate-800/80 sm:p-4">
+            <div className="flex items-start gap-2.5 sm:items-center sm:gap-3">
+              <div className={`rounded-xl p-2 ${stat.bg}`}>
                 <stat.icon size={18} className={stat.color} />
               </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900 dark:text-white">{stat.value}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">{stat.label}</p>
+              <div className="min-w-0">
+                <p className="text-xl font-bold text-slate-900 dark:text-white sm:text-2xl">{stat.value}</p>
+                <p className="text-xs leading-snug text-slate-500 dark:text-slate-400">{stat.label}</p>
               </div>
             </div>
           </div>
@@ -809,7 +809,7 @@ export default function TutorCoursesPage() {
       </div>
 
       {/* ── Tab Selector ── */}
-      <div className="flex gap-1 bg-slate-100 dark:bg-slate-800/60 rounded-xl p-1 w-fit">
+      <div className="flex w-full gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1 scrollbar-hide dark:bg-slate-800/60 sm:w-fit">
         {[
           { key: 'courses' as Tab, label: 'My Courses', icon: BookOpen },
           { key: 'create' as Tab, label: 'Create New', icon: Plus },
@@ -817,7 +817,7 @@ export default function TutorCoursesPage() {
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-all sm:flex-none ${
               activeTab === tab.key
                 ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
@@ -836,7 +836,7 @@ export default function TutorCoursesPage() {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/40 p-6"
+          className="rounded-xl border border-slate-200/60 bg-white p-4 dark:border-slate-700/40 dark:bg-slate-800/80 sm:p-6"
         >
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
             <Plus size={20} className="text-primary-600 dark:text-primary-400" />
@@ -947,11 +947,11 @@ export default function TutorCoursesPage() {
             </div>
 
             {/* Submit */}
-            <div className="flex justify-end pt-2">
+            <div className="flex justify-stretch pt-2 sm:justify-end">
               <button
                 type="submit"
                 disabled={creating}
-                className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-primary-600 to-emerald-600 hover:from-primary-700 hover:to-emerald-700 text-white rounded-xl font-medium shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-emerald-600 px-6 py-2.5 font-medium text-white shadow-md transition-all hover:from-primary-700 hover:to-emerald-700 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
               >
                 {creating ? (
                   <Loader2 size={18} className="animate-spin" />
@@ -974,7 +974,7 @@ export default function TutorCoursesPage() {
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-white dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/40 p-12 text-center"
+              className="rounded-xl border border-slate-200/60 bg-white p-8 text-center dark:border-slate-700/40 dark:bg-slate-800/80 sm:p-12"
             >
               <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary-100 to-emerald-100 dark:from-teal-900/40 dark:to-emerald-900/40 flex items-center justify-center mx-auto mb-4 shadow-sm">
                 <GraduationCap className="h-8 w-8 text-primary-600 dark:text-primary-400" />
@@ -987,7 +987,7 @@ export default function TutorCoursesPage() {
               </p>
               <button
                 onClick={() => setActiveTab('create')}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-primary-600 to-emerald-600 text-white rounded-xl font-medium shadow-md hover:shadow-lg transition-all"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-emerald-600 px-5 py-2.5 font-medium text-white shadow-md transition-all hover:shadow-lg sm:w-auto"
               >
                 <Plus size={18} />
                 Create Your First Class
@@ -1006,12 +1006,12 @@ export default function TutorCoursesPage() {
                 >
                   {/* ── Course Header ── */}
                   <div
-                    className="p-5 cursor-pointer"
+                    className="cursor-pointer p-4 sm:p-5"
                     onClick={() => setExpandedCourse(expandedCourse === course.id ? null : course.id)}
                   >
-                    <div className="flex items-start justify-between gap-4">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3 mb-1">
+                        <div className="mb-1 flex flex-wrap items-center gap-2 sm:gap-3">
                           <h3 className="text-lg font-semibold text-slate-900 dark:text-white truncate">
                             {course.title}
                           </h3>
@@ -1026,7 +1026,7 @@ export default function TutorCoursesPage() {
 
                         {/* Class Code Badge */}
                         {course.class_code && (
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="mb-1 flex flex-wrap items-center gap-2">
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-700/40">
                               <Hash size={13} className="text-indigo-500" />
                               <span className="text-sm font-mono font-semibold text-indigo-700 dark:text-indigo-300 tracking-wider">
@@ -1068,7 +1068,7 @@ export default function TutorCoursesPage() {
                         )}
 
                         {/* Quick stats row */}
-                        <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-slate-500 dark:text-slate-400">
+                        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-500 dark:text-slate-400">
                           <span className="flex items-center gap-1.5">
                             <Users size={14} className="text-blue-500" />
                             {course.enrolled_count}/{course.max_students} students
@@ -1089,7 +1089,7 @@ export default function TutorCoursesPage() {
                       </div>
 
                       {/* Expand toggle */}
-                      <div className="flex items-center gap-2 flex-shrink-0">
+                      <div className="flex items-center gap-2 self-end flex-shrink-0 sm:self-start">
                         {/* Active toggle */}
                         <button
                           onClick={(e) => {
@@ -1128,10 +1128,10 @@ export default function TutorCoursesPage() {
                         transition={{ duration: 0.2 }}
                         className="overflow-hidden"
                       >
-                        <div className="border-t border-slate-200/60 dark:border-slate-700/40 p-5 space-y-6">
+                        <div className="space-y-6 border-t border-slate-200/60 p-4 dark:border-slate-700/40 sm:p-5">
                           {/* ── Sessions Section ── */}
                           <div>
-                            <div className="flex items-center justify-between mb-3">
+                            <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                               <h4 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                                 <Video size={16} className="text-purple-500" />
                                 Scheduled Sessions
@@ -1146,7 +1146,7 @@ export default function TutorCoursesPage() {
                                   setSessionMeetingUrl('')
                                   setShowSessionModal(course.id)
                                 }}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-teal-900/20 hover:bg-primary-100 dark:hover:bg-teal-900/40 rounded-lg transition-colors"
+                                className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary-50 px-3 py-1.5 text-xs font-medium text-primary-600 transition-colors hover:bg-primary-100 dark:bg-teal-900/20 dark:text-primary-400 dark:hover:bg-teal-900/40 sm:w-auto"
                               >
                                 <Plus size={14} />
                                 Add Session
@@ -1162,7 +1162,7 @@ export default function TutorCoursesPage() {
                                 {course.sessions.map((session) => (
                                   <div
                                     key={session.id}
-                                    className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-700/30 border border-slate-100 dark:border-slate-600/30"
+                                    className="flex flex-col gap-3 rounded-lg border border-slate-100 bg-slate-50 p-3 dark:border-slate-600/30 dark:bg-slate-700/30 sm:flex-row sm:items-center sm:justify-between"
                                   >
                                     <div className="flex items-center gap-3 min-w-0">
                                       <div className="p-1.5 rounded-lg bg-purple-100 dark:bg-purple-900/30">
@@ -1179,7 +1179,7 @@ export default function TutorCoursesPage() {
                                         </p>
                                       </div>
                                     </div>
-                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                    <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-end">
                                       {session.meeting_url && (
                                         <a
                                           href={session.meeting_url}
@@ -1256,14 +1256,14 @@ export default function TutorCoursesPage() {
 
                           {/* ── Resources / Materials Section ── */}
                           <div>
-                            <div className="flex items-center justify-between mb-3">
+                            <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                               <h4 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                                 <FileText size={16} className="text-amber-500" />
                                 Materials & Assignments ({course.resources.length})
                               </h4>
                               <button
                                 onClick={() => setShowUploadModal(course.id)}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/40 rounded-lg transition-colors"
+                                className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-600 transition-colors hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:hover:bg-amber-900/40 sm:w-auto"
                               >
                                 <Upload size={14} />
                                 Upload
@@ -1293,7 +1293,7 @@ export default function TutorCoursesPage() {
                                   return (
                                     <div
                                       key={resource.id}
-                                      className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
+                                      className={`flex flex-col gap-3 rounded-lg border p-3 transition-colors sm:flex-row sm:items-center ${
                                         isTask
                                           ? 'bg-indigo-50/50 dark:bg-indigo-900/10 border-indigo-200/60 dark:border-indigo-700/30 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'
                                           : isRecording
@@ -1310,7 +1310,7 @@ export default function TutorCoursesPage() {
                                       )}
 
                                       <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex flex-wrap items-center gap-2">
                                           <span className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">{resource.title}</span>
                                           <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide ${
                                             isTask
@@ -1322,7 +1322,7 @@ export default function TutorCoursesPage() {
                                             {badgeLabel}
                                           </span>
                                         </div>
-                                        <div className="flex items-center gap-2 mt-0.5">
+                                        <div className="mt-0.5 flex flex-wrap items-center gap-2">
                                           <span className="text-xs text-slate-400 dark:text-slate-500">
                                             {formatDate(resource.uploaded_at)}
                                           </span>
@@ -1340,45 +1340,47 @@ export default function TutorCoursesPage() {
                                         </div>
                                       </div>
 
-                                      {isAssignment && (
+                                      <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-end">
+                                        {isAssignment && (
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation()
+                                              loadSubmissions(resource.id)
+                                            }}
+                                            className="inline-flex items-center gap-1 rounded-lg bg-indigo-100 px-2 py-1 text-xs font-medium text-indigo-600 transition-colors hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400 dark:hover:bg-indigo-900/50"
+                                            title="View student submissions"
+                                          >
+                                            <ArrowUpFromLine size={12} />
+                                            Submissions
+                                          </button>
+                                        )}
+
+                                        <a
+                                          href={resource.file_url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="p-1.5 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                                          title="Download / View"
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          <Download size={14} className="text-blue-500" />
+                                        </a>
                                         <button
                                           onClick={(e) => {
                                             e.stopPropagation()
-                                            loadSubmissions(resource.id)
+                                            handleDeleteResource(resource.id, resource.file_url)
                                           }}
-                                          className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/30 hover:bg-indigo-200 dark:hover:bg-indigo-900/50 rounded-lg transition-colors"
-                                          title="View student submissions"
+                                          disabled={deletingResource === resource.id}
+                                          className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                                          title="Delete"
                                         >
-                                          <ArrowUpFromLine size={12} />
-                                          Submissions
+                                          {deletingResource === resource.id ? (
+                                            <Loader2 size={14} className="animate-spin text-slate-400" />
+                                          ) : (
+                                            <Trash2 size={14} className="text-slate-400 hover:text-red-500 transition-colors" />
+                                          )}
                                         </button>
-                                      )}
-
-                                      <a
-                                        href={resource.file_url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="p-1.5 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
-                                        title="Download / View"
-                                        onClick={(e) => e.stopPropagation()}
-                                      >
-                                        <Download size={14} className="text-blue-500" />
-                                      </a>
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation()
-                                          handleDeleteResource(resource.id, resource.file_url)
-                                        }}
-                                        disabled={deletingResource === resource.id}
-                                        className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
-                                        title="Delete"
-                                      >
-                                        {deletingResource === resource.id ? (
-                                          <Loader2 size={14} className="animate-spin text-slate-400" />
-                                        ) : (
-                                          <Trash2 size={14} className="text-slate-400 hover:text-red-500 transition-colors" />
-                                        )}
-                                      </button>
+                                      </div>
                                     </div>
                                   )
                                 })}
@@ -1412,9 +1414,9 @@ export default function TutorCoursesPage() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-lg bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200/60 dark:border-slate-700/40 overflow-hidden"
+              className="w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-200/60 bg-white shadow-xl dark:border-slate-700/40 dark:bg-slate-800 max-h-[90vh]"
             >
-              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/60 dark:border-slate-700/40">
+              <div className="flex items-center justify-between border-b border-slate-200/60 px-4 py-4 dark:border-slate-700/40 sm:px-6">
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                   <ClipboardCheck size={20} className="text-indigo-500" />
                   Publish AI Quiz
@@ -1427,7 +1429,7 @@ export default function TutorCoursesPage() {
                 </button>
               </div>
 
-              <div className="p-6 space-y-4">
+              <div className="space-y-4 p-4 sm:p-6">
                 {quizPublishError && (
                   <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40">
                     <AlertCircle size={16} className="text-red-500 flex-shrink-0" />
@@ -1458,11 +1460,11 @@ export default function TutorCoursesPage() {
                   </p>
                 </div>
 
-                <div className="flex justify-end gap-3 pt-2">
+                <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
                   <button
                     type="button"
                     onClick={resetQuizPublishModal}
-                    className="px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+                    className="w-full px-4 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white sm:w-auto"
                   >
                     Cancel
                   </button>
@@ -1470,7 +1472,7 @@ export default function TutorCoursesPage() {
                     type="button"
                     onClick={handlePublishQuizAssignment}
                     disabled={quizPublishing}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 text-white rounded-xl font-medium shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 px-5 py-2.5 text-sm font-medium text-white shadow-md transition-all hover:from-indigo-600 hover:to-purple-600 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                   >
                     {quizPublishing ? (
                       <Loader2 size={16} className="animate-spin" />
@@ -1500,10 +1502,10 @@ export default function TutorCoursesPage() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-lg bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200/60 dark:border-slate-700/40 overflow-hidden"
+              className="w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-200/60 bg-white shadow-xl dark:border-slate-700/40 dark:bg-slate-800 max-h-[90vh]"
             >
               {/* Modal Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/60 dark:border-slate-700/40">
+              <div className="flex items-center justify-between border-b border-slate-200/60 px-4 py-4 dark:border-slate-700/40 sm:px-6">
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                   <Calendar size={20} className="text-purple-500" />
                   Schedule a Live Session
@@ -1517,7 +1519,7 @@ export default function TutorCoursesPage() {
               </div>
 
               {/* Modal Body */}
-              <form onSubmit={handleAddSession} className="p-6 space-y-4">
+              <form onSubmit={handleAddSession} className="space-y-4 p-4 sm:p-6">
                 {sessionError && (
                   <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40">
                     <AlertCircle size={16} className="text-red-500 flex-shrink-0" />
@@ -1556,7 +1558,7 @@ export default function TutorCoursesPage() {
                 </div>
 
                 {/* Start / End Time */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
                       Start Time <span className="text-red-500">*</span>
@@ -1601,18 +1603,18 @@ export default function TutorCoursesPage() {
                 </div>
 
                 {/* Submit */}
-                <div className="flex justify-end gap-3 pt-2">
+                <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
                   <button
                     type="button"
                     onClick={resetSessionModal}
-                    className="px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+                    className="w-full px-4 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white sm:w-auto"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={addingSession}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl font-medium shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-md transition-all hover:from-purple-700 hover:to-indigo-700 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                   >
                     {addingSession ? (
                       <Loader2 size={16} className="animate-spin" />
@@ -1645,10 +1647,10 @@ export default function TutorCoursesPage() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-lg bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200/60 dark:border-slate-700/40 overflow-hidden"
+              className="w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-200/60 bg-white shadow-xl dark:border-slate-700/40 dark:bg-slate-800 max-h-[90vh]"
             >
               {/* Modal Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/60 dark:border-slate-700/40">
+              <div className="flex items-center justify-between border-b border-slate-200/60 px-4 py-4 dark:border-slate-700/40 sm:px-6">
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                   <Upload size={20} className="text-amber-500" />
                   Upload {uploadType === 'assignment' ? 'Assignment' : 'Material'}
@@ -1662,7 +1664,7 @@ export default function TutorCoursesPage() {
               </div>
 
               {/* Modal Body */}
-              <form onSubmit={handleUploadMaterial} className="p-6 space-y-4">
+              <form onSubmit={handleUploadMaterial} className="space-y-4 p-4 sm:p-6">
                 {uploadError && (
                   <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40">
                     <AlertCircle size={16} className="text-red-500 flex-shrink-0" />
@@ -1675,7 +1677,7 @@ export default function TutorCoursesPage() {
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                     Type <span className="text-red-500">*</span>
                   </label>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <button
                       type="button"
                       onClick={() => { setUploadType('material'); setUploadDueDate('') }}
@@ -1758,18 +1760,18 @@ export default function TutorCoursesPage() {
                 </div>
 
                 {/* Submit */}
-                <div className="flex justify-end gap-3 pt-2">
+                <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
                   <button
                     type="button"
                     onClick={() => { setShowUploadModal(null); setUploadError(null); setUploadType('material'); setUploadDueDate('') }}
-                    className="px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+                    className="w-full px-4 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white sm:w-auto"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={uploading || !uploadFile}
-                    className={`inline-flex items-center gap-2 px-5 py-2.5 text-white rounded-xl font-medium shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm ${
+                    className={`inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium text-white shadow-md transition-all hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto ${
                       uploadType === 'assignment'
                         ? 'bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600'
                         : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600'
@@ -1806,10 +1808,10 @@ export default function TutorCoursesPage() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-2xl max-h-[80vh] bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200/60 dark:border-slate-700/40 overflow-hidden flex flex-col"
+              className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200/60 bg-white shadow-xl dark:border-slate-700/40 dark:bg-slate-800 sm:max-h-[80vh]"
             >
               {/* Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/60 dark:border-slate-700/40">
+              <div className="flex items-center justify-between border-b border-slate-200/60 px-4 py-4 dark:border-slate-700/40 sm:px-6">
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                   <ArrowUpFromLine size={20} className="text-indigo-500" />
                   Student Submissions ({submissions.length})
@@ -1823,7 +1825,7 @@ export default function TutorCoursesPage() {
               </div>
 
               {/* Body */}
-              <div className="p-6 overflow-y-auto flex-1">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6">
                 {loadingSubmissions ? (
                   <div className="flex items-center justify-center py-12">
                     <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
@@ -1841,7 +1843,7 @@ export default function TutorCoursesPage() {
                         key={sub.id}
                         className="rounded-xl border border-slate-200 dark:border-slate-700/40 bg-slate-50 dark:bg-slate-700/20 overflow-hidden"
                       >
-                        <div className="flex items-center gap-3 p-4">
+                        <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
                           <img
                             src={sub.student_avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(sub.student_name || 'S')}&background=6366f1&color=fff`}
                             alt={sub.student_name || 'Student'}
@@ -1854,7 +1856,7 @@ export default function TutorCoursesPage() {
                             </p>
                           </div>
 
-                          <div className="flex items-center gap-2">
+                          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
                             {sub.grade !== null && (
                               <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
                                 {sub.grade}%
@@ -1902,8 +1904,8 @@ export default function TutorCoursesPage() {
 
                         {/* Grading form */}
                         {gradingId === sub.id && (
-                          <div className="px-4 pb-4 space-y-3 border-t border-slate-200/60 dark:border-slate-700/30 pt-3">
-                            <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-3 border-t border-slate-200/60 px-4 pb-4 pt-3 dark:border-slate-700/30">
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                               <div>
                                 <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Grade (%)</label>
                                 <input
@@ -1927,18 +1929,18 @@ export default function TutorCoursesPage() {
                                 className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700/50 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                               />
                             </div>
-                            <div className="flex justify-end gap-2">
+                            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                               <button
                                 type="button"
                                 onClick={() => setGradingId(null)}
-                                className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-white transition-colors"
+                                className="w-full px-3 py-1.5 text-xs text-slate-500 transition-colors hover:text-slate-700 dark:hover:text-white sm:w-auto"
                               >
                                 Cancel
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleGradeSubmission(sub.id)}
-                                className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
+                                className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-1.5 text-xs font-medium text-white transition-colors hover:bg-indigo-700 sm:w-auto"
                               >
                                 <Check size={13} />
                                 Save Grade

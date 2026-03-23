@@ -159,12 +159,12 @@ export default async function TutorDashboardPage() {
   const hourlyRate = tutor?.hourly_rate || 0;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl lg:text-3xl font-bold text-slate-900 dark:text-white">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white lg:text-3xl">
               Dashboard
             </h1>
             <span className="badge-primary font-semibold">
@@ -178,7 +178,7 @@ export default async function TutorDashboardPage() {
         </div>
         <Link
           href="/tutor/settings"
-          className="btn-secondary inline-flex items-center gap-2"
+          className="btn-secondary inline-flex w-full items-center justify-center gap-2 sm:w-auto"
         >
           <Settings size={16} />
           Edit Profile
@@ -193,19 +193,19 @@ export default async function TutorDashboardPage() {
       </section>
 
       {/* Main Grid: Requests + Schedule */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 xl:gap-8">
         {/* Incoming Requests - Takes 2 columns */}
         <section className="lg:col-span-2">
-          <div className="flex items-center justify-between mb-4">
+          <div className="mb-4 flex items-center justify-between gap-3">
             <h2 className="section-title">
               <Bell size={20} className="text-primary-600 dark:text-primary-400" />
               Incoming Requests
             </h2>
             <Link
               href="/tutor/requests"
-              className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium transition-colors"
+              className="text-sm font-medium text-primary-600 transition-colors hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
             >
-              View All →
+              View All
             </Link>
           </div>
           <Suspense fallback={<BookingsLoadingSkeleton />}>
@@ -215,7 +215,7 @@ export default async function TutorDashboardPage() {
 
         {/* Upcoming Schedule - Takes 1 column */}
         <section className="lg:col-span-1">
-          <div className="flex items-center justify-between mb-4">
+          <div className="mb-4 flex items-center justify-between gap-3">
             <h2 className="section-title">
               <CalendarDays size={20} className="text-primary-600 dark:text-primary-400" />
               Upcoming Schedule

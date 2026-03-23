@@ -5,6 +5,11 @@ env/
 
 # Ignore Node modules
 node_modules/
+frontend/.next/
+frontend/.next-build/
+frontend/.next-dev/
+frontend/dev-stdout.log
+frontend/dev-stderr.log
 
 # Ignore Python compiled files
 __pycache__/

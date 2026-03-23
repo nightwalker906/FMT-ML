@@ -3,8 +3,8 @@ const { PHASE_DEVELOPMENT_SERVER } = require('next/constants')
 module.exports = (phase) => {
   /** @type {import('next').NextConfig} */
   const nextConfig = {
-    // Keep dev and prod artifacts separate so a build does not corrupt a running dev server.
-    distDir: phase === PHASE_DEVELOPMENT_SERVER ? '.next-dev' : '.next',
+    // Use Next's default dev directory, but isolate production builds to avoid build/dev collisions.
+    distDir: phase === PHASE_DEVELOPMENT_SERVER ? '.next' : '.next-build',
     eslint: {
       ignoreDuringBuilds: true,
     },
