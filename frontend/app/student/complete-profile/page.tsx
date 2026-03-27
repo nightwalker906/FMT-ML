@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { createClient } from '@/utils/supabase/client';
+import { syncRecommender } from '@/lib/recommender-sync';
 import { User, BookOpen, Target, Brain, ArrowRight, Loader2 } from 'lucide-react';
 
 const GRADE_LEVELS = [
@@ -165,6 +166,12 @@ export default function StudentCompleteProfilePage() {
 
         if (studentError) throw studentError;
       }
+
+      await syncRecommender({
+        entity: 'student',
+        syncType: 'student_preferences',
+        profileId: user.id,
+      });
 
       // Redirect to student dashboard
       router.push('/student/dashboard');

@@ -13,6 +13,7 @@ interface SmartRecommendationsProps {
   learningGoals?: string[];
   preferredSubjects?: string[];
   gradeLevel?: string;
+  profileReady?: boolean;
 }
 
 interface Recommendation {
@@ -87,6 +88,7 @@ const SmartRecommendations: React.FC<SmartRecommendationsProps> = ({
   learningGoals = [],
   preferredSubjects = [],
   gradeLevel = '',
+  profileReady = false,
 }) => {
   const { user } = useAuth();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -123,7 +125,8 @@ const SmartRecommendations: React.FC<SmartRecommendationsProps> = ({
   // Build URL with student_id if user is authenticated
   // Include profile hash to trigger cache invalidation when any profile factor changes
   // When profileHash changes, the URL changes, which tells SWR to refetch
-  const url = user?.id
+  const waitingForProfile = Boolean(user?.id) && !profileReady;
+  const url = user?.id && profileReady
     ? `${API_BASE}/recommendations/?student_id=${user.id}${profileHash ? `&goals=${profileHash}` : ''}`
     : null;
 
@@ -150,7 +153,7 @@ const SmartRecommendations: React.FC<SmartRecommendationsProps> = ({
       </div>
 
       {/* Content: loading, error, empty, or recommendations */}
-      {isLoading ? (
+      {waitingForProfile || (isLoading && !data) ? (
         <div className="flex gap-5 overflow-hidden pb-4">
           {[0, 1, 2, 3].map((i) => (
             <SkeletonCard key={i} />

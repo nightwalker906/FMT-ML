@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { createClient } from '@/utils/supabase/client';
+import { syncRecommender } from '@/lib/recommender-sync';
 import {
   User,
   Briefcase,
@@ -152,6 +153,12 @@ export default function TutorCompleteProfilePage() {
 
         if (tutorError) throw tutorError;
       }
+
+      await syncRecommender({
+        entity: 'tutor',
+        syncType: 'tutor_corpus',
+        profileId: user.id,
+      });
 
       // Redirect to tutor dashboard
       router.push('/tutor/dashboard');
