@@ -103,8 +103,9 @@ export default function LoginPage() {
         redirectPath = userType === 'tutor' ? '/tutor/dashboard' : '/student/dashboard'
       }
 
-      setSuccessMessage('Login successful! Redirecting...')
-      setTimeout(() => router.push(redirectPath), 1500)
+      router.replace(redirectPath)
+      router.refresh()
+      return
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred during login')
     } finally {

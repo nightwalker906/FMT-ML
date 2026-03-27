@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { User, Lock, Bell, Camera, Save, Loader2, Check, Sun, Moon } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 import { useTheme } from '@/context/theme-context'
+import { syncRecommender } from '@/lib/recommender-sync'
 
 export default function StudentSettingsPage() {
   const { theme, toggleTheme } = useTheme()
@@ -239,6 +240,12 @@ export default function StudentSettingsPage() {
       setSaving(null)
       return
     }
+
+    await syncRecommender({
+      entity: 'student',
+      syncType: 'student_preferences',
+      profileId: user.id,
+    })
 
     showSuccess('profile')
     setSaving(null)

@@ -70,6 +70,7 @@ export default function StudentDashboardPage() {
   const [learningGoals, setLearningGoals] = useState<string[]>([]);
   const [preferredSubjects, setPreferredSubjects] = useState<string[]>([]);
   const [gradeLevel, setGradeLevel] = useState<string>('');
+  const [profileFactorsLoaded, setProfileFactorsLoaded] = useState(false);
   const [stats, setStats] = useState({
     totalSessions: 0,
     totalHours: 0,
@@ -85,6 +86,31 @@ export default function StudentDashboardPage() {
 
     const fetchData = async () => {
       setLoading(true);
+      setProfileFactorsLoaded(false);
+
+      const studentProfileTask = supabase
+        .from('students')
+        .select('learning_goals, preferred_subjects, grade_level')
+        .eq('profile_id', userId)
+        .single()
+        .then(({ data: studentData, error }) => {
+          if (error) {
+            throw error;
+          }
+
+          setLearningGoals(Array.isArray(studentData?.learning_goals) ? studentData.learning_goals : []);
+          setPreferredSubjects(Array.isArray(studentData?.preferred_subjects) ? studentData.preferred_subjects : []);
+          setGradeLevel(studentData?.grade_level || '');
+        })
+        .catch((err) => {
+          console.error('Error fetching learning goals:', err);
+          setLearningGoals([]);
+          setPreferredSubjects([]);
+          setGradeLevel('');
+        })
+        .finally(() => {
+          setProfileFactorsLoaded(true);
+        });
 
       // Fetch upcoming sessions
       const { data: sessions } = await supabase
@@ -265,26 +291,7 @@ export default function StudentDashboardPage() {
         console.error('Error fetching featured courses:', err);
       }
 
-      // Fetch learning goals and profile data
-      try {
-        const { data: studentData } = await supabase
-          .from('students')
-          .select('learning_goals, preferred_subjects, grade_level')
-          .eq('profile_id', userId)
-          .single();
-
-        if (studentData?.learning_goals) {
-          setLearningGoals(Array.isArray(studentData.learning_goals) ? studentData.learning_goals : []);
-        }
-        if (studentData?.preferred_subjects) {
-          setPreferredSubjects(Array.isArray(studentData.preferred_subjects) ? studentData.preferred_subjects : []);
-        }
-        if (studentData?.grade_level) {
-          setGradeLevel(studentData.grade_level);
-        }
-      } catch (err) {
-        console.error('Error fetching learning goals:', err);
-      }
+      await studentProfileTask;
 
       setLoading(false);
     };
@@ -324,6 +331,7 @@ export default function StudentDashboardPage() {
           if (newData?.grade_level) {
             setGradeLevel(newData.grade_level);
           }
+          setProfileFactorsLoaded(true);
         }
       )
       .subscribe((status) => {
@@ -427,6 +435,7 @@ export default function StudentDashboardPage() {
         learningGoals={learningGoals}
         preferredSubjects={preferredSubjects}
         gradeLevel={gradeLevel}
+        profileReady={profileFactorsLoaded}
       />
 
       {/* Quick Actions */}

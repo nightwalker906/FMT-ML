@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { User, Lock, Bell, Camera, Save, Loader2, Check, DollarSign, Sun, Moon } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 import { useTheme } from '@/context/theme-context'
+import { syncRecommender } from '@/lib/recommender-sync'
 
 export default function TutorSettingsPage() {
   const { theme, toggleTheme } = useTheme()
@@ -181,6 +182,12 @@ export default function TutorSettingsPage() {
       return
     }
 
+    await syncRecommender({
+      entity: 'tutor',
+      syncType: 'tutor_metadata',
+      profileId: user.id,
+    })
+
     setAvatarUrl(publicUrl)
     showSuccess('avatar')
     setSaving(null)
@@ -227,6 +234,11 @@ export default function TutorSettingsPage() {
       console.error('Tutor update error:', tutorError)
       showError(tutorError.message)
     } else {
+      await syncRecommender({
+        entity: 'tutor',
+        syncType: 'tutor_corpus',
+        profileId: user.id,
+      })
       showSuccess('profile')
     }
     setSaving(null)

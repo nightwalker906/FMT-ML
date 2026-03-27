@@ -28,6 +28,7 @@ urlpatterns = [
     path('recommendations/', views.get_smart_recommendations, name='smart-recommendations'),
     path('recommend/', views.recommend_tutors, name='recommend-tutors'),
     path('recommend/health/', views.recommendation_health, name='recommend-health'),
+    path('recommend/sync/', views.sync_recommender, name='recommend-sync'),
     
     # Sentiment Analysis Endpoints
     path('analyze-review/', views.analyze_review, name='analyze-review'),

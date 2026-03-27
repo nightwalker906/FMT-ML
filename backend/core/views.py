@@ -325,12 +325,8 @@ def get_smart_recommendations(request):
         # Transform ML recommender output to API response format
         recommendations = []
         for i, result in enumerate(ml_results, 1):
-            # Get qualifications from database for subjects
-            try:
-                profile = Profile.objects.get(id=result.get('id'))
-                tutor = Tutor.objects.get(profile_id=result.get('id'))
-                subjects = tutor.qualifications if isinstance(tutor.qualifications, list) else []
-            except (Profile.DoesNotExist, Tutor.DoesNotExist):
+            subjects = result.get('subjects', [])
+            if not isinstance(subjects, list):
                 subjects = []
             
             recommendation = {
@@ -340,7 +336,7 @@ def get_smart_recommendations(request):
                 "match_percentage": round(result.get('match_percentage', 0), 1),
                 "similarity_score": round(result.get('similarity_score', 0), 3),
                 "explanation": "; ".join(result.get('match_reasons', ['Recommended match'])),
-                "is_online": True,  # Placeholder - update with real status if available
+                "is_online": bool(result.get('is_online', False)),
                 "average_rating": result.get('average_rating', 0),
                 "hourly_rate": result.get('hourly_rate', 0),
                 "image": result.get('avatar') or f"https://ui-avatars.com/api/?name={result.get('full_name', 'Tutor')}&background=0d9488&color=fff"
@@ -630,6 +626,77 @@ def recommendation_health(request):
             'status': 'unhealthy',
             'error': str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@swagger_auto_schema(
+    method='post',
+    operation_description="Notify the recommender that tutor or student data changed outside Django ORM writes.",
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        required=['entity', 'sync_type'],
+        properties={
+            'entity': openapi.Schema(
+                type=openapi.TYPE_STRING,
+                enum=['tutor', 'student'],
+                description='The entity that changed'
+            ),
+            'sync_type': openapi.Schema(
+                type=openapi.TYPE_STRING,
+                enum=['tutor_corpus', 'tutor_metadata', 'student_preferences'],
+                description='How the recommender should react'
+            ),
+            'profile_id': openapi.Schema(
+                type=openapi.TYPE_STRING,
+                description='Profile UUID associated with the change'
+            ),
+        },
+        example={
+            "entity": "tutor",
+            "sync_type": "tutor_corpus",
+            "profile_id": "123e4567-e89b-12d3-a456-426614174000"
+        },
+    ),
+    responses={
+        202: openapi.Response(description="Recommender sync accepted"),
+        400: openapi.Response(description="Invalid payload"),
+    },
+)
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@throttle_classes([MLPredictionThrottle])
+def sync_recommender(request):
+    entity = request.data.get('entity')
+    sync_type = request.data.get('sync_type')
+    profile_id = request.data.get('profile_id')
+
+    if entity == 'student' and sync_type == 'student_preferences':
+        from api.ml.recommender import invalidate_student_query_cache
+
+        invalidate_student_query_cache(str(profile_id) if profile_id else None)
+        logger.info("[RecommenderSync] Accepted student cache refresh for %s.", profile_id)
+        return Response({
+            "status": "accepted",
+            "action": "student_cache_cleared",
+            "profile_id": profile_id,
+        }, status=status.HTTP_202_ACCEPTED)
+
+    if entity == 'tutor' and sync_type in {'tutor_corpus', 'tutor_metadata'}:
+        from .signals import schedule_recommender_refresh
+
+        action = 'full' if sync_type == 'tutor_corpus' else 'metadata'
+        trigger = f"api:{sync_type}:{profile_id or 'unknown'}"
+        schedule_recommender_refresh(action, trigger)
+        logger.info("[RecommenderSync] Accepted %s refresh for %s.", action, profile_id)
+        return Response({
+            "status": "accepted",
+            "action": action,
+            "profile_id": profile_id,
+        }, status=status.HTTP_202_ACCEPTED)
+
+    return Response({
+        "status": "error",
+        "message": "Invalid recommender sync payload.",
+    }, status=status.HTTP_400_BAD_REQUEST)
 
 
 # =============================================================================
