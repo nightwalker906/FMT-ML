@@ -5,10 +5,11 @@ import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createClient } from '@/utils/supabase/client'
 import Link from 'next/link'
-import { GraduationCap, Loader2 } from 'lucide-react'
+import { GraduationCap, Loader2, CheckCircle } from 'lucide-react'
 
 type UserRole = 'student' | 'tutor'
 type AuthMode = 'login' | 'signup'
+type SuccessState = 'signup' | 'login' | null
 
 export default function LoginPage() {
   const router = useRouter()
@@ -21,12 +22,13 @@ export default function LoginPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  
+  // New state for our beautiful full-card success animations
+  const [successOverlay, setSuccessOverlay] = useState<SuccessState>(null)
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError(null)
-    setSuccessMessage(null)
     setLoading(true)
 
     try {
@@ -37,10 +39,6 @@ export default function LoginPage() {
 
       if (signInError) throw signInError
 
-      // Query profiles table to get the definitive user_type and check if complete
-      let userType = 'student' // default fallback
-      let isProfileComplete = false
-      
       if (data.user?.id) {
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
@@ -48,67 +46,32 @@ export default function LoginPage() {
           .eq('id', data.user.id)
           .single()
 
-        console.log('[login] Profile query result:', { profile, profileError })
-
-        if (!profileError && profile) {
-          userType = profile.user_type
-          console.log('[login] User type from profile:', userType)
-          
-          // Check if profile has first_name (basic completion check)
-          if (profile.first_name) {
-            // Also check if role-specific record exists
-            const roleTable = userType === 'tutor' ? 'tutors' : 'students'
-            const { data: roleData } = await supabase
-              .from(roleTable)
-              .select('profile_id')
-              .eq('profile_id', data.user.id)
-              .single()
-            
-            isProfileComplete = !!roleData
-            console.log('[login] Role table check:', { roleTable, isProfileComplete })
-          }
-        } else {
-          // Profile doesn't exist - try to create it from auth metadata
-          console.warn('[login] Profile not found, attempting to create from auth metadata')
-          userType = data.user?.user_metadata?.user_type || 'student'
-          
-          // Try to create the profile
-          try {
-            const createRes = await fetch('/api/auth/create-profile', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                userId: data.user.id,
-                email: data.user.email,
-                userType: userType,
-              }),
-            })
-            
-            if (createRes.ok) {
-              console.log('[login] Profile created during login')
-            } else {
-              console.error('[login] Failed to create profile during login:', await createRes.json())
-            }
-          } catch (err) {
-            console.error('[login] Error creating profile during login:', err)
-          }
+        if (profileError) {
+          console.error('[login] Profile fetch error:', profileError)
+          throw new Error('Could not load user profile data.')
         }
-      }
 
-      // Determine redirect path based on profile completion
-      let redirectPath: string
-      if (!isProfileComplete) {
-        redirectPath = userType === 'tutor' ? '/tutor/complete-profile' : '/student/complete-profile'
-      } else {
-        redirectPath = userType === 'tutor' ? '/tutor/dashboard' : '/student/dashboard'
-      }
+        const userType = profile.user_type || 'student'
+        const isProfileComplete = !!profile.first_name
 
-      router.replace(redirectPath)
-      router.refresh()
-      return
+        let redirectPath: string
+        if (!isProfileComplete) {
+          redirectPath = userType === 'tutor' ? '/tutor/complete-profile' : '/student/complete-profile'
+        } else {
+          redirectPath = userType === 'tutor' ? '/tutor/dashboard' : '/student/dashboard'
+        }
+
+        // Trigger the success animation overlay
+        setSuccessOverlay('login')
+
+        // Wait 1.5 seconds so the user can see the animation before the page redirects
+        setTimeout(() => {
+          router.replace(redirectPath)
+          router.refresh()
+        }, 1500)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred during login')
-    } finally {
       setLoading(false)
     }
   }
@@ -116,9 +79,7 @@ export default function LoginPage() {
   const handleSignup = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError(null)
-    setSuccessMessage(null)
 
-    // Validate password match
     if (password !== confirmPassword) {
       setError('Passwords do not match')
       return
@@ -132,75 +93,39 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      console.log('[signup] Starting signup with role:', role)
-
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            user_type: role, // Pass role to metadata
+            user_type: role, 
           },
         },
       })
 
-      console.log('[signup] Signup response:', { userId: data.user?.id, signUpError })
-
       if (signUpError) throw signUpError
 
-      // Create profile record server-side after successful signup
-      if (data.user?.id) {
-        console.log('[signup] Creating profile with role:', role)
-        
-        let profileCreated = false
-        let retries = 3
-         
-        while (!profileCreated && retries > 0) {
-          const profileRes = await fetch('/api/auth/create-profile', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              userId: data.user.id,
-              email,
-              userType: role,
-            }),
-          })
-
-          console.log('[signup] Profile creation attempt:', { status: profileRes.status, retries })
-
-          if (profileRes.ok) {
-            const profileData = await profileRes.json()
-            console.log('[signup] Profile created successfully:', profileData)
-            profileCreated = true
-          } else {
-            const errorData = await profileRes.json()
-            console.error('[signup] Profile creation failed:', { status: profileRes.status, error: errorData })
-            retries--
-            if (retries > 0) {
-              // Wait a bit before retrying
-              await new Promise(resolve => setTimeout(resolve, 500))
-            }
-          }
-        }
-
-        if (!profileCreated) {
-          console.error('[signup] Failed to create profile after retries')
-          setError('Profile creation failed. Please try logging in and contact support if the issue persists.')
-          setLoading(false)
-          return
-        }
+      // If Supabase auto-logged them in (Email confirmations off), 
+      // but we explicitly want them to log in manually, we sign them out silently here.
+      if (data.session) {
+        await supabase.auth.signOut()
       }
 
-      setSuccessMessage(
-        'Signup successful! Check your email to confirm your account.'
-      )
-      setEmail('')
-      setPassword('')
-      setConfirmPassword('')
-      setTimeout(() => setMode('login'), 2000)
+      // Trigger the gorgeous success animation overlay
+      setSuccessOverlay('signup')
+
+      // Wait 2.5 seconds, then reset the form and switch to login mode
+      setTimeout(() => {
+        setSuccessOverlay(null)
+        setMode('login')
+        setEmail('')
+        setPassword('')
+        setConfirmPassword('')
+        setLoading(false)
+      }, 2500)
+
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred during signup')
-    } finally {
       setLoading(false)
     }
   }
@@ -246,8 +171,51 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Card */}
-        <div className="card">
+        {/* Card (Added relative and overflow-hidden for the overlay) */}
+        <div className="card relative overflow-hidden">
+          
+          {/* THE SUCCESS ANIMATION OVERLAY */}
+          <AnimatePresence>
+            {successOverlay && (
+              <motion.div
+                initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+                animate={{ opacity: 1, backdropFilter: 'blur(8px)' }}
+                exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+                className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/90 dark:bg-slate-900/90 rounded-2xl"
+              >
+                {successOverlay === 'signup' ? (
+                  <motion.div 
+                    initial={{ scale: 0.5, y: 20 }}
+                    animate={{ scale: 1, y: 0 }}
+                    className="flex flex-col items-center text-center px-6"
+                  >
+                    <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-500 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/20">
+                      <CheckCircle size={40} strokeWidth={2.5} />
+                    </div>
+                    <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Account Created!</h3>
+                    <p className="text-slate-600 dark:text-slate-400">
+                      Successfully created your account.<br/>Moving you to login...
+                    </p>
+                  </motion.div>
+                ) : (
+                  <motion.div 
+                    initial={{ scale: 0.5, y: 20 }}
+                    animate={{ scale: 1, y: 0 }}
+                    className="flex flex-col items-center text-center px-6"
+                  >
+                    <div className="w-20 h-20 bg-primary-100 dark:bg-primary-900/30 text-primary-500 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-primary-500/20">
+                      <Loader2 size={40} strokeWidth={2.5} className="animate-spin" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Login Successful</h3>
+                    <p className="text-slate-600 dark:text-slate-400">
+                      Preparing your dashboard...
+                    </p>
+                  </motion.div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Mode Toggle */}
           <div className="flex gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
             <button
@@ -255,7 +223,6 @@ export default function LoginPage() {
               onClick={() => {
                 setMode('login')
                 setError(null)
-                setSuccessMessage(null)
               }}
               className={`flex-1 py-2.5 px-4 rounded-lg font-semibold text-sm transition-all duration-200 ${
                 mode === 'login'
@@ -270,7 +237,6 @@ export default function LoginPage() {
               onClick={() => {
                 setMode('signup')
                 setError(null)
-                setSuccessMessage(null)
               }}
               className={`flex-1 py-2.5 px-4 rounded-lg font-semibold text-sm transition-all duration-200 ${
                 mode === 'signup'
@@ -335,20 +301,6 @@ export default function LoginPage() {
                 className="p-4 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50"
               >
                 <p className="text-sm font-medium text-red-700 dark:text-red-400">{error}</p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Success Message */}
-          <AnimatePresence>
-            {successMessage && (
-              <motion.div
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50"
-              >
-                <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">{successMessage}</p>
               </motion.div>
             )}
           </AnimatePresence>
@@ -419,9 +371,9 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary w-full py-3 mt-6"
+              className="btn-primary w-full py-3 mt-6 relative overflow-hidden"
             >
-              {loading ? (
+              {loading && !successOverlay ? (
                 <span className="flex items-center justify-center gap-2">
                   <Loader2 className="w-4 h-4 animate-spin" />
                   {mode === 'login' ? 'Signing in...' : 'Creating account...'}
@@ -444,7 +396,6 @@ export default function LoginPage() {
                 onClick={() => {
                   setMode(mode === 'login' ? 'signup' : 'login')
                   setError(null)
-                  setSuccessMessage(null)
                   setEmail('')
                   setPassword('')
                   setConfirmPassword('')

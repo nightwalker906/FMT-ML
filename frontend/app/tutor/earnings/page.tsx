@@ -86,7 +86,7 @@ export default function TutorEarningsPage() {
           { label: 'This Month', value: formatCurrency(monthlyEarnings), sub: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }), iconBg: 'from-primary-100 to-primary-200 dark:from-primary-900/40 dark:to-primary-800/30', icon: <TrendingUp className="h-6 w-6 text-primary-600 dark:text-primary-400" /> },
           { label: 'Sessions Completed', value: completedSessions.length, sub: 'Total sessions', iconBg: 'from-blue-100 to-blue-200 dark:from-blue-900/40 dark:to-blue-800/30', icon: <Calendar className="h-6 w-6 text-blue-600 dark:text-blue-400" /> },
         ].map((card, i) => (
-          <motion.div key={card.label} custom={i} initial="hidden" animate="visible" variants={cardVariants} whileHover={{ y: -4, transition: { duration: 0.2 } }} className="card-stat group">
+          <motion.div key={card.label} custom={i} initial="hidden" animate="visible" whileHover={{ y: -4, transition: { duration: 0.2 } }} className="card-stat group">
             <div className="flex items-center justify-between mb-4">
               <div className={`p-3 rounded-2xl bg-gradient-to-br ${card.iconBg} shadow-sm group-hover:scale-110 transition-transform duration-300`}>
                 {card.icon}

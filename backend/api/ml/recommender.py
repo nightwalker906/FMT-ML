@@ -262,7 +262,7 @@ class RecommenderSingleton:
         )
 
         tutor_data: dict[str, dict[str, Any]] = {}
-        for row in tutor_rows.iterator():
+        for row in tutor_rows:
             tutor_id = str(row["profile_id"])
             qualifications = _parse_string_list(row.get("qualifications"))
             tutor_data[tutor_id] = {
