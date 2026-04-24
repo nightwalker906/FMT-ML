@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { predictTutorRate } from '@/services/aiService';
 import { X, Sparkles, TrendingUp, Loader2, Zap, CheckCircle2 } from 'lucide-react';
+import { formatCurrency } from '@/lib/currency';
 
 const subjects = [
   'Math', 'Physics', 'Chemistry', 'Biology', 'English',
@@ -213,7 +214,7 @@ export default function PricePredictorModal({ isOpen, onClose, onRateApplied, on
                     Suggested Rate
                   </div>
                   <div className="text-4xl font-bold text-slate-900 dark:text-white mb-1">
-                    R{prediction.toFixed(2)}
+                    {formatCurrency(prediction, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     <span className="text-lg font-medium text-slate-400 dark:text-slate-500">/hr</span>
                   </div>
                   <motion.button

@@ -11,6 +11,7 @@ import { BookingList } from '@/components/tutor/booking-list';
 import { UpcomingSchedule } from '@/components/tutor/upcoming-schedule';
 import { DollarSign, Bell, CalendarDays, Settings } from 'lucide-react';
 import Link from 'next/link';
+import { formatCurrency } from '@/lib/currency';
 
 // Loading skeleton for stats
 function StatsLoadingSkeleton() {
@@ -169,7 +170,7 @@ export default async function TutorDashboardPage() {
             </h1>
             <span className="badge-primary font-semibold">
               <DollarSign size={14} />
-              R{hourlyRate}/hr
+              {formatCurrency(hourlyRate, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}/hr
             </span>
           </div>
           <p className="mt-1 text-slate-500 dark:text-slate-400">

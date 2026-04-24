@@ -12,6 +12,7 @@ const PricePredictorModal = dynamic(() => import('@/components/ai/PricePredictor
 const TutorCommandCenter = dynamic(() => import('@/components/ai/TutorCommandCenter'), { ssr: false });
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Bell, Menu, Loader2 } from 'lucide-react';
+import { formatCurrency } from '@/lib/currency';
 
 export default function TutorLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -236,7 +237,7 @@ export default function TutorLayout({ children }: { children: React.ReactNode })
               </h1>
               {hourlyRate > 0 && (
                 <span className="badge-primary">
-                  R{hourlyRate}/hr
+                  {formatCurrency(hourlyRate, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}/hr
                 </span>
               )}
             </div>

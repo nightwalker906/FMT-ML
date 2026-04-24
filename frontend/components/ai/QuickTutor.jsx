@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { API_BASE } from '@/lib/api-config';
+import { fetchJsonWithRetry } from '@/lib/fetch-json-with-retry';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -399,7 +400,7 @@ export default function QuickTutor() {
           content: m.content,
         }));
 
-        const res = await fetch(`${API_BASE}/ai/quick-tutor/`, {
+        const data = await fetchJsonWithRetry(`${API_BASE}/ai/quick-tutor/`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -407,14 +408,9 @@ export default function QuickTutor() {
             history,
             student_id: user?.id || null,
           }),
+          timeoutMs: 60000,
+          retries: 1,
         });
-
-        if (!res.ok) {
-          const errData = await res.json().catch(() => null);
-          throw new Error(errData?.error || `Server error (${res.status})`);
-        }
-
-        const data = await res.json();
 
         const aiMsg = {
           id: `ai-${Date.now()}`,
@@ -493,7 +489,7 @@ export default function QuickTutor() {
               </span>
             </h1>
             <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
-              <Zap size={10} /> Online &middot; Powered by Gemini
+              <Zap size={10} /> Online &middot; Search-backed tutoring
             </p>
           </div>
         </div>

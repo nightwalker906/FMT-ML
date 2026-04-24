@@ -14,10 +14,12 @@ Date: January 2026
 """
 
 import os
+import hashlib
 import requests
 import logging
 from typing import Dict, List, Any, Optional
 from dotenv import load_dotenv
+from django.core.cache import cache
 
 # Load environment variables
 load_dotenv()
@@ -72,6 +74,12 @@ class SerperSearchService:
         Raises:
             Exception: If API call fails
         """
+        cache_key = f"serper_service_{hashlib.md5(f'{query}|{num_results}'.encode()).hexdigest()}"
+        cached = cache.get(cache_key)
+        if cached is not None:
+            logger.info(f"Serper cache hit for: {query}")
+            return cached
+
         try:
             headers = {
                 "X-API-KEY": self.api_key,
@@ -91,7 +99,7 @@ class SerperSearchService:
                 self.endpoint,
                 headers=headers,
                 json=payload,
-                timeout=30
+                timeout=12
             )
             
             if response.status_code == 200:
@@ -109,6 +117,7 @@ class SerperSearchService:
                         })
                 
                 logger.info(f"Found {len(results)} results for: {query}")
+                cache.set(cache_key, results, timeout=1800)
                 return results
             else:
                 logger.error(f"Serper API error: {response.status_code} - {response.text}")

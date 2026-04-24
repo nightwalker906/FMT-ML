@@ -5,6 +5,7 @@ import { Star, Clock, ArrowUpRight } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { TutorWithProfile } from '@/app/actions/get-tutors'
 import { staggerItem } from '@/components/ui/motion'
+import { formatCurrency } from '@/lib/currency'
 
 interface TutorCardProps {
   tutor: TutorWithProfile
@@ -25,8 +26,10 @@ export default function TutorCard({ tutor }: TutorCardProps) {
     <motion.div
       variants={staggerItem}
       whileHover={{ y: -6, transition: { duration: 0.25, ease: 'easeOut' } }}
-      className="group bg-white dark:bg-slate-900 rounded-2xl shadow-glass dark:shadow-glass-dark border border-slate-200/60 dark:border-slate-700/50 overflow-hidden hover:shadow-card-hover dark:hover:shadow-card-hover-dark hover:border-primary-200 dark:hover:border-primary-800/50 transition-all duration-300"
+      className="group relative bg-white dark:bg-slate-900 rounded-2xl shadow-glass dark:shadow-glass-dark border border-slate-200/60 dark:border-slate-700/50 overflow-hidden hover:shadow-xl hover:shadow-primary-500/10 hover:border-primary-500/30 transition-all duration-300 ease-out"
     >
+      {/* Subtle gradient glow on hover */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary-500/0 via-primary-500/0 to-primary-500/0 group-hover:from-primary-500/5 group-hover:via-primary-500/2 group-hover:to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 pointer-events-none" />
       {/* Top Section - Avatar and Name */}
       <div className="p-5 pb-3">
         <div className="flex items-center gap-4">
@@ -98,7 +101,7 @@ export default function TutorCard({ tutor }: TutorCardProps) {
       <div className="px-5 py-4 bg-slate-50/80 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
         <div className="flex items-baseline gap-1">
           <span className="text-2xl font-bold text-slate-900 dark:text-white">
-            R{tutor.hourly_rate}
+            {formatCurrency(tutor.hourly_rate, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
           </span>
           <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">/hr</span>
         </div>

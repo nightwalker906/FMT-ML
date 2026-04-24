@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/context/auth-context';
+import { formatCurrency } from '@/lib/currency';
 import {
   Star,
   MapPin,
@@ -743,7 +744,7 @@ export default function TutorDetailPage() {
                               <div className="flex sm:flex-col items-center sm:items-end gap-3 sm:gap-2 flex-shrink-0">
                                 <div className="text-right">
                                   <span className="text-xl font-bold text-slate-900 dark:text-white">
-                                    R{Number(course.price).toFixed(0)}
+                                    {formatCurrency(course.price, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                                   </span>
                                   <span className="text-xs text-slate-400 dark:text-slate-500 ml-1">/ course</span>
                                 </div>

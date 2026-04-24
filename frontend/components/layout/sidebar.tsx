@@ -94,17 +94,16 @@ export function Sidebar({ links, userType, onSignOut, onLinkClick, userName, use
 
   const isStudent = userType === 'student';
   
-  // Theme colors - now supports dark mode via Tailwind classes
+  // Theme colors - premium glassmorphism design
   const theme = {
-    bg: 'bg-white/90 dark:bg-slate-900/95 backdrop-blur-xl',
-    bgHover: 'bg-slate-50 dark:bg-slate-800',
-    border: 'border-slate-200/60 dark:border-slate-700/40',
+    bg: 'bg-white/70 dark:bg-slate-950/70 backdrop-blur-xl',
+    bgHover: 'bg-slate-50/80 dark:bg-slate-800/80',
+    border: 'border-slate-200/50 dark:border-slate-800/50',
     text: 'text-slate-600 dark:text-slate-400',
     textMuted: 'text-slate-400 dark:text-slate-500',
     textBrand: 'text-slate-900 dark:text-white',
     hover: 'hover:bg-slate-100/80 dark:hover:bg-slate-800/80 hover:text-slate-900 dark:hover:text-white',
     active: 'bg-gradient-to-r from-primary-50 dark:from-primary-600/20 to-transparent text-primary-700 dark:text-primary-400',
-    activeIcon: 'text-primary-600 dark:text-primary-400',
   };
 
   if (!mounted) {
@@ -333,10 +332,10 @@ export function MobileSidebar({
 
   const isStudent = userType === 'student';
   
-  // Theme colors - now supports dark mode via Tailwind classes
+  // Theme colors - premium glassmorphism design
   const theme = {
-    bg: 'bg-white dark:bg-slate-900',
-    border: 'border-slate-200/60 dark:border-slate-700/40',
+    bg: 'bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl',
+    border: 'border-slate-200/50 dark:border-slate-800/50',
     text: 'text-slate-600 dark:text-slate-400',
     textMuted: 'text-slate-400 dark:text-slate-500',
     textBrand: 'text-slate-900 dark:text-white',
