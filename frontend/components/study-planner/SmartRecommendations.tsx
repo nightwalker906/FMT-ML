@@ -7,6 +7,7 @@ import { useAuth } from '@/context/auth-context';
 import { motion } from 'framer-motion';
 import { Sparkles, Star, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
 import { API_BASE } from '@/lib/api-config';
+import { formatCurrency } from '@/lib/currency';
 
 // Type definitions
 interface SmartRecommendationsProps {
@@ -65,18 +66,27 @@ const getMatchBadgeStyle = (percentage: number) => {
   };
 };
 
-// -- Animation variants --
+// -- Animation variants for staggered list animations --
 const containerVariants = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.1 } },
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.1,
+    },
+  },
 };
 
-const cardVariants = {
+const itemVariants = {
   hidden: { opacity: 0, y: 20 },
-  visible: { 
-    opacity: 1, 
-    y: 0, 
-    transition: { duration: 0.4 } 
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.4,
+      ease: [0.22, 1, 0.36, 1] as const,
+    },
   },
 };
 
@@ -282,7 +292,7 @@ const SmartCard = React.memo(function SmartCard({
 
   return (
     <motion.div
-      variants={shouldAnimate ? cardVariants : undefined}
+      variants={shouldAnimate ? itemVariants : undefined}
       whileHover={{ y: -5, boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}
       className="flex-shrink-0 w-[310px] snap-start bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-lg transition-shadow duration-300 overflow-hidden"
     >
@@ -356,7 +366,7 @@ const SmartCard = React.memo(function SmartCard({
             </span>
           </div>
           <span className="text-sm font-bold text-slate-900 dark:text-white">
-            R{recommendation.hourly_rate}/hr
+            {formatCurrency(recommendation.hourly_rate, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}/hr
           </span>
         </div>
 

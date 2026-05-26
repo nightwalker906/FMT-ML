@@ -151,6 +151,45 @@ export async function updateTutorStatus(
 }
 
 /**
+ * Update tutor's hourly rate (Smart Pricing feature)
+ */
+export async function updateTutorHourlyRate(
+  hourlyRate: number
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const supabase = await createClient();
+    
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    // Update the tutor's hourly_rate in the database
+    const { error } = await supabase
+      .from('tutors')
+      .update({
+        hourly_rate: parseFloat(hourlyRate.toString()) || 0,
+      })
+      .eq('profile_id', user.id);
+
+    if (error) {
+      console.error('updateTutorHourlyRate error:', error);
+      return { success: false, error: 'Failed to update hourly rate' };
+    }
+
+    // Revalidate paths to refresh server components that display the hourly rate
+    revalidatePath('/tutor/dashboard');
+    revalidatePath('/tutor/layout');
+    revalidatePath('/tutor/settings');
+    
+    return { success: true };
+  } catch (error) {
+    console.error('updateTutorHourlyRate error:', error);
+    return { success: false, error: 'Failed to update hourly rate' };
+  }
+}
+
+/**
  * Respond to a booking request (accept or reject)
  */
 export async function respondToBooking(

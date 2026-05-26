@@ -12,6 +12,7 @@ import {
   AlertCircle,
 } from 'lucide-react'
 import { bookSession } from '@/app/actions/student'
+import { formatCurrency } from '@/lib/currency'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface BookingModalProps {
@@ -310,7 +311,7 @@ export default function BookingModal({ isOpen, onClose, tutor }: BookingModalPro
                     Estimated Cost
                   </span>
                   <span className="text-xl font-bold text-slate-900 dark:text-white">
-                    R{estimatedCost}
+                    {formatCurrency(estimatedCost, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
 

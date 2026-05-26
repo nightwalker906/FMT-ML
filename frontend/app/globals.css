@@ -103,6 +103,44 @@
            transition-all duration-200;
   }
 
+  /* ─── Button Icon Slide Animation ───────────────────────────────────────── */
+  .btn-icon-slide {
+    @apply relative overflow-hidden;
+  }
+
+  .btn-icon-slide .icon-default {
+    @apply transition-transform duration-300 ease-out;
+  }
+
+  .btn-icon-slide .icon-hover {
+    @apply absolute inset-0 flex items-center justify-center
+           translate-x-full opacity-0
+           transition-all duration-300 ease-out;
+  }
+
+  .btn-icon-slide:hover .icon-default {
+    @apply -translate-x-full opacity-0;
+  }
+
+  .btn-icon-slide:hover .icon-hover {
+    @apply translate-x-0 opacity-100;
+  }
+
+  /* Arrow icon slide (simpler version) */
+  .btn-arrow-slide {
+    @apply group inline-flex items-center gap-2;
+  }
+
+  .btn-arrow-slide .arrow-icon {
+    @apply transition-all duration-200 ease-out
+           group-hover:translate-x-1;
+  }
+
+  /* Premium magnetic button effect base */
+  .btn-magnetic {
+    @apply relative transition-transform duration-100 ease-out;
+  }
+
   /* ─── Cards ────────────────────────────────────────────────────────────── */
   .card {
     @apply bg-white dark:bg-slate-900
@@ -271,6 +309,20 @@
     background: var(--glass-bg);
     backdrop-filter: blur(var(--glass-blur));
     -webkit-backdrop-filter: blur(var(--glass-blur));
+  }
+
+  /* Shimmer animation for button hover effect */
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  .animate-shimmer {
+    animation: shimmer 1s ease-in-out;
   }
 
   /* Mesh gradient backgrounds */

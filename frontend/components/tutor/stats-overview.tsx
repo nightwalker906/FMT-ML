@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { motion, type Variants } from 'framer-motion';
 import { Wallet, Star, Wifi, WifiOff, TrendingUp, Clock } from 'lucide-react';
 import { updateTutorStatus, type TutorStats } from '@/app/actions/tutor';
+import { formatCurrency } from '@/lib/currency';
 
 interface StatsOverviewProps {
   stats: TutorStats;
@@ -37,14 +38,10 @@ export function StatsOverview({ stats }: StatsOverviewProps) {
     });
   };
 
-  const formatCurrency = (amount: number) => {
-    return `R${amount.toLocaleString()}`;
-  };
-
   const cards = [
     {
       label: 'Total Earnings',
-      value: formatCurrency(stats.totalEarnings),
+      value: formatCurrency(stats.totalEarnings, { minimumFractionDigits: 0, maximumFractionDigits: 0 }),
       sub: (
         <span className="flex items-center gap-1">
           <TrendingUp size={12} />
@@ -107,8 +104,10 @@ export function StatsOverview({ stats }: StatsOverviewProps) {
           animate="visible"
           variants={cardVariants}
           whileHover={{ y: -4, transition: { duration: 0.2 } }}
-          className="card-stat group"
+          className="card-stat group relative hover:shadow-xl hover:shadow-primary-500/10 hover:border-primary-500/30 transition-all duration-300 ease-out"
         >
+          {/* Subtle gradient glow on hover */}
+          <div className="absolute inset-0 bg-gradient-to-br from-primary-500/0 via-primary-500/0 to-primary-500/0 group-hover:from-primary-500/5 group-hover:via-primary-500/2 group-hover:to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 rounded-2xl pointer-events-none" />
           <div className="flex items-start justify-between gap-3 sm:gap-4">
             <div className="min-w-0">
               <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
@@ -133,8 +132,10 @@ export function StatsOverview({ stats }: StatsOverviewProps) {
         animate="visible"
         variants={cardVariants}
         whileHover={{ y: -4, transition: { duration: 0.2 } }}
-        className="card-stat group"
+        className="card-stat group relative hover:shadow-xl hover:shadow-primary-500/10 hover:border-primary-500/30 transition-all duration-300 ease-out"
       >
+        {/* Subtle gradient glow on hover */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-500/0 via-primary-500/0 to-primary-500/0 group-hover:from-primary-500/5 group-hover:via-primary-500/2 group-hover:to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 rounded-2xl pointer-events-none" />
         <div className="flex items-start justify-between gap-3 sm:gap-4">
           <div className="min-w-0">
             <p className="text-sm font-medium text-slate-500 dark:text-slate-400">

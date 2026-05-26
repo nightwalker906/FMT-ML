@@ -13,7 +13,7 @@ Flow:
 
 Supported Backends (in priority order):
   - Google Gemini 1.5 Flash  (GEMINI_API_KEY)
-  - Groq Cloud — Llama 3.3   (GROQ_API_KEY  — free at groq.com)
+  - Groq Cloud — Llama 3.3   (GROQ_API_KEY — free at groq.com)
   - Ollama local              (auto-detected on localhost:11434)
   - Serper search synthesis   (SERPER_API_KEY — uses search results only)
 
@@ -27,6 +27,7 @@ import json
 import logging
 import time
 import hashlib
+from pathlib import Path
 
 import requests as http_requests
 from django.conf import settings
@@ -37,16 +38,33 @@ from rest_framework.response import Response
 from rest_framework import status
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
-
 logger = logging.getLogger(__name__)
 
-# ─── Configuration ────────────────────────────────────────────────────────────
+# backend/.env (same folder as manage.py)
+_ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-SERPER_API_KEY = os.environ.get("SERPER_API_KEY", "")
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+
+def _ensure_env():
+    if _ENV_FILE.exists():
+        load_dotenv(_ENV_FILE, override=True)
+
+
+def _gemini_key():
+    _ensure_env()
+    return os.environ.get("GEMINI_API_KEY", "").strip()
+
+
+def _serper_key():
+    _ensure_env()
+    return os.environ.get("SERPER_API_KEY", "").strip()
+
+
+def _groq_key():
+    _ensure_env()
+    return os.environ.get("GROQ_API_KEY", "").strip()
+
+
+# ─── Configuration ────────────────────────────────────────────────────────────
 
 GEMINI_MODEL = "gemini-1.5-flash"
 GEMINI_URL = (
@@ -141,7 +159,7 @@ def _search_web(query, num_results=5):
     Search the web using Serper API for factual grounding.
     Returns structured search results or empty dict on failure.
     """
-    if not SERPER_API_KEY:
+    if not _serper_key():
         logger.warning("SERPER_API_KEY not set — skipping web search.")
         return {}
 
@@ -155,7 +173,7 @@ def _search_web(query, num_results=5):
         response = http_requests.post(
             SERPER_URL,
             headers={
-                "X-API-KEY": SERPER_API_KEY,
+                "X-API-KEY": _serper_key(),
                 "Content-Type": "application/json",
             },
             json={
@@ -245,9 +263,9 @@ def _detect_backend():
     Detect the best available LLM backend.
     Priority: Gemini → Groq → Ollama → serper_only → none
     """
-    if GEMINI_API_KEY:
+    if _gemini_key():
         return "gemini"
-    if GROQ_API_KEY:
+    if _groq_key():
         return "groq"
     # Check if Ollama is running locally
     try:
@@ -256,7 +274,7 @@ def _detect_backend():
             return "ollama"
     except Exception:
         pass
-    if SERPER_API_KEY:
+    if _serper_key():
         return "serper_only"
     return "none"
 
@@ -290,7 +308,7 @@ def _call_groq(question, history, search_context=""):
         response = http_requests.post(
             GROQ_URL,
             headers={
-                "Authorization": f"Bearer {GROQ_API_KEY}",
+                "Authorization": f"Bearer {_groq_key()}",
                 "Content-Type": "application/json",
             },
             json={
@@ -371,7 +389,7 @@ def _serper_smart_search(query, num_results=5):
     Perform a Serper search and return raw structured data.
     Separate from _search_web to avoid cache key conflicts.
     """
-    if not SERPER_API_KEY:
+    if not _serper_key():
         return {}
 
     cache_key = f"serper_smart_{hashlib.md5(query.encode()).hexdigest()}"
@@ -383,7 +401,7 @@ def _serper_smart_search(query, num_results=5):
         response = http_requests.post(
             SERPER_URL,
             headers={
-                "X-API-KEY": SERPER_API_KEY,
+                "X-API-KEY": _serper_key(),
                 "Content-Type": "application/json",
             },
             json={"q": query, "num": num_results, "gl": "us", "hl": "en"},
@@ -408,7 +426,7 @@ def _serper_only_response(question, search_context=""):
     3. Extract answer boxes, knowledge graph, and top snippets
     4. Synthesize into a structured, tutor-like markdown response
     """
-    if not SERPER_API_KEY:
+    if not _serper_key():
         return _mock_response(question)
 
     # ── Multi-query search strategy ──
@@ -529,7 +547,7 @@ def _call_gemini(question, history, search_context=""):
     Call Gemini API with the student's question, conversation history,
     and optional web search context.
     """
-    if not GEMINI_API_KEY:
+    if not _gemini_key():
         return None  # Signal to try next backend
 
     # Build the conversation contents
@@ -562,7 +580,7 @@ def _call_gemini(question, history, search_context=""):
 
     try:
         response = http_requests.post(
-            f"{GEMINI_URL}?key={GEMINI_API_KEY}",
+            f"{GEMINI_URL}?key={_gemini_key()}",
             headers={"Content-Type": "application/json"},
             json={
                 "system_instruction": {
@@ -633,32 +651,33 @@ def _call_ai(question, history, search_context=""):
     logger.info("Detected best backend: %s", backend)
 
     # Try Gemini first
-    if GEMINI_API_KEY:
+    if _gemini_key():
         logger.info("Trying Gemini...")
         result = _call_gemini(question, history, search_context)
         if result:
             return result, "gemini"
 
     # Try Groq (free)
-    if GROQ_API_KEY:
+    if _groq_key():
         logger.info("Trying Groq (Llama 3.3)...")
         result = _call_groq(question, history, search_context)
         if result:
             return result, "groq"
 
-    # Try Ollama (local)
-    try:
-        r = http_requests.get(f"{OLLAMA_URL}/api/tags", timeout=2)
-        if r.status_code == 200:
-            logger.info("Trying Ollama (local)...")
-            result = _call_ollama(question, history, search_context)
-            if result:
-                return result, "ollama"
-    except Exception:
-        pass
+    # Try Ollama only when another LLM key is set; otherwise use Serper directly
+    if _gemini_key() or _groq_key():
+        try:
+            r = http_requests.get(f"{OLLAMA_URL}/api/tags", timeout=2)
+            if r.status_code == 200:
+                logger.info("Trying Ollama (local)...")
+                result = _call_ollama(question, history, search_context)
+                if result:
+                    return result, "ollama"
+        except Exception:
+            pass
 
     # Serper-only fallback
-    if SERPER_API_KEY:
+    if _serper_key():
         logger.info("Falling back to Serper-only response...")
         result = _serper_only_response(question, search_context)
         return result, "serper_only"

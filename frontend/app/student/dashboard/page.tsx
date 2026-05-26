@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation';
 import SmartRecommendations from '@/components/study-planner/SmartRecommendations';
 import { MiniAchievements } from '@/components/achievements/AchievementsShowcase';
 import { useAchievements } from '@/hooks/useAchievements';
-import { PageTransition, StaggerContainer, StaggerItem, AnimatedCounter } from '@/components/ui/motion';
+import { PageTransition, StaggerContainer, StaggerItem, AnimatedCounter, RevealOnScroll } from '@/components/ui/motion';
 import { SkeletonStatsGrid, SkeletonList } from '@/components/ui/skeleton';
 import { OnlineDot } from '@/components/OnlineStatusIndicator';
 import {
@@ -439,6 +439,7 @@ export default function StudentDashboardPage() {
       />
 
       {/* Quick Actions */}
+      <RevealOnScroll direction="up">
       <StaggerContainer className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
         {[
           { href: '/student/search', icon: Search, title: 'Find a Tutor', desc: 'Browse available tutors', color: 'teal' },
@@ -471,11 +472,13 @@ export default function StudentDashboardPage() {
           )
         })}
       </StaggerContainer>
+      </RevealOnScroll>
 
       {/* Stats Cards */}
       {loading ? (
         <SkeletonStatsGrid count={3} />
       ) : (
+        <RevealOnScroll direction="up">
         <StaggerContainer className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4" delay={0.2}>
           {[
             { icon: BookOpen, value: stats.totalSessions, label: 'Total Sessions', color: 'primary' },
@@ -506,12 +509,18 @@ export default function StudentDashboardPage() {
             )
           })}
         </StaggerContainer>
+        </RevealOnScroll>
       )}
 
       {/* 🏆 Achievement Mini-Widget */}
-      {!loading && <MiniAchievements achievements={achievements} />}
+      {!loading && (
+        <RevealOnScroll direction="up" delay={0.2}>
+          <MiniAchievements achievements={achievements} />
+        </RevealOnScroll>
+      )}
 
       {/* Main Content Grid */}
+      <RevealOnScroll direction="up" delay={0.3}>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 xl:gap-8">
         {/* Upcoming Sessions */}
         <div className="lg:col-span-2">
@@ -640,6 +649,7 @@ export default function StudentDashboardPage() {
           </div>
         </div>
       </div>
+      </RevealOnScroll>
     </PageTransition>
   );
 }

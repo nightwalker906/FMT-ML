@@ -35,6 +35,7 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 import { API_BASE } from '@/lib/api-config'
+import { formatCurrency } from '@/lib/currency'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -911,7 +912,7 @@ export default function TutorCoursesPage() {
               {/* Price */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                  Price (R) <span className="text-red-500">*</span>
+                  Price (USD) <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <DollarSign size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -1079,7 +1080,7 @@ export default function TutorCoursesPage() {
                           </span>
                           <span className="flex items-center gap-1.5">
                             <DollarSign size={14} className="text-emerald-500" />
-                            R{Number(course.price).toFixed(2)}
+                            {formatCurrency(course.price, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>
                           <span className="flex items-center gap-1.5">
                             <FileText size={14} className="text-amber-500" />

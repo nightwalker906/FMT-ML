@@ -38,9 +38,11 @@ import os
 import json
 import logging
 import re
+import hashlib
 import requests
 from typing import Dict, Any, Optional, List
 from datetime import datetime, timedelta
+from django.core.cache import cache
 
 # Load environment variables
 from dotenv import load_dotenv
@@ -51,6 +53,7 @@ from .serper_service import SerperSearchService, search_for_study_resources
 
 # Configure logging
 logger = logging.getLogger(__name__)
+STUDY_PLAN_CACHE_TTL = 3600
 
 # =============================================================================
 # AI CONFIGURATION (shared keys with Quick Tutor)
@@ -580,24 +583,17 @@ def _enhance_plan_with_serper_resources(
                 
                 # Extract resource links and titles
                 if search_results:
-                    # Create formatted resource strings
-                    for result in search_results[:3]:  # Limit to top 3 resources per week
+                    existing_resources = week_entry.setdefault("resources", [])
+                    added_resources = 0
+
+                    # Reuse a single search pass per week to keep plan generation responsive.
+                    for result in search_results[:4]:
                         resource_str = f"{result.get('title', 'Resource')} - {result.get('link', '')}"
-                        if resource_str not in week_entry.get("resources", []):
-                            if "resources" not in week_entry:
-                                week_entry["resources"] = []
-                            week_entry["resources"].append(resource_str)
-                    
-                    # Also search for practice problems
-                    practice_results = search_for_study_resources(topic, search_type="practice")
-                    
-                    if practice_results:
-                        # Add top practice problem resource
-                        practice_resource = f"Practice Problems: {practice_results[0].get('title', '')} - {practice_results[0].get('link', '')}"
-                        if practice_resource not in week_entry.get("resources", []):
-                            week_entry["resources"].append(practice_resource)
+                        if resource_str not in existing_resources:
+                            existing_resources.append(resource_str)
+                            added_resources += 1
                 
-                logger.info(f"Enhanced week {week_entry.get('week', '?')} with {len(search_results)} resources")
+                logger.info(f"Enhanced week {week_entry.get('week', '?')} with {added_resources if search_results else 0} resources")
                 
             except Exception as e:
                 logger.warning(f"Failed to enhance week {week_entry.get('week', '?')} with resources: {str(e)}")
@@ -672,6 +668,27 @@ def generate_study_plan(
     
     # Clamp duration to reasonable bounds
     duration_weeks = max(1, min(12, int(duration_weeks)))
+
+    cache_payload = json.dumps(
+        {
+            'goal': student_goal.strip().lower(),
+            'weak_areas': weak_areas.strip().lower(),
+            'duration_weeks': duration_weeks,
+            'additional_context': (additional_context or '').strip().lower(),
+        },
+        sort_keys=True,
+    )
+    cache_key = f"study_plan_result_{hashlib.md5(cache_payload.encode()).hexdigest()}"
+    cached_result = cache.get(cache_key)
+    if cached_result is not None:
+        logger.info(f"Study Planner cache hit for goal='{student_goal}'")
+        return {
+            **cached_result,
+            'metadata': {
+                **cached_result.get('metadata', {}),
+                'cached': True,
+            }
+        }
     
     # Track generation metadata
     metadata = {
@@ -727,12 +744,15 @@ def generate_study_plan(
         
         logger.info(f"Successfully generated {len(study_plan)}-week plan via {ai_method}")
         
-        return {
+        response_payload = {
             'status': 'success',
             'message': f'Study plan generated successfully via {ai_method}',
             'plan': study_plan,
             'metadata': {**metadata, 'method': ai_method, 'weeks_generated': len(study_plan)}
         }
+
+        cache.set(cache_key, response_payload, timeout=STUDY_PLAN_CACHE_TTL)
+        return response_payload
         
     except ValueError as e:
         logger.error(f"Validation error: {str(e)}")

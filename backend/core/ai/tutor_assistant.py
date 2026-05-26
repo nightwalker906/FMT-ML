@@ -18,6 +18,7 @@ import json
 import logging
 import time
 import hashlib
+from pathlib import Path
 
 import requests as http_requests
 from django.conf import settings
@@ -28,15 +29,17 @@ from rest_framework.response import Response
 from rest_framework import status
 from dotenv import load_dotenv
 
-load_dotenv()
+_ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
+if _ENV_FILE.exists():
+    load_dotenv(_ENV_FILE, override=True)
 
 logger = logging.getLogger(__name__)
 
 # ─── Configuration (shared keys with Quick Tutor) ─────────────────────────────
 
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-SERPER_API_KEY = os.environ.get("SERPER_API_KEY", "")
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
+SERPER_API_KEY = os.environ.get("SERPER_API_KEY", "").strip()
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "").strip()
 
 GEMINI_MODEL = "gemini-1.5-flash"
 GEMINI_URL = (

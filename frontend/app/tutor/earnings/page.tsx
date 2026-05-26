@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { DollarSign, TrendingUp, Calendar, Clock, Loader2, BarChart3, Wallet } from 'lucide-react'
 import { getTutorEarnings } from '@/app/actions/tutor'
+import { formatCurrency } from '@/lib/currency'
 
 type CompletedSession = {
   id: string
@@ -57,10 +58,6 @@ export default function TutorEarningsPage() {
     })
   }
 
-  function formatCurrency(amount: number) {
-    return `R${amount.toLocaleString()}`
-  }
-
   // Calculate max earnings for chart scaling
   const maxMonthlyEarning = Math.max(...earningsByMonth.map(e => e.amount), 1)
 
@@ -82,8 +79,8 @@ export default function TutorEarningsPage() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[
-          { label: 'Total Earnings', value: formatCurrency(totalEarnings), sub: 'Lifetime earnings', iconBg: 'from-emerald-100 to-emerald-200 dark:from-emerald-900/40 dark:to-emerald-800/30', icon: <Wallet className="h-6 w-6 text-emerald-600 dark:text-emerald-400" /> },
-          { label: 'This Month', value: formatCurrency(monthlyEarnings), sub: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }), iconBg: 'from-primary-100 to-primary-200 dark:from-primary-900/40 dark:to-primary-800/30', icon: <TrendingUp className="h-6 w-6 text-primary-600 dark:text-primary-400" /> },
+          { label: 'Total Earnings', value: formatCurrency(totalEarnings, { minimumFractionDigits: 0, maximumFractionDigits: 0 }), sub: 'Lifetime earnings', iconBg: 'from-emerald-100 to-emerald-200 dark:from-emerald-900/40 dark:to-emerald-800/30', icon: <Wallet className="h-6 w-6 text-emerald-600 dark:text-emerald-400" /> },
+          { label: 'This Month', value: formatCurrency(monthlyEarnings, { minimumFractionDigits: 0, maximumFractionDigits: 0 }), sub: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }), iconBg: 'from-primary-100 to-primary-200 dark:from-primary-900/40 dark:to-primary-800/30', icon: <TrendingUp className="h-6 w-6 text-primary-600 dark:text-primary-400" /> },
           { label: 'Sessions Completed', value: completedSessions.length, sub: 'Total sessions', iconBg: 'from-blue-100 to-blue-200 dark:from-blue-900/40 dark:to-blue-800/30', icon: <Calendar className="h-6 w-6 text-blue-600 dark:text-blue-400" /> },
         ].map((card, i) => (
           <motion.div key={card.label} custom={i} initial="hidden" animate="visible" whileHover={{ y: -4, transition: { duration: 0.2 } }} className="card-stat group">
@@ -128,7 +125,7 @@ export default function TutorEarningsPage() {
             {earningsByMonth.map((item) => (
               <div key={item.month} className="flex-1 text-center">
                 <p className="text-xs text-slate-500 dark:text-slate-400">{item.month.split(' ')[0]}</p>
-                <p className="text-xs font-medium text-slate-700 dark:text-slate-300">{formatCurrency(item.amount)}</p>
+                <p className="text-xs font-medium text-slate-700 dark:text-slate-300">{formatCurrency(item.amount, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
               </div>
             ))}
           </div>
@@ -177,7 +174,7 @@ export default function TutorEarningsPage() {
                       <span className="text-slate-500 dark:text-slate-400 text-sm">{formatDate(session.completedAt)}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <span className="font-semibold text-emerald-600 dark:text-emerald-400">{formatCurrency(session.amount)}</span>
+                      <span className="font-semibold text-emerald-600 dark:text-emerald-400">{formatCurrency(session.amount, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
                     </td>
                   </tr>
                 ))}
@@ -193,7 +190,7 @@ export default function TutorEarningsPage() {
             </span>
             <div className="text-right">
               <span className="text-sm text-slate-500 dark:text-slate-400">Total: </span>
-              <span className="font-bold text-lg text-slate-900 dark:text-white">{formatCurrency(totalEarnings)}</span>
+              <span className="font-bold text-lg text-slate-900 dark:text-white">{formatCurrency(totalEarnings, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
             </div>
           </div>
         )}

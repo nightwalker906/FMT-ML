@@ -1,7 +1,7 @@
 import { getTutors } from '@/app/actions/get-tutors'
-import TutorCard from '@/components/tutor-card'
 import { Search, Users } from 'lucide-react'
 import Link from 'next/link'
+import AnimatedTutorGrid from './animated-grid'
 
 export default async function StudentTutorsPage() {
   const tutors = await getTutors()
@@ -48,12 +48,8 @@ export default async function StudentTutorsPage() {
               Showing {tutors.length} tutor{tutors.length !== 1 ? 's' : ''}
             </p>
             
-            {/* Responsive Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {tutors.map((tutor) => (
-                <TutorCard key={tutor.profile_id} tutor={tutor} />
-              ))}
-            </div>
+            {/* Responsive Grid with staggered animations */}
+            <AnimatedTutorGrid tutors={tutors} />
           </>
         )}
       </div>

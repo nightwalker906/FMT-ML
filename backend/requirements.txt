@@ -31,4 +31,5 @@ requests>=2.31.0         # HTTP requests for AI APIs
 # API Documentation & Security
 # ============================================
 drf-yasg==1.21.7             # Swagger/OpenAPI Documentation
+setuptools<81                # drf-yasg needs pkg_resources (removed in setuptools 81+)
 PyYAML==6.0.1                # YAML support for OpenAPI spec

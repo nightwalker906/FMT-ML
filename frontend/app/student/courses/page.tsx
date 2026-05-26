@@ -28,6 +28,7 @@ import {
 import { createClient } from '@/utils/supabase/client'
 import { OnlineDot, OnlineStatusText } from '@/components/OnlineStatusIndicator'
 import { API_BASE } from '@/lib/api-config'
+import { formatCurrency } from '@/lib/currency'
 import Link from 'next/link'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -497,7 +498,7 @@ export default function StudentCourseBrowserPage() {
 
   const activeFilters = [
     ...(selectedSubject ? [{ key: 'subject', label: selectedSubject }] : []),
-    ...(maxPrice ? [{ key: 'price', label: `Max R${maxPrice}` }] : []),
+    ...(maxPrice ? [{ key: 'price', label: `Max ${formatCurrency(maxPrice, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` }] : []),
     ...(minRating ? [{ key: 'rating', label: `${minRating}+ Stars` }] : []),
     ...(spotsAvailableOnly ? [{ key: 'spots', label: 'Has Spots' }] : []),
   ]
@@ -729,7 +730,7 @@ export default function StudentCourseBrowserPage() {
 
                 {/* Max Price */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Max Price (R)</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Max Price (USD)</label>
                   <div className="relative">
                     <DollarSign size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
@@ -952,7 +953,7 @@ export default function StudentCourseBrowserPage() {
                   {/* Price */}
                   <div className="sm:flex-shrink-0">
                     <span className="text-xl font-bold text-slate-900 dark:text-white">
-                      R{Number(course.price).toFixed(0)}
+                      {formatCurrency(course.price, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                     </span>
                     <span className="text-xs text-slate-400 dark:text-slate-500 ml-1">/ course</span>
                   </div>
@@ -1141,7 +1142,7 @@ export default function StudentCourseBrowserPage() {
               <div className="sticky bottom-0 flex flex-col items-stretch gap-3 border-t border-slate-200/60 bg-white px-4 py-4 dark:border-slate-700/40 dark:bg-slate-800 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                 <div className="text-center sm:text-left">
                   <span className="text-2xl font-bold text-slate-900 dark:text-white">
-                    R{Number(selectedCourse.price).toFixed(0)}
+                    {formatCurrency(selectedCourse.price, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                   </span>
                   <span className="text-sm text-slate-400 dark:text-slate-500 ml-1">/ course</span>
                 </div>

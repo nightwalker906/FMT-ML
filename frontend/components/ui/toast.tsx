@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, createContext, useContext, ReactNode } from 'react'
+import { useState, useEffect, useCallback, createContext, useContext, ReactNode, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CheckCircle, AlertCircle, Info, X, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -85,20 +85,71 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 }
 
 function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }) {
+  const duration = toast.duration || 4000
+  const [progress, setProgress] = useState(100)
+  const [isPaused, setIsPaused] = useState(false)
+
+  // Progress bar countdown
   useEffect(() => {
-    const timer = setTimeout(onDismiss, toast.duration || 4000)
+    if (isPaused) return
+
+    const startTime = Date.now()
+    const endTime = startTime + duration
+
+    const updateProgress = () => {
+      const now = Date.now()
+      const remaining = Math.max(0, endTime - now)
+      const newProgress = (remaining / duration) * 100
+      setProgress(newProgress)
+
+      if (remaining > 0 && !isPaused) {
+        requestAnimationFrame(updateProgress)
+      }
+    }
+
+    const rafId = requestAnimationFrame(updateProgress)
+    return () => cancelAnimationFrame(rafId)
+  }, [duration, isPaused])
+
+  // Auto-dismiss timer
+  useEffect(() => {
+    if (isPaused) return
+    const timer = setTimeout(onDismiss, duration)
     return () => clearTimeout(timer)
-  }, [toast, onDismiss])
+  }, [toast, onDismiss, duration, isPaused])
+
+  // Swipe to dismiss
+  const handleDragEnd = (
+    _: MouseEvent | TouchEvent | PointerEvent,
+    info: { offset: { x: number }; velocity: { x: number } }
+  ) => {
+    if (info.offset.x > 100 || info.velocity.x > 500) {
+      onDismiss()
+    }
+  }
+
+  const progressColors = {
+    success: 'bg-emerald-500',
+    error: 'bg-red-500',
+    info: 'bg-blue-500',
+    warning: 'bg-amber-500',
+  }
 
   return (
     <motion.div
       layout
       initial={{ opacity: 0, x: 80, scale: 0.95 }}
       animate={{ opacity: 1, x: 0, scale: 1 }}
-      exit={{ opacity: 0, x: 80, scale: 0.95 }}
+      exit={{ opacity: 0, x: 100, scale: 0.9 }}
+      drag="x"
+      dragConstraints={{ left: 0, right: 0 }}
+      dragElastic={0.2}
+      onDragEnd={handleDragEnd}
+      onHoverStart={() => setIsPaused(true)}
+      onHoverEnd={() => setIsPaused(false)}
       transition={{ type: 'spring', damping: 25, stiffness: 300 }}
       className={cn(
-        'pointer-events-auto',
+        'pointer-events-auto relative overflow-hidden',
         'flex items-start gap-3 px-4 py-3.5',
         'bg-white dark:bg-slate-800',
         'rounded-xl shadow-glass-lg dark:shadow-glass-dark-lg',
@@ -107,8 +158,28 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
         borders[toast.type]
       )}
     >
-      <div className="flex-shrink-0 mt-0.5">{icons[toast.type]}</div>
+      {/* Progress Bar */}
+      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-100 dark:bg-slate-700">
+        <motion.div
+          className={cn('h-full', progressColors[toast.type])}
+          initial={{ width: '100%' }}
+          animate={{ width: `${progress}%` }}
+          transition={{ duration: 0.1, ease: 'linear' }}
+        />
+      </div>
+
+      {/* Icon with animation */}
+      <motion.div
+        className="flex-shrink-0 mt-0.5"
+        initial={{ scale: 0, rotate: -180 }}
+        animate={{ scale: 1, rotate: 0 }}
+        transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
+      >
+        {icons[toast.type]}
+      </motion.div>
+
       <p className="flex-1 text-sm font-medium text-slate-900 dark:text-white">{toast.message}</p>
+
       <button
         onClick={onDismiss}
         className="flex-shrink-0 p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"

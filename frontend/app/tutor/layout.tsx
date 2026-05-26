@@ -12,6 +12,9 @@ const PricePredictorModal = dynamic(() => import('@/components/ai/PricePredictor
 const TutorCommandCenter = dynamic(() => import('@/components/ai/TutorCommandCenter'), { ssr: false });
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Bell, Menu, Loader2 } from 'lucide-react';
+import { formatCurrency } from '@/lib/currency';
+import { syncRecommender } from '@/lib/recommender-sync';
+import { updateTutorHourlyRate } from '@/app/actions/tutor';
 
 export default function TutorLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -157,6 +160,37 @@ export default function TutorLayout({ children }: { children: React.ReactNode })
     router.push('/login');
   };
 
+  const handleRateApplied = async (newRate: number) => {
+    if (!user) return;
+    
+    try {
+      // Call server action to update the tutor's hourly_rate and revalidate pages
+      const result = await updateTutorHourlyRate(newRate);
+
+      if (!result.success) {
+        console.error('Error updating hourly rate:', result.error);
+        alert('Failed to update price. Please try again.');
+        return;
+      }
+
+      // Update local state to reflect the new price
+      setHourlyRate(newRate);
+
+      // Sync the recommender system with the updated tutor data
+      await syncRecommender({
+        entity: 'tutor',
+        syncType: 'tutor_corpus',
+        profileId: user.id,
+      });
+
+      // Close the modal
+      setShowPricingModal(false);
+    } catch (err) {
+      console.error('Error in handleRateApplied:', err);
+      alert('An error occurred while updating your price.');
+    }
+  };
+
   // Create links with dynamic message badge
   const linksWithBadges: SidebarLink[] = useMemo(() => {
     return tutorLinks.map(link => {
@@ -236,7 +270,7 @@ export default function TutorLayout({ children }: { children: React.ReactNode })
               </h1>
               {hourlyRate > 0 && (
                 <span className="badge-primary">
-                  R{hourlyRate}/hr
+                  {formatCurrency(hourlyRate, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}/hr
                 </span>
               )}
             </div>
@@ -301,7 +335,7 @@ export default function TutorLayout({ children }: { children: React.ReactNode })
       <PricePredictorModal
         isOpen={showPricingModal}
         onClose={() => setShowPricingModal(false)}
-        onRateApplied={() => setShowPricingModal(false)}
+        onRateApplied={handleRateApplied}
       />
     </div>
   );

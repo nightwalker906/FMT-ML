@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, BookOpen, Calendar, ChevronDown, ChevronUp, BrainCircuit, Target, Clock, AlertCircle } from 'lucide-react';
 import StudyPlanTimeline from '@/components/study-planner/StudyPlanTimeline';
 import { API_BASE } from '@/lib/api-config';
+import { fetchJsonWithRetry } from '@/lib/fetch-json-with-retry';
+
 interface StudyPlan {
   week: number;
   theme: string;
@@ -20,18 +22,18 @@ interface PlanResponse {
   message: string;
   plan: StudyPlan[];
   metadata: {
+    cached?: boolean;
     generated_at: string;
     method: string;
     duration_weeks: number;
   };
 }
 
-// Loading messages for the thinking process
 const loadingMessages = [
-  "🧠 Analyzing your learning style...",
-  "🔍 Scanning academic resources...",
-  "📐 Structuring weekly milestones...",
-  "✨ Finalizing your personalized plan..."
+  'Analyzing your learning style...',
+  'Scanning academic resources...',
+  'Structuring weekly milestones...',
+  'Finalizing your personalized plan...'
 ];
 
 export default function StudyPlannerPage() {
@@ -47,7 +49,6 @@ export default function StudyPlannerPage() {
   const [expandedWeek, setExpandedWeek] = useState<number | null>(null);
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
 
-  // Animate loading messages
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (loading) {
@@ -65,7 +66,6 @@ export default function StudyPlannerPage() {
     setPlan(null);
     setExpandedWeek(null);
 
-    // Validation
     if (!goal.trim()) {
       setError('Please enter your learning goal');
       return;
@@ -79,13 +79,8 @@ export default function StudyPlannerPage() {
     const weeksNum = Math.max(1, Math.min(12, parseInt(weeks) || 4));
 
     try {
-      // AbortController for 30s timeout
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 30000);
-
-      // Minimum delay to show the cool animation
       const [response] = await Promise.all([
-        fetch(`${API_BASE}/generate-plan/`, {
+        fetchJsonWithRetry<PlanResponse>(`${API_BASE}/generate-plan/`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -94,11 +89,9 @@ export default function StudyPlannerPage() {
             weeks: weeksNum,
             context: context || ''
           }),
-          signal: controller.signal,
-        }).then(res => {
-          clearTimeout(timeout);
-          if (!res.ok) throw new Error(`Server error (${res.status})`);
-          return res.json();
+          timeoutMs: 90000,
+          retries: 1,
+          retryDelayMs: 2000,
         }),
         new Promise(resolve => setTimeout(resolve, 3000))
       ]);
@@ -110,8 +103,8 @@ export default function StudyPlannerPage() {
         setError(response.message || 'Failed to generate study plan');
       }
     } catch (err) {
-      if (err instanceof DOMException && err.name === 'AbortError') {
-        setError('Request timed out. The AI service may be busy — please try again.');
+      if (err instanceof Error && err.name === 'AbortError') {
+        setError('The study plan is taking longer than usual. Please try again in a moment.');
       } else if (err instanceof TypeError && err.message.includes('fetch')) {
         setError('Cannot reach the server. Make sure the backend is running.');
       } else {
@@ -124,8 +117,6 @@ export default function StudyPlannerPage() {
 
   return (
     <div className="w-full max-w-6xl mx-auto p-6">
-      
-      {/* --- HEADER --- */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -144,9 +135,7 @@ export default function StudyPlannerPage() {
       </motion.div>
 
       <div className="grid lg:grid-cols-3 gap-8 items-start">
-        
-        {/* --- INPUT FORM (Left Side) --- */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           className="lg:col-span-1 bg-white rounded-2xl shadow-xl shadow-indigo-100/50 border border-gray-100 p-6 sticky top-6"
@@ -209,7 +198,6 @@ export default function StudyPlannerPage() {
               />
             </div>
 
-            {/* Error Message */}
             {error && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
@@ -239,12 +227,8 @@ export default function StudyPlannerPage() {
           </form>
         </motion.div>
 
-
-        {/* --- RESULTS AREA (Right Side) --- */}
         <div className="lg:col-span-2">
           <AnimatePresence mode="wait">
-        
-            {/* STATE: LOADING */}
             {loading && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -273,24 +257,24 @@ export default function StudyPlannerPage() {
                 </motion.p>
               </motion.div>
             )}
-            {/* STATE: SUCCESS (The Beautiful Timeline) */}
+
             {!loading && plan && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
               >
-                <StudyPlanTimeline 
+                <StudyPlanTimeline
                   planData={plan}
                   isLoading={false}
                   method={method}
                 />
               </motion.div>
             )}
-            {/* STATE: EMPTY/START */}
+
             {!loading && !plan && !error && (
-              <motion.div 
-                initial={{ opacity: 0 }} 
+              <motion.div
+                initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 className="h-full flex flex-col items-center justify-center text-center p-12 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl border-2 border-dashed border-gray-200"
               >
@@ -300,14 +284,9 @@ export default function StudyPlannerPage() {
                 <p className="text-gray-400 font-medium">Your personalized study plan will appear here</p>
               </motion.div>
             )}
-
           </AnimatePresence>
         </div>
       </div>
     </div>
   );
 }
-
-
-
-

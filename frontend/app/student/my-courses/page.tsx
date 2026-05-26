@@ -30,6 +30,7 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 import { OnlineDot } from '@/components/OnlineStatusIndicator'
+import { formatCurrency } from '@/lib/currency'
 import Link from 'next/link'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -899,7 +900,7 @@ export default function StudentMyCoursesPage() {
                           <div className="flex items-center gap-4 text-xs text-slate-400 dark:text-slate-500 pt-2 border-t border-slate-100 dark:border-slate-700/30">
                             <span>Enrolled {formatDate(course.enrolled_at)}</span>
                             <span>·</span>
-                            <span>Price: R{Number(course.price).toFixed(0)}</span>
+                            <span>Price: {formatCurrency(course.price, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
                           </div>
                         </div>
                       </motion.div>
