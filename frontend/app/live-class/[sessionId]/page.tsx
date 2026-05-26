@@ -2,17 +2,20 @@ import LiveClassroom from '@/components/classroom/LiveClassroom';
 import { createClient } from '@/utils/supabase/server';
 
 type PageProps = {
-  params: { sessionId: string };
-  searchParams?: { redirect?: string | string[]; role?: string | string[] };
+  params: Promise<{ sessionId: string }>;
+  searchParams: Promise<{ redirect?: string | string[]; role?: string | string[] }>;
 };
 
 export default async function LiveClassroomPage({ params, searchParams }: PageProps) {
+  const { sessionId } = await params;
+  const query = await searchParams;
+
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const roleParam = searchParams?.role;
+  const roleParam = query.role;
   const role = Array.isArray(roleParam) ? roleParam[0] : roleParam;
   let detectedRole: string | null = role || null;
 
@@ -38,7 +41,7 @@ export default async function LiveClassroomPage({ params, searchParams }: PagePr
       const { data: session } = await supabase
         .from('course_sessions')
         .select('id, course_id, status')
-        .eq('id', params.sessionId)
+        .eq('id', sessionId)
         .single();
 
       if (session?.course_id) {
@@ -52,20 +55,20 @@ export default async function LiveClassroomPage({ params, searchParams }: PagePr
           await supabase
             .from('course_sessions')
             .update({ status: 'live' })
-            .eq('id', params.sessionId);
+            .eq('id', sessionId);
         }
       }
     }
   }
 
-  const redirectParam = searchParams?.redirect;
+  const redirectParam = query.redirect;
   const redirectPath = Array.isArray(redirectParam)
     ? redirectParam[0]
     : redirectParam || (detectedRole === 'tutor' ? '/tutor/live-classroom' : '/student/live-classroom');
 
   return (
     <LiveClassroom
-      sessionId={params.sessionId}
+      sessionId={sessionId}
       redirectPath={redirectPath}
       userInfo={{ displayName, email, role: detectedRole }}
     />

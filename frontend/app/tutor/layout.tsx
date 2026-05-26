@@ -13,6 +13,8 @@ const TutorCommandCenter = dynamic(() => import('@/components/ai/TutorCommandCen
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Bell, Menu, Loader2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/currency';
+import { syncRecommender } from '@/lib/recommender-sync';
+import { updateTutorHourlyRate } from '@/app/actions/tutor';
 
 export default function TutorLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -156,6 +158,37 @@ export default function TutorLayout({ children }: { children: React.ReactNode })
     await goOffline();
     await signOut();
     router.push('/login');
+  };
+
+  const handleRateApplied = async (newRate: number) => {
+    if (!user) return;
+    
+    try {
+      // Call server action to update the tutor's hourly_rate and revalidate pages
+      const result = await updateTutorHourlyRate(newRate);
+
+      if (!result.success) {
+        console.error('Error updating hourly rate:', result.error);
+        alert('Failed to update price. Please try again.');
+        return;
+      }
+
+      // Update local state to reflect the new price
+      setHourlyRate(newRate);
+
+      // Sync the recommender system with the updated tutor data
+      await syncRecommender({
+        entity: 'tutor',
+        syncType: 'tutor_corpus',
+        profileId: user.id,
+      });
+
+      // Close the modal
+      setShowPricingModal(false);
+    } catch (err) {
+      console.error('Error in handleRateApplied:', err);
+      alert('An error occurred while updating your price.');
+    }
   };
 
   // Create links with dynamic message badge
@@ -302,7 +335,7 @@ export default function TutorLayout({ children }: { children: React.ReactNode })
       <PricePredictorModal
         isOpen={showPricingModal}
         onClose={() => setShowPricingModal(false)}
-        onRateApplied={() => setShowPricingModal(false)}
+        onRateApplied={handleRateApplied}
       />
     </div>
   );
