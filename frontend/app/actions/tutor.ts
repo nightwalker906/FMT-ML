@@ -602,3 +602,73 @@ export async function getPendingRequests(): Promise<{
     return { success: false, error: 'Failed to fetch requests' };
   }
 }
+
+export interface RatingStats {
+  totalRatings: number;
+  avgOverall: number;
+  avgKnowledge: number;
+  avgTeachingStyle: number;
+  avgCommunication: number;
+  recentRatings: Array<{
+    id: string;
+    studentName: string;
+    overall: number;
+    review: string | null;
+    createdAt: string;
+  }>;
+}
+
+/**
+ * Get tutor rating statistics and recent reviews
+ */
+export async function getTutorRatingStats(): Promise<{
+  success: boolean;
+  data?: RatingStats;
+  error?: string;
+}> {
+  try {
+    const supabase = await createClient();
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+
+    const response = await fetch(`${apiUrl}/ratings/stats/?tutor_id=${user.id}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      return { success: false, error: 'Failed to fetch rating stats' };
+    }
+
+    const data = await response.json();
+
+    return {
+      success: true,
+      data: {
+        totalRatings: data.stats.total_ratings || 0,
+        avgOverall: data.stats.avg_overall ? parseFloat(data.stats.avg_overall.toFixed(1)) : 0,
+        avgKnowledge: data.stats.avg_knowledge ? parseFloat(data.stats.avg_knowledge.toFixed(1)) : 0,
+        avgTeachingStyle: data.stats.avg_teaching_style ? parseFloat(data.stats.avg_teaching_style.toFixed(1)) : 0,
+        avgCommunication: data.stats.avg_communication ? parseFloat(data.stats.avg_communication.toFixed(1)) : 0,
+        recentRatings: (data.recent_ratings || []).map((r: any) => ({
+          id: r.id,
+          studentName: r.student_name,
+          overall: r.overall_rating,
+          review: r.review_text,
+          createdAt: r.created_at,
+        })),
+      },
+    };
+  } catch (error) {
+    console.error('getTutorRatingStats error:', error);
+    return { success: false, error: 'Failed to fetch rating stats' };
+  }
+}

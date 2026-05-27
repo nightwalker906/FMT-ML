@@ -220,10 +220,36 @@ class RatingViewSet(viewsets.ModelViewSet):
         tutor_id = request.query_params.get('tutor_id')
         if not tutor_id:
             return Response({'error': 'tutor_id parameter required'}, status=status.HTTP_400_BAD_REQUEST)
-        
+
         ratings = Rating.objects.filter(tutor_id=tutor_id)
         serializer = self.get_serializer(ratings, many=True)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def stats(self, request):
+        """Get rating statistics for a tutor"""
+        from django.db.models import Avg, Count
+
+        tutor_id = request.query_params.get('tutor_id')
+        if not tutor_id:
+            return Response({'error': 'tutor_id parameter required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        ratings = Rating.objects.filter(tutor_id=tutor_id)
+
+        stats = ratings.aggregate(
+            total_ratings=Count('id'),
+            avg_overall=Avg('overall_rating'),
+            avg_knowledge=Avg('knowledge_rating'),
+            avg_teaching_style=Avg('teaching_style_rating'),
+            avg_communication=Avg('communication_rating'),
+        )
+
+        recent_ratings = ratings.select_related('student').order_by('-created_at')[:5]
+
+        return Response({
+            'stats': stats,
+            'recent_ratings': RatingSerializer(recent_ratings, many=True).data
+        })
 
 
 # =============================================================================
