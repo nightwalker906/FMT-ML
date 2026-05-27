@@ -209,11 +209,11 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col">
       {/* Desktop Sidebar */}
-      <Sidebar 
-        links={linksWithBadges} 
-        userType="student" 
+      <Sidebar
+        links={linksWithBadges}
+        userType="student"
         onSignOut={handleSignOut}
         userName={displayName}
         userInitials={initials}
@@ -232,10 +232,8 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         userAvatar={avatarUrl}
       />
 
-      {/* Main Content Area */}
-      <div className="min-w-0 lg:pl-64">
-        {/* Header — Glass effect */}
-        <header className="sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/60 dark:border-slate-800/60">
+      {/* Header — Glass effect (Fixed at top) */}
+      <header className="fixed top-0 left-0 right-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/60 dark:border-slate-800/60 lg:ml-64">
           <div className="flex h-16 items-center justify-between gap-3 px-4 sm:px-5 lg:px-8">
             {/* Mobile Menu Button */}
             <button
@@ -298,11 +296,13 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
           </div>
         </header>
 
-        {/* Page Content */}
-        <main className="overflow-x-hidden p-4 md:p-6 lg:p-8">
-          {children}
-        </main>
+        {/* Main Content Area with top padding for fixed header */}
+        <div className="min-w-0 pt-16 lg:pl-64">
+          {/* Page Content */}
+          <main className="overflow-x-hidden p-4 md:p-6 lg:p-8">
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
   );
 }
