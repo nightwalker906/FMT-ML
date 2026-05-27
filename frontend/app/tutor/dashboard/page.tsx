@@ -5,10 +5,12 @@ import {
   getTutorStats,
   getBookingRequests,
   getUpcomingSessions,
+  getTutorRatingStats,
 } from '@/app/actions/tutor';
 import { StatsOverview } from '@/components/tutor/stats-overview';
 import { BookingList } from '@/components/tutor/booking-list';
 import { UpcomingSchedule } from '@/components/tutor/upcoming-schedule';
+import { RatingsCard } from '@/components/tutor/ratings-card';
 import { DollarSign, Bell, CalendarDays, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { formatCurrency } from '@/lib/currency';
@@ -82,6 +84,29 @@ function ScheduleLoadingSkeleton() {
   );
 }
 
+// Loading skeleton for ratings card
+function RatingsLoadingSkeleton() {
+  return (
+    <div className="card space-y-6 animate-pulse">
+      <div className="flex items-start justify-between">
+        <div className="space-y-3">
+          <div className="h-6 w-32 skeleton rounded" />
+          <div className="h-4 w-24 skeleton rounded" />
+        </div>
+        <div className="h-12 w-16 skeleton rounded" />
+      </div>
+      <div className="grid grid-cols-2 gap-4 py-4 border-t border-slate-200 dark:border-slate-700">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="space-y-2">
+            <div className="h-4 w-20 skeleton rounded" />
+            <div className="h-6 w-16 skeleton rounded" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // Server component to fetch stats
 async function StatsSection() {
   const result = await getTutorStats();
@@ -125,6 +150,21 @@ async function ScheduleSection() {
   }
 
   return <UpcomingSchedule sessions={result.data || []} />;
+}
+
+// Server component to fetch rating stats
+async function RatingsSection() {
+  const result = await getTutorRatingStats();
+
+  if (!result.success || !result.data) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+        <p className="text-red-600">Failed to load ratings</p>
+      </div>
+    );
+  }
+
+  return <RatingsCard stats={result.data} />;
 }
 
 export default async function TutorDashboardPage() {
@@ -214,17 +254,25 @@ export default async function TutorDashboardPage() {
           </Suspense>
         </section>
 
-        {/* Upcoming Schedule - Takes 1 column */}
-        <section className="lg:col-span-1">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 className="section-title">
-              <CalendarDays size={20} className="text-primary-600 dark:text-primary-400" />
-              Upcoming Schedule
-            </h2>
+        {/* Upcoming Schedule + Ratings - Takes 1 column */}
+        <section className="lg:col-span-1 space-y-6">
+          <div>
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h2 className="section-title">
+                <CalendarDays size={20} className="text-primary-600 dark:text-primary-400" />
+                Upcoming Schedule
+              </h2>
+            </div>
+            <Suspense fallback={<ScheduleLoadingSkeleton />}>
+              <ScheduleSection />
+            </Suspense>
           </div>
-          <Suspense fallback={<ScheduleLoadingSkeleton />}>
-            <ScheduleSection />
-          </Suspense>
+
+          <div>
+            <Suspense fallback={<RatingsLoadingSkeleton />}>
+              <RatingsSection />
+            </Suspense>
+          </div>
         </section>
       </div>
     </div>

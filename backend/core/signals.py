@@ -9,7 +9,7 @@ from django.db import transaction
 from django.db.models.signals import post_delete, post_save, pre_save
 from django.dispatch import receiver
 
-from .models import Profile, Student, Tutor
+from .models import Profile, Student, Tutor, Rating
 
 
 logger = logging.getLogger(__name__)
@@ -302,3 +302,33 @@ def clear_student_recommender_cache_after_student_delete(
     from api.ml.recommender import invalidate_student_query_cache
 
     invalidate_student_query_cache(str(instance.profile_id))
+
+
+@receiver(
+    post_save,
+    sender=Rating,
+    dispatch_uid="core.update_tutor_rating_after_rating_save",
+)
+def update_tutor_rating_after_rating_save(
+    sender,
+    instance: Rating,
+    created: bool = False,
+    raw: bool = False,
+    using: str | None = None,
+    **kwargs,
+) -> None:
+    if raw:
+        return
+
+    from django.db.models import Avg
+
+    tutor = instance.tutor
+    avg_rating = Rating.objects.filter(tutor=tutor).aggregate(Avg('overall_rating'))['overall_rating__avg']
+
+    if avg_rating is not None:
+        tutor.average_rating = Decimal(str(round(float(avg_rating), 2)))
+        tutor.save(update_fields=['average_rating'])
+        logger.info(f"[Rating] Updated tutor {tutor.profile_id} average rating to {tutor.average_rating}")
+
+        schedule_recommender_refresh("metadata", f"Rating for Tutor<{tutor.profile_id}>", using=using)
+
